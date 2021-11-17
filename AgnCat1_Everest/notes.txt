@@ -1,1 +1,0 @@
-This is the begining of a first end-to-end pipeline for making an AGN catalogue
