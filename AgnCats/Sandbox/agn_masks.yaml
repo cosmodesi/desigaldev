@@ -1,0 +1,37 @@
+#- DESI agn catalogue target bit mask: 
+z_sel:
+    - [RR,          0, "RR", {}]
+    - [QN/RR,       1, "QN/RR", {}]
+
+#- AGN summary bit mask
+agn_summary:
+    - [AGN_ANY,     0, "AGN_ANY"]
+
+    #- from Edmond's QSO catalogue definiton
+    - [RR,          1, "Red rock determines this to be a QSO from template fitting"]
+    - [MGII,        2, "MgII afterburner detects broad line"]
+    - [QN,          3, "Quasar Net reclassifies as a QSO"]
+
+    #- from DESI data
+    - [BPT_ANY_AGN, 4, "At least one BPT diagnostic indicates SEYFERT, LINER or COMPOSITE"]
+    - [OPT_OTHER,   5, "Rest frame optical emission lines diagnostic not bpt (4000-10000 ang)"]
+    - [UV,          6, "Rest frame UV emission lines indicate agn"]
+    - [WISE,        7, "WISE colours indicate agn"]
+    - [XRAY,        8, "X-rays indicate agn"]
+    - [RADIO,       9, "Radio indicates agn"]
+
+#- AGN type
+agn_type:
+    - [UNKNOWN,     0, "Unknown agn type"]
+    - [TYPE1,       1, "Type 1 agn (FWHM>1500 km/s or >1000 km/s in a Balmer line)"]
+    - [TYPE2,       2, "Type 2 agn (FWHM<1500 km/s or <1000 km/s in a Balmer line)"]
+
+#- BPT type
+bpt_type:
+    - [BPT_ANY,     0, "Any BPT diagnostic indicates agn"]
+    - [NII_BPT_AV,  1, "NII BPT diagnostic is avalible (S/N "]
+    - [NII_SF,      2, "NII BPT diagnostic is avalible"]
+    - [NII_COMP,  3, "NII BPT diagnostic is avalible"]
+    - [NII_SEY,  4, "NII BPT diagnostic is avalible"]
+    - [NII_LINER,  5, "NII BPT diagnostic is avalible"]
+    - [NII_QUIES, 
