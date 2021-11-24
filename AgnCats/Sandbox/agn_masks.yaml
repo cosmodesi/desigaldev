@@ -30,8 +30,8 @@ agn_type:
 bpt_type:
     - [BPT_ANY,     0, "Any BPT diagnostic indicates agn"]
     - [NII_BPT_AV,  1, "NII BPT diagnostic is avalible (S/N "]
-    - [NII_SF,      2, "NII BPT diagnostic is avalible"]
-    - [NII_COMP,  3, "NII BPT diagnostic is avalible"]
-    - [NII_SEY,  4, "NII BPT diagnostic is avalible"]
-    - [NII_LINER,  5, "NII BPT diagnostic is avalible"]
-    - [NII_QUIES, 
+    - [NII_SF,      2, "NII BPT Star-forming"]
+    - [NII_COMP,    3, "NII BPT Composite"]
+    - [NII_SEY,     4, "NII BPT Seyfert"]
+    - [NII_LINER,   5, "NII BPT LINER"]
+    - [NII_QUIES,   6, "Lines are detected at les than 3 sigma"]
