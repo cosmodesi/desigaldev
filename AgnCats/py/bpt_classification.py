@@ -83,7 +83,7 @@ def Classify_SII_BPT(table):
     liner_sii = (~quiescent_sii) & ((j_bptsii>=Kew01_sii) & (j_bptsii<Kew06_sii) | (i_bptsii>=0.32))
     sf_sii = (~quiescent_sii) & (~agn_sii) & (~liner_sii)
     
-    return (sii_bpt, sf_sii, agn_sii, liner_sii)
+    return (sii_bpt, sf_sii, agn_sii, liner_sii, quiescent_sii)
 
 def Classify_OI_BPT(table):
     fastspec_mask = table['HALPHA_FLUX'].mask        # Fastspec Results Not Available = TRUE
