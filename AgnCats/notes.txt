@@ -1,1 +1,15 @@
+Overview of the catalogue generation
+
+Parent: Decals - target selection
+
+ - Parent = 5 * QSOMaker catalogues (QSO, ELG, LRG, BGS, star)
+   - this cat gives us the redshifts (RR or QN/RR) and some QSO identifiers
+
+   - Choose these with thresholds
+
+   - Combine DESI observed with with FastSpecFit
+
+ - Combine with X-ray, Radio and WISE
+ 
+ 
 
