@@ -55,7 +55,7 @@ def Classify_NII_BPT(table):
     
     return (nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii, quiescent_nii)
 
-def Classify_SII_BPT(table, Kewley01=False, Law21=False):
+def Classify_SII_BPT(table, Kewley01=False):
     # By default, use the Law+21 line for SF/AGN separation and the Kewley+06 line 
     # for LINER/Seyfert separation on the AGN side.
     #
