@@ -6,7 +6,7 @@
 import numpy as np
 from astropy.table import Table, Column
 from join_tables import join_zcat_fastspec
-from bpt_classification import Classify_NII_BPT, Classify_SII_BPT, Classify_OI_BPT
+from emline_classification import Classify_NII_BPT, Classify_SII_BPT, Classify_OI_BPT
 from desiutil.bitmask import BitMask
 import yaml
 
