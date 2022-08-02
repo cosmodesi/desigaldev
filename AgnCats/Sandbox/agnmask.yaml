@@ -9,43 +9,49 @@ QSO_MASKBITS:
 
 #- AGN summary table bitmask
 AGN_MASKBITS:
-    - [AGN_ANY,     0, "any agn classification is set"]
+    - [AGN_ANY,       0, "any agn classification is set"]
     #- from Edmond's QSO catalogue definiton
-    - [RR,          1, "RR determines this to be a QSO from template fitting"]
-    - [MGII,        2, "MgII afterburner detects broad line"]
-    - [QN,          3, "Quasar Net reclassifies as a QSO"]
-    - [QN_NEW_RR,   4, "Quasar Net reclassifies as a QSO"]
+    - [RR,            1, "RR determines this to be a QSO from template fitting"]
+    - [MGII,          2, "MgII afterburner detects broad line"]
+    - [QN,            3, "Quasar Net reclassifies as a QSO"]
+    - [QN_NEW_RR,     4, "Quasar Net prompts different RR redshift"]
     #- from DESI data
-    - [BPT_ANY_AGN, 5, "At least one BPT diagnostic indicates SEYFERT, LINER or COMPOSITE"]
-    - [OPT_OTHER,   6, "Rest frame optical emission lines diagnostic not bpt (4000-10000 ang)"]
-    - [UV,          7, "Rest frame UV emission lines indicate agn"]
-    - [WISE,        8, "WISE colours indicate agn"]
-    - [XRAY,        9, "X-rays indicate agn"]
-    - [RADIO,       10, "Radio indicates agn"]
+    - [BPT_ANY_AGN,   5, "At least one BPT diagnostic indicates SEYFERT, LINER or COMPOSITE"]
+    - [OPT_OTHER_AGN, 6, "Rest frame optical emission lines diagnostic not bpt (4000-10000 ang) indicate agn"]
+    - [UV,            7, "Rest frame UV emission lines indicate agn"]
+    - [WISE,          8, "Infrared (WISE) colours indicate agn"]
+    - [XRAY,          9, "X-rays indicate agn"]
+    - [RADIO,        10, "Radio indicates agn"]
 
 #- AGN detailed type information
 AGN_TYPE:
-	#-optical types
+    #-optical types
     - [UNKNOWN,     0, "Unknown agn type"]
     - [TYPE1,       1, "Type 1 agn (FWHM>1500 km/s or >1000 km/s in a Balmer line)"]
     - [TYPE2,       2, "Type 2 agn (FWHM<1500 km/s or <1000 km/s in a Balmer line)"]
-	#- agn emission line types
-	- [EMLINE_ANY,  3, "Any emission line diagnotic"]
-    - [BPT_AGN,     4, "Any BPT diagnostic indicates agn"]
+    #- agn emission line types
+    - [BPT_SY,      3, "Any BPT diagnostic indicates Seyfert"]
+    - [BPT_LINER,   4, "Any BPT diagnostic indicates LINER"]
     - [NII_BPT_AV,  5, "NII BPT diagnostic is avalible"]
     - [NII_SF,      6, "NII BPT Star-forming"]
     - [NII_COMP,    7, "NII BPT Composite"]
     - [NII_SY,      8, "NII BPT Seyfert"]
     - [NII_LINER,   9, "NII BPT LINER"]
-    - [NII_QUIES,   10, "NII BPT Lines detected with (S/N) < 3"]
+    - [NII_QUIES,   10, "NII BPT Quiescent, Lines detected with (S/N) < 3"]
     - [SII_BPT_AV,  11, "SII BPT diagnostic is available"]
     - [SII_SF,      12, "SII BPT Star-forming"]
-    - [SII_SY,     13, "SII BPT Seyfert"]
-    - [SII_LINER,  14, "SII BPT LINER"]
-    - [SII_QUIES,  15, "SII BPT Lines detected with (S/N) < 3"]
-    - [OI_BPT_AV,  16, "OI BPT dianostic is available"]
-    - [OI_SF,      17, "OI BPT Star-forming"]
-    - [OI_SY,      18, "OI BPT Seyfert"]
-    - [OI_LINER,   19, "OI BPT LINER"]
-	- [MEx,        20, "Mass-excitation"]
-	#-future types and diagnostics here too
+    - [SII_SY,      13, "SII BPT Seyfert"]
+    - [SII_LINER,   14, "SII BPT LINER"]
+    - [SII_QUIES,   15, "SII BPT Quiescent, Lines detected with (S/N) < 3"]
+    - [OI_BPT_AV,   16, "OI BPT dianostic is available"]
+    - [OI_SF,       17, "OI BPT Star-forming"]
+    - [OI_SY,       18, "OI BPT Seyfert"]
+    - [OI_LINER,    19, "OI BPT LINER"]
+    - [WHAN_AV,     20, "WHAN is available (Halpha and [NII])"]
+    - [WHAN_SF,     21, "WHAN Star-forming"]
+    - [WHAN_SAGN,   22, "WHAN Strong AGN"]
+    - [WHAN_WAGN,   23, "WHAN Weak AGN"]
+    - [WHAN_RET,    24, "WHAN Retired"]
+    - [WHAN_PASS,   25, "WHAN Passive"]
+    - [MEx,         26, "Mass-excitation"]
+    #-future types and diagnostics here too
