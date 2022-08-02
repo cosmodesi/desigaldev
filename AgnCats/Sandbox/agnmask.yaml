@@ -25,11 +25,11 @@ AGN_MASKBITS:
 
 #- AGN detailed type information
 AGN_TYPE:
-	#-optical types
+    #-optical types
     - [UNKNOWN,     0, "Unknown agn type"]
     - [TYPE1,       1, "Type 1 agn (FWHM>1500 km/s or >1000 km/s in a Balmer line)"]
     - [TYPE2,       2, "Type 2 agn (FWHM<1500 km/s or <1000 km/s in a Balmer line)"]
-	#- agn emission line types
+    #- agn emission line types
     - [BPT_SY,      3, "Any BPT diagnostic indicates Seyfert"]
     - [BPT_LINER,   4, "Any BPT diagnostic indicates LINER"]
     - [NII_BPT_AV,  5, "NII BPT diagnostic is avalible"]
@@ -54,4 +54,4 @@ AGN_TYPE:
     - [WHAN_RET,    24, "WHAN Retired"]
     - [WHAN_PASS,   25, "WHAN Passive"]
     - [MEx,         26, "Mass-excitation"]
-	#-future types and diagnostics here too
+    #-future types and diagnostics here too
