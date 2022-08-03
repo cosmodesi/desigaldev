@@ -3,8 +3,7 @@ import pandas as pd
 import numpy as np
 from AGNdiagnosticFunctions import NII_BPT, SII_BPT, OI_BPT, WHAN
 
-dir = '/Users/mmezcua/Documents/Postdoc/ICE/DESI/inputs/'
-input=pd.read_csv(dir+'input_stripe82.txt',header=0, delim_whitespace=True)
+input=pd.read_csv('inputTable.txt',header=0, delim_whitespace=True)
 output=input[['#id']]
 
 ## NII BPT ##
@@ -36,7 +35,6 @@ choices_whan = ['WHAN_AV','WHAN_SF','WHAN_SAGN','WHAN_WAGN','WHAN_RET','WHAN_PAS
 output['WHAN'] = np.select(conditions_whan, choices_whan, default='--')
 
 #Save output table as .csv or .ascii table
-dirout = '/Users/mmezcua/Documents/Postdoc/ICE/DESI/outputs/'
-output.to_csv(dirout+'output.csv', header= True, index=None, sep='\t')
-output.to_csv(dirout+'output.ascii', header= True, index=None, sep='\t')
+output.to_csv('output.csv', header= True, index=None, sep='\t')
+output.to_csv('output.ascii', header= True, index=None, sep='\t')
 
