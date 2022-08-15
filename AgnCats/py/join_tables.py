@@ -5,7 +5,6 @@ This module has functions that join information from different tables
 import numpy
 from astropy.io import fits
 from astropy.table import Table, Column, vstack, join
-
 from desimodel.footprint import radec2pix
 
 #######################################################################################################
