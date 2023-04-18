@@ -118,7 +118,7 @@ def OI_BPT(input, Kewley01=False):
 	SNR_OIII=input['flux_oiii_5006']/input['flux_oiii_5006_err']
 	snrOI=1
 	SNR_OI=input['flux_oi_6300']/input['flux_oi_6300_err']
-	zero_flux_oi= (input['flux_ha_6562']==0) | (input['flux_hb_4861']==0) | (input['flux_oiii_5006']==0) | (input['flux_oi_6300'])
+	zero_flux_oi= (input['flux_ha_6562']==0) | (input['flux_hb_4861']==0) | (input['flux_oiii_5006']==0) | (input['flux_oi_6300']==0)
 
 	## OI-BPT is available (SNR for the 3 lines other than OI >= 3)
 	oi_bpt = (SNR_Ha >= snr) & (SNR_Hb >= snr) & (SNR_OIII >= snr) & (SNR_OI >= snrOI) & (~zero_flux_oi)
@@ -159,6 +159,43 @@ def WHAN(input):
 	whan_passive=ew_ha_6562<0.5
 
 	return (whan, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive)
+
+##########################################################################################################
+##########################################################################################################
+
+def BLUE(input):
+	## BLUE diagram from Lamareille et al (2004) & Lamareille (2010)
+	#Main division between SF/AGN (eq. 1 of Lamareille 2010): log10(flux_oiii_5006/flux_hbeta) = 0.11/(log10(ew_oii_3727/ew_hb_4861) - 0.92) + 0.85
+	#Division between SF and "mixed" SF/Sy2 (eq. 2 of Lamareille 2010): log10(flux_oiii_5006/flux_hbeta) > 0.3
+	#Divisions for the SF-LIN/Comp overlap region (eq. 3 of Lamareille 2010): 
+    	#log10(flux_oiii_5006/flux_hbeta) = -(log10(ew_oii_3727/ew_hb_4861)-1.0)**2 - 0.1*log10(ew_oii_3727/ew_hb_4861) + 0.25
+   	#log10(flux_oiii_5006/flux_hbeta) = (log10(ew_oii_3727/ew_hb_4861)-0.2)**2 - 0.6
+   	#Division between Sy2/LINER (eq. 4 of Lamareille 2010): log10(flux_oiii_5006/flux_hbeta) = 0.95*log10(ew_oii_3727/ew_hb_4861) - 0.4
+	log_ewoii_ewhb = np.log10(input['ew_oii_3727']/input['ew_hb_4861'])
+	log_oiii_hb=np.log10(input['flux_oiii_5006']/input['flux_hb_4861'])
+	main_blue = 0.11/(log_ewoii_ewhb-0.92)+0.85
+	eq3_blue1 = -(log_ewoii_ewhb-1.0)**2-0.1*log_ewoii_ewhb+0.25
+	eq3_blue2 = (log_ewoii_ewhb-0.2)**2-0.6
+	eq4_blue = 0.95*log_ewoii_ewhb - 0.4
+
+	snr=3
+	SNR_Hb=input['flux_hb_4861']/input['flux_hb_4861_err']
+	SNR_OIII=input['flux_oiii_5006']/input['flux_oiii_5006_err']
+	snrOII=1
+	SNR_OII=input['flux_oii_3727']/input['flux_oii_3727_err']
+	zero_flux_blue= (input['flux_hb_4861']==0) | (input['flux_oiii_5006']==0) | (input['flux_oii_3727']==0)
+
+	## BLUE is available (SNR for the 3 lines other than OII >= 3)
+	blue = (SNR_Hb >= snr) & (SNR_OIII >= snr) & (SNR_OII >= snrOII) & (~zero_flux_blue)
+
+   	## BLUE-AGN, SF/LINER/Composite, LINER, SF, SF/AGN
+	agn_blue = blue & ((log_oiii_hb>=main_blue) | (log_ewoii_ewhb>=0.92))
+	sflin_blue = blue & ((log_oiii_hb<=eq3_blue1) | (log_oiii_hb>=eq3_blue2))
+	liner_blue = (agn_blue) & (log_oiii_hb<eq4_blue) & (~sflin_blue)
+	sf_blue = blue & (~agn_blue) & (~liner_blue) & (~sflin_blue) & (log_oiii_hb<0.3)
+	sfagn_blue = blue & (~agn_blue) & (~liner_blue) & (~sflin_blue) & (log_oiii_hb>=0.3)
+	
+	return (blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue)
 
 ##########################################################################################################
 ##########################################################################################################
