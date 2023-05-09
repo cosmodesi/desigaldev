@@ -512,9 +512,12 @@ def NeV(input, snr=2.5, mask=None):
         # Mask for flux avalibility - included as fastspecfit columns are maskedcolumn data
         mask = mask
         zero_flux_nev= input['NEV_3426_FLUX']==0 | mask
+
+    # SJ: QUESTION FOR MAR: should it be NEV_3426_FLUX_IVAR on the left below as commented out??
     
     #If ivar=0 set it to NaN to avoid infinites when computing the error:
     input['NEV_3426_FLUX']=np.where(input['NEV_3426_FLUX_IVAR']==0,np.nan,input['NEV_3426_FLUX_IVAR'])
+#    input['NEV_3426_FLUX_IVAR']=np.where(input['NEV_3426_FLUX_IVAR']==0,np.nan,input['NEV_3426_FLUX_IVAR'])
 
     # Mask for SNR. Default is OI-BPT is available if Ha, Hb, OIII SNR >= 3 and OI SNR >= 1.
     snr = snr
@@ -531,3 +534,117 @@ def NeV(input, snr=2.5, mask=None):
 
 ##########################################################################################################
 ##########################################################################################################
+
+def WISE_colors(input, snr=3, mask=None):
+    '''
+    If using these diagnostic fuctions please ref Mar_&_Steph_2023
+    and the appropriate references given below.
+    
+    If using DESI please reference Summary_ref_2023 and the apprpriate
+    photometry catalog (e.g., Tractor or Photometry VAC)
+
+    --WISE Color diagnostic--
+    
+    Inputs:
+    'input' including WISE fluxes and inverse variance: 
+            FLUX_W1, FLUX_IVAR_W1, FLUX_W2, FLUX_IVAR_W2, FLUX_W3, FLUX_IVAR_W3
+    'snr' is the snr cut applied to WISE magnitudes. Default is 3.
+    'mask' is an optional mask (e.g. from masked column array). Default is None.
+      
+    Outputs:
+    Output vectors of same dimension as rows in table which include flags for:
+    agn_ir, sf_ir, unavail_ir
+    
+    Regions defined as:
+    Region defined in WISE infrared color space, indicating AGN. Note of caution:
+    The points outside the AGN region may still include a significant fraction of AGN and 
+    are best considered as "uncertain" rather than "star-forming" or "non-AGN"
+    '''
+    # Mask for zero fluxes
+    zero_flux_wise = (input['FLUX_W1']==0)|(input['FLUX_W2']==0)
+    zero_flux_w3 = (input['FLUX_W3']==0)
+    if mask != None:
+        # Mask for flux avalibility - included if input photometry is missing/masked
+        mask = mask
+        zero_flux_wise = (input['FLUX_W1']==0) | (input['FLUX_W2']==0) | mask
+        zero_flux_w3 = (input['FLUX_W3']==0) | mask
+    
+    #If ivar=0 set it to NaN to avoid infinites when computing the error:
+    input['FLUX_IVAR_W1'] = np.where(input['FLUX_IVAR_W1']==0, np.nan, input['FLUX_IVAR_W1'])
+    input['FLUX_IVAR_W2'] = np.where(input['FLUX_IVAR_W2']==0, np.nan, input['FLUX_IVAR_W2'])
+    input['FLUX_IVAR_W3'] = np.where(input['FLUX_IVAR_W3']==0, np.nan, input['FLUX_IVAR_W3'])
+
+    # Mask for SNR.
+    snr = snr
+    SNR_W1 = input['FLUX_W1']*np.sqrt(input['FLUX_IVAR_W1'])
+    SNR_W2 = input['FLUX_W2']*np.sqrt(input['FLUX_IVAR_W2'])
+    SNR_W3 = input['FLUX_W3']*np.sqrt(input['FLUX_IVAR_W3'])
+
+    ## IR diagnostic based on W1W2 is available if flux is not zero
+    W1W2_avail = (~zero_flux_wise)&(SNR_W1>snr)&(SNR_W2>snr)
+    W2W3_avail = (~zero_flux_wise)&(~zero_flux_w3)&(SNR_W2>snr)&(SNR_W3>snr)
+
+    # Convert to AB magnitudes (most diagnostics use Vega mags so need to apply offsets)
+    W1 = 22.5 - 2.5*np.log10(input['FLUX_W1'])
+    W2 = 22.5 - 2.5*np.log10(input['FLUX_W2'])
+    W3 = 22.5 - 2.5*np.log10(input['FLUX_W3'])
+    W1W2 = W1 - W2
+    W2W3 = W2 - W3
+
+    # Offsets from Vega to AB magnitudes (Jarrett+2011) 
+    W1_vega2ab = 2.699
+    W2_vega2ab = 3.339
+    W3_vega2ab = 5.174
+
+    # Offsets from Vega to AB WISE colors
+    W1W2_vega2ab = W1_vega2ab - W2_vega2ab
+    W2W3_vega2ab = W2_vega2ab - W3_vega2ab
+
+    # Subtract offsets to go from AB to Vega (add to go from Vega to AB)
+    W1W2_Vega = W1W2 - W1W2_vega2ab
+    W2W3_Vega = W2W3 - W2W3_vega2ab
+    
+    ## Jarrett et al. 2011 box in W1-W2 vs. W2-W3 space in Vega mags
+    y_top = 1.7 
+    y_bot = 0.1*W2W3_Vega + 0.38
+    x_left = 2.2
+    x_right = 4.2
+    
+    agn_jarrett11 = W1W2_avail&W2W3_avail&(W2W3_Vega>x_left)&(W2W3_Vega<x_right)&(W1W2_Vega>y_bot)&(W1W2_Vega<y_top)
+    sf_jarrerr11 = W1W2_avail&W2W3_avail&(~agn_jarrett11)
+    unavail_jarrett11 = (~W1W2_avail)|(~W2W3_avail)  #unavailable
+
+    ## Stern et al. 2012 cut along just W1-W2 color
+    agn_stern12 = W1W2_avail&(W1W2_Vega>0.8)
+    sf_stern12 = W1W2_avail&(~agn_stern12)
+    unavail_stern12 = ~W1W2_avail  #unavailable
+
+    ## Mateos et al. 2012 box in W1-W2 vs. W2-W3 space
+    x_M12 = W2W3 / (2.5)  #from eqn 1 using AB mags
+    y_M12 = W1W2 / (2.5)
+        
+    # top/bottom around the power-law
+    y_top = 0.315*x_M12 + 0.297   #eqn 1 + offset
+    y_bot = 0.315*x_M12 - 0.110   #eqn 1 - offset
+    y_pl = -3.172*x_M12 + 0.436   #eqn 2 for the power-law
+
+    agn_mateos12 = W1W2_avail&W2W3_avail&(y_M12>y_bot)&(y_M12>y_pl)&(y_M12<y_top)
+    sf_mateos12 = W1W2_avail&W2W3_avail&(~agn_mateos12)
+    unavail_mateos12 = (~W1W2_avail)|(~W2W3_avail)  #unavailable
+        
+    ## Yao et al. 2020 cuts
+    # Vega mags: w1w2 = (0.15 * exp(w2w3/1.38)) - 0.08 + offset
+    # where offset of 0.3 is reported in paper as the 2*sigma cut to create a demarcation line
+    line_yao20 = (0.15 * exp(W2W3_Vega/1.38)) - 0.08 + 0.3
+    agn_yao20 = W1W2_avail&W2W3_avail&(W1W2_Vega>line_yao20)
+    unavail_yao20 = (~W1W2_avail)|(~W2W3_avail)  #unavailable
+
+    ## Hviding et al. 2022 cuts
+    # TO DO: add these cuts here
+    
+    ## Set the default choice here (for now) # agn_hviding22 not yet implemented
+    agn_ir = agn_mateos12 | agn_jarrett11 | (agn_stern12&~W2W3_avail)
+    sf_ir = W1W2_avail & (~agn_ir)
+    unavail_ir = ~W1W2_avail
+    
+    return (agn_ir, sf_ir, unavail_ir)
