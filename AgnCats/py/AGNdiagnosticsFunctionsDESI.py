@@ -476,10 +476,10 @@ def HeII_BPT(input, snr=3, mask=None):
     heii_bpt = (SNR_Ha >= snr) & (SNR_Hb >= snr) & (SNR_HeII >= snr) & (SNR_NII >= snr) & (~zero_flux_heii)
 
     ## HeII-AGN, SF
-    agn_heii=(heii_bpt) & log_heii_hb>=Shir12
+    agn_heii=(heii_bpt) & (log_heii_hb>=Shir12)
     sf_heii=(heii_bpt) & ~agn_heii
 
-    return (heii_bpt, agn_heii, sf_nii)
+    return (heii_bpt, agn_heii, sf_heii)
 
 ##########################################################################################################
 ##########################################################################################################
@@ -530,7 +530,7 @@ def NeV(input, snr=2.5, mask=None):
     agn_nev= (nev) & (SNR_NeV >= snr)
     sf_nev= (nev) & ~agn_nev
 
-    return (agn_nev, sf_nev)
+    return (nev, agn_nev, sf_nev)
 
 ##########################################################################################################
 ##########################################################################################################
@@ -553,7 +553,7 @@ def WISE_colors(input, snr=3, mask=None):
       
     Outputs:
     Output vectors of same dimension as rows in table which include flags for:
-    agn_ir, sf_ir, unavail_ir
+    W1W2_avail, agn_ir, sf_ir (unavail_ir)
     
     Regions defined as:
     Region defined in WISE infrared color space, indicating AGN. Note of caution:
@@ -635,7 +635,7 @@ def WISE_colors(input, snr=3, mask=None):
     ## Yao et al. 2020 cuts
     # Vega mags: w1w2 = (0.15 * exp(w2w3/1.38)) - 0.08 + offset
     # where offset of 0.3 is reported in paper as the 2*sigma cut to create a demarcation line
-    line_yao20 = (0.15 * exp(W2W3_Vega/1.38)) - 0.08 + 0.3
+    line_yao20 = (0.15 * np.exp(W2W3_Vega/1.38)) - 0.08 + 0.3
     agn_yao20 = W1W2_avail&W2W3_avail&(W1W2_Vega>line_yao20)
     unavail_yao20 = (~W1W2_avail)|(~W2W3_avail)  #unavailable
 
@@ -690,5 +690,3 @@ def Xray(input, H0=67.4, Om0=0.315, snr=3):
 	fp_xray = (zero_flux_xray) & (input['FLUX_2_7_err'] > 0) 
 
 	return (agn_xray, sf_xray, fp_xray)
-
-
