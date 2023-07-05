@@ -96,9 +96,43 @@ def NII_BPT(input, snr=3, mask=None):
     liner_nii=(agnliner_nii) & (log_oiii_hb<Scha07) 
     composite_nii=(nii_bpt) & ((log_oiii_hb>=Ka03) | (log_nii_ha>=0.05)) & (~agnliner_nii)
     sf_nii=(nii_bpt) & (~agnliner_nii) & (~composite_nii)
-
+    
     return (nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii, quiescent_nii)
+    
+def NII_BPT_lines(x_axes):
+    '''
+    BPT regions
+    
+    Kewley et al. 2001: starburst vs AGN classification.
+    Kew01_nii: log10(flux_oiii_5006/flux_hbeta)=0.61/(log10(flux_nii_6583/flux_halpha)-0.47)+1.19
 
+    Kauffmann et al. 2003: starburst vs composites.
+    Ka03: log10(flux_oiii_5006/flux_hbeta)=0.61/(log10(flux_nii_6583/flux_halpha)-0.05)+1.3
+    
+    Schawinsky et al. 2007: Seyferts vs LINERS
+    Scha07: log10(flux_oiii_5006/flux_hbeta)=1.05*log10(flux_nii_6583/flux_halpha)+0.45
+    
+    Other BPT regions not implemented here yet:
+    
+    Law et al. 2021 proposed revised lines based on MaNGA observation (not implemented b/c similar to Ka03):
+log10(flux_oiii_5006/flux_hbeta)=0.438/(log10(flux_nii_6583/flux_halpha)+0.023)+1.222
+    
+    Law et al. define an extra "intermediate" region (not yet implemented)
+    '''
+    Kew01_nii=0.61/(x_axes-0.47)+1.19
+    n=np.where(x_axes >= 0.47)
+    Kew01_nii[n]=np.nan
+
+    Ka03=0.61/(x_axes-0.05)+1.3
+    n=np.where(x_axes >= 0.05)
+    Ka03[n]=np.nan
+
+    Scha07=1.05*x_axes+0.45
+    n=np.where(Scha07 < Kew01_nii)
+    Scha07[n]=np.nan
+    return Kew01_nii, Ka03, Scha07
+    
+    
 ##########################################################################################################
 ##########################################################################################################
 
