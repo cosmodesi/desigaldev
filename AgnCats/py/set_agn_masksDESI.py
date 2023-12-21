@@ -282,7 +282,7 @@ def update_AGNTYPE_WISE_colors(T, AGN_TYPE, snr=3, mask=None):
     '''    
     W1W2_avail, agn_ir, sf_ir = WISE_colors(T, snr=snr, mask=None)
     agn_mask = np.zeros(len(T))    
-    # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
+    # If any of the W1, W2 fluxes is zero, then there is no agn_mask available for WISE 
     agn_mask = W1W2_avail * AGN_TYPE.WISE_AV           ## 
     agn_mask |= agn_ir * AGN_TYPE.WISE_AGN         ## 
     agn_mask |= sf_ir * AGN_TYPE.WISE_SF     ## 
