@@ -677,11 +677,12 @@ def WISE_colors(input, snr=3, mask=None):
     # TO DO: add these cuts here
     
     ## Set the default choice here (for now) # agn_hviding22 not yet implemented
-    agn_ir = agn_mateos12 | agn_jarrett11 | (agn_stern12&~W2W3_avail)
+    agn_ir = W1W2_avail & agn_stern12
+#    agn_ir = agn_mateos12 | agn_jarrett11 | (agn_stern12&~W2W3_avail)
     sf_ir = W1W2_avail & (~agn_ir)
-    unavail_ir = ~W1W2_avail
+    avail_ir = W1W2_avail
     
-    return (agn_ir, sf_ir, unavail_ir)
+    return (avail_ir, agn_ir, sf_ir)
 
 ##########################################################################################################
 ##########################################################################################################
