@@ -569,7 +569,7 @@ def NeV(input, snr=2.5, mask=None):
 ##########################################################################################################
 ##########################################################################################################
 
-def WISE_colors(input, snr=3, mask=None):
+def WISE_colors(input, snr=3, mask=None, diag='All'):
     '''
     If using these diagnostic fuctions please ref Mar_&_Steph_2023
     and the appropriate references given below.
@@ -645,7 +645,7 @@ def WISE_colors(input, snr=3, mask=None):
     x_right = 4.2
     
     agn_jarrett11 = W1W2_avail&W2W3_avail&(W2W3_Vega>x_left)&(W2W3_Vega<x_right)&(W1W2_Vega>y_bot)&(W1W2_Vega<y_top)
-    sf_jarrerr11 = W1W2_avail&W2W3_avail&(~agn_jarrett11)
+    sf_jarrett11 = W1W2_avail&W2W3_avail&(~agn_jarrett11)
     unavail_jarrett11 = (~W1W2_avail)|(~W2W3_avail)  #unavailable
 
     ## Stern et al. 2012 cut along just W1-W2 color
@@ -673,14 +673,38 @@ def WISE_colors(input, snr=3, mask=None):
     agn_yao20 = W1W2_avail&W2W3_avail&(W1W2_Vega>line_yao20)
     unavail_yao20 = (~W1W2_avail)|(~W2W3_avail)  #unavailable
 
-    ## Hviding et al. 2022 cuts
-    # TO DO: add these cuts here
+    ## Hviding et al. 2022 cuts in (y=)W1-W2 vs. (x=)W2-W3 space in Vega mags (eq. 3)
+    x_left = 1.734
+    x_right = 3.916
+    y_bot1 = 0.0771*W2W3_Vega + 0.319
+    y_bot2 = 0.261*W2W3_Vega -0.260
+    agn_hviding22 = W1W2_avail&W2W3_avail&(W2W3_Vega>x_left)&(W2W3_Vega<x_right)&(W1W2_Vega>y_bot1)&(W1W2_Vega>y_bot2)
+    unavail_hviding22 = (~W1W2_avail)|(~W2W3_avail)  #unavailable
     
-    ## Set the default choice here (for now) # agn_hviding22 not yet implemented
-    agn_ir = W1W2_avail & agn_stern12
-#    agn_ir = agn_mateos12 | agn_jarrett11 | (agn_stern12&~W2W3_avail)
-    sf_ir = W1W2_avail & (~agn_ir)
-    avail_ir = W1W2_avail
+    ## Set the choice here for individual diagnostics or our default combination # agn_hviding22 not yet implemented
+    if diag=='Stern12':
+        agn_ir = agn_stern12
+        avail_ir = W1W2_avail
+    if diag=='Jarrett11':
+        agn_ir = agn_jarrett11
+        avail_ir = W1W2_avail&W2W3_avail
+    if diag=='Mateos12':
+        agn_ir = agn_mateos12
+        avail_ir = W1W2_avail&W2W3_avail
+    if diag=='Yao20':
+        agn_ir = agn_yao20
+        avail_ir = W1W2_avail&W2W3_avail
+    if diag=='Hviding22':
+        agn_ir = agn_hviding22
+        avail_ir = W1W2_avail&W2W3_avail
+    ## By default, combine the diagnostics based on W1W2W3 when all 3 bands available;
+    #  otherwise use the Stern cut on W1-W2 only
+    if diag=='All':
+        agn_ir = agn_mateos12 | agn_jarrett11 | (agn_stern12&~W2W3_avail) | agn_hviding22
+        avail_ir = W1W2_avail
+    
+    # SF defined based on the above
+    sf_ir = avail_ir & (~agn_ir)
     
     return (avail_ir, agn_ir, sf_ir)
 
