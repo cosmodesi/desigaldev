@@ -10,8 +10,7 @@ Find/replace: FastSpecFit_ref with correct reference
 ##########################################################################################################
 def NII_BPT(input, snr=3, mask=None):
     '''
-    If using these diagnostic fuctions please ref Mar_&_Steph_2023
-    and the appropriate references given below.
+    If using these diagnostic fuctions please ref the appropriate references given below.
     
     If using DESI please reference Summary_ref_2023 and the apprpriate
     emission line catalog (e.g. FastSpecFit ref FastSpecFit_ref)
@@ -138,8 +137,7 @@ log10(flux_oiii_5006/flux_hbeta)=0.438/(log10(flux_nii_6583/flux_halpha)+0.023)+
 
 def SII_BPT(input, snr=3, Kewley01=False, mask=None):
     '''
-    If using these diagnostic fuctions please ref Mar_&_Steph_2023
-    and the appropriate references given below.
+    If using these diagnostic fuctions please ref the appropriate references given below.
     
     If using DESI please reference Summary_ref_2023 and the apprpriate
     emission line catalog (e.g. FastSpecFit ref FastSpecFit_ref)
@@ -229,8 +227,7 @@ def SII_BPT(input, snr=3, Kewley01=False, mask=None):
 
 def OI_BPT(input, snr=3, snrOI=1, Kewley01=False, mask=None):
     '''
-    If using these diagnostic fuctions please ref Mar_&_Steph_2023
-    and the appropriate references given below.
+    If using these diagnostic fuctions please ref the appropriate references given below.
     
     If using DESI please reference Summary_ref_2023 and the apprpriate
     emission line catalog (e.g. FastSpecFit ref FastSpecFit_ref)
@@ -334,7 +331,7 @@ def WHAN(input, snr=3, mask=None):
     Output vectors of same dimension as rows in table which include flags for:
     whan, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive
     
-    WHAN regions defeined as:
+    WHAN regions defined as:
     # Cid Fernandes et al. 2011
     # pure star-forming galaxies
     whan_sf: log10(flux_nii_6583/flux_halpha) < -0.4 and ew_ha_6562 > 3A
@@ -385,8 +382,7 @@ def WHAN(input, snr=3, mask=None):
 
 def BLUE(input, snr=3, snrOII=1, mask=None):
     '''
-    If using these diagnostic fuctions please ref Mar_&_Steph_2023
-    and the appropriate references given below.
+    If using these diagnostic fuctions please ref the appropriate references given below.
     
     If using DESI please reference Summary_ref_2023 and the apprpriate
     emission line catalog (e.g. FastSpecFit ref FastSpecFit_ref)
@@ -546,12 +542,9 @@ def NeV(input, snr=2.5, mask=None):
         # Mask for flux avalibility - included as fastspecfit columns are maskedcolumn data
         mask = mask
         zero_flux_nev= input['NEV_3426_FLUX']==0 | mask
-
-    # SJ: QUESTION FOR MAR: should it be NEV_3426_FLUX_IVAR on the left below as commented out??
     
     #If ivar=0 set it to NaN to avoid infinites when computing the error:
-    input['NEV_3426_FLUX']=np.where(input['NEV_3426_FLUX_IVAR']==0,np.nan,input['NEV_3426_FLUX_IVAR'])
-#    input['NEV_3426_FLUX_IVAR']=np.where(input['NEV_3426_FLUX_IVAR']==0,np.nan,input['NEV_3426_FLUX_IVAR'])
+    input['NEV_3426_FLUX_IVAR']=np.where(input['NEV_3426_FLUX_IVAR']==0,np.nan,input['NEV_3426_FLUX_IVAR'])
 
     # Mask for SNR. Default is OI-BPT is available if Ha, Hb, OIII SNR >= 3 and OI SNR >= 1.
     snr = snr
