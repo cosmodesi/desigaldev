@@ -22,6 +22,23 @@ def get_qso_maskbits(file):
 ###
 def update_AGN_MASKBITS(T, QSO_MASKBITS, AGN_MASKBITS):
 
+#AGN_MASKBITS:
+#    - [AGN_ANY,       0, "any agn classification is set"]
+#    #- from Edmond's QSO catalogue definiton
+#    - [RR,            1, "RR determines this to be a QSO from template fitting"]
+#    - [MGII,          2, "MgII afterburner detects broad line"]
+#    - [QN,            3, "Quasar Net reclassifies as a QSO"]
+#    - [QN_NEW_RR,     4, "Quasar Net prompts different RR redshift"]
+#    #- from DESI data
+#    - [BPT_ANY_SY,    5, "At least one BPT diagnostic indicates SEYFERT"]
+#    - [BPT_ANY_AGN,   6, "At least one BPT diagnostic indicates SEYFERT, LINER or COMPOSITE"]
+#    - [OPT_OTHER_AGN, 7, "Rest frame optical emission lines diagnostic not bpt (4000-10000 ang) indicate agn"]
+#    - [UV,            8, "Rest frame UV emission lines indicate agn"]
+#    - [WISE,          9, "Infrared (WISE) colours indicate agn"]
+#    - [XRAY,          10, "X-rays indicate agn"]
+#    - [RADIO,         11, "Radio indicates agn"]
+
+    
     ## EC doesn't use yaml - no QN_NEW_RR but we add this
     qsom_RR = T['QSO_MASKBITS'] & QSO_MASKBITS.RR != 0
     qsom_mgii = (T['QSO_MASKBITS'] & QSO_MASKBITS.MGII != 0)  
@@ -36,6 +53,17 @@ def update_AGN_MASKBITS(T, QSO_MASKBITS, AGN_MASKBITS):
     agn_bits |= qsom_QN * agn_mask.QN
     agn_bits |= qsom_QN_RR * agn_mask.QN_NEW_RR
 
+    #bpt_any_sy, bpt_any_agn, opt_other_agn, wise = 
+    #agn_bits = bpt_any_sy * agn_mask.BPT_ANY_SY 
+    #agn_bits |= bpt_any_agn * agn_mask.BPT_ANY_AGN
+    #agn_bits |= opt_other_agn * agn_mask.OPT_OTHER_AGN
+    #agn_bits |= wise * agn_mask.WISE
+    
+    # uv, xray, radio =
+    #agn_bits |= uv * agn_mask.UV
+    #agn_bits |= xray * agn_mask.XRAY
+    #agn_bits |= radio * agn_mask.RADIO
+    
     agnmaskbits_column = Column(agn_bits, name = 'AGN_MASKBITS')
     if 'AGN_MASKBITS' in T.columns:
         T['AGN_MASKBITS']=agn_bits
