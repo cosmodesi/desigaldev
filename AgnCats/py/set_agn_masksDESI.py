@@ -20,7 +20,7 @@ def get_qso_maskbits(file):
 ###
 
 ###
-def update_AGN_MASKBITS(T, QSO_MASKBITS, AGN_MASKBITS):
+def update_AGN_MASKBITS(T, QSO_MASKBITS, AGN_MASKBITS, snr=3, mask=None):
 
 #AGN_MASKBITS:
 #    - [AGN_ANY,       0, "any agn classification is set"]
@@ -53,9 +53,16 @@ def update_AGN_MASKBITS(T, QSO_MASKBITS, AGN_MASKBITS):
     agn_bits |= qsom_QN * agn_mask.QN
     agn_bits |= qsom_QN_RR * agn_mask.QN_NEW_RR
 
-    #bpt_any_sy, bpt_any_agn, opt_other_agn, wise = 
-    #agn_bits = bpt_any_sy * agn_mask.BPT_ANY_SY 
-    #agn_bits |= bpt_any_agn * agn_mask.BPT_ANY_AGN
+    nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii, quiescent_nii = NII_BPT(T, snr=snr, mask=mask)
+    sii_bpt, sf_sii, agn_sii, liner_sii, quiescent_sii = SII_BPT(T, snr=snr, Kewley01=Kewley01, mask=mask)
+    oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T, snr=snr, snrOI=snrOI, Kewley01=Kewley01, mask=mask)
+
+    bpt_any_sy = agn_nii | agn_sii | agn_oi
+    bpt_any_agn = agn_nii | agn_sii | agn_oi | liner_nii | composite_nii | liner_sii | liner_oi
+    agn_bits = bpt_any_sy * agn_mask.BPT_ANY_SY 
+    agn_bits |= bpt_any_agn * agn_mask.BPT_ANY_AGN
+
+    #opt_other_agn, wise =
     #agn_bits |= opt_other_agn * agn_mask.OPT_OTHER_AGN
     #agn_bits |= wise * agn_mask.WISE
     
@@ -151,7 +158,7 @@ def update_AGNTYPE_OIBPT(T, AGN_TYPE, snr=3, snrOI=1, Kewley01=False, mask=None)
     outputs:
     T - table with new column 'AGN_TYPE'
     '''    
-    oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T)
+    oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T, snr=snr, snrOI=snrOI, Kewley01=Kewley01, mask=mask)
     bpt_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     bpt_mask = oi_bpt * AGN_TYPE.OI_BPT_AV            ## Except [OI] - other emission lines have S/N >= 3
