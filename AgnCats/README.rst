@@ -44,6 +44,32 @@ Data model
 ==========
 
 
+AGN diagnostics
+===============
+- NII BPT regions defined as:
+Kewley et al. (2001): starburst vs AGN classification
+Kauffmann et al. (2003): starburst vs composites
+Schawinsky et al. (2007): Seyferts vs LINERS
+
+- SII BPT regions defined as:
+Kewley et al. (2001): starburst vs AGN classification
+Kewley et al. (2006): Seyferts vs LINERS
+
+- OI BPT regions defined as:
+Law et al. (2021): starburst vs AGN classification
+Kewley et al. (2006): Seyferts vs LINERS
+
+- WHAN diagram from Cid Fernandes et al. (2011)
+
+- BLUE diagram from Lamareille et al (2004) & Lamareille (2010)
+
+- HeII BPT diagram from Shirazi & Brinchmann (2012)
+
+- NeV diagnostic: detection of [NeV]λ3426 implies hard radiation with photon energies above 96.6 eV, indicating AGN
+
+- WISE diagnostics cuts from Jarrett et al. (2011), Mateos et al. (2012), Stern et al. (2012), Yao et al. (2020), and Hviding et al. (2022)
+    
+
 Example
 =======
 
