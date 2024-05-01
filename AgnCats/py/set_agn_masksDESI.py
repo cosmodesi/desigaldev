@@ -20,8 +20,25 @@ def get_qso_maskbits(file):
 ###
 
 ###
-def update_AGN_MASKBITS(T, QSO_MASKBITS, AGN_MASKBITS):
+def update_AGN_MASKBITS(T, QSO_MASKBITS, AGN_MASKBITS, snr=3, mask=None):
 
+#AGN_MASKBITS:
+#    - [AGN_ANY,       0, "any agn classification is set"]
+#    #- from Edmond's QSO catalogue definiton
+#    - [RR,            1, "RR determines this to be a QSO from template fitting"]
+#    - [MGII,          2, "MgII afterburner detects broad line"]
+#    - [QN,            3, "Quasar Net reclassifies as a QSO"]
+#    - [QN_NEW_RR,     4, "Quasar Net prompts different RR redshift"]
+#    #- from DESI data
+#    - [BPT_ANY_SY,    5, "At least one BPT diagnostic indicates SEYFERT"]
+#    - [BPT_ANY_AGN,   6, "At least one BPT diagnostic indicates SEYFERT, LINER or COMPOSITE"]
+#    - [OPT_OTHER_AGN, 7, "Rest frame optical emission lines diagnostic not bpt (4000-10000 ang) indicate agn"]
+#    - [UV,            8, "Rest frame UV emission lines indicate agn"]
+#    - [WISE,          9, "Infrared (WISE) colours indicate agn"]
+#    - [XRAY,          10, "X-rays indicate agn"]
+#    - [RADIO,         11, "Radio indicates agn"]
+
+    
     ## EC doesn't use yaml - no QN_NEW_RR but we add this
     qsom_RR = T['QSO_MASKBITS'] & QSO_MASKBITS.RR != 0
     qsom_mgii = (T['QSO_MASKBITS'] & QSO_MASKBITS.MGII != 0)  
@@ -36,6 +53,24 @@ def update_AGN_MASKBITS(T, QSO_MASKBITS, AGN_MASKBITS):
     agn_bits |= qsom_QN * agn_mask.QN
     agn_bits |= qsom_QN_RR * agn_mask.QN_NEW_RR
 
+    nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii, quiescent_nii = NII_BPT(T, snr=snr, mask=mask)
+    sii_bpt, sf_sii, agn_sii, liner_sii, quiescent_sii = SII_BPT(T, snr=snr, Kewley01=Kewley01, mask=mask)
+    oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T, snr=snr, snrOI=snrOI, Kewley01=Kewley01, mask=mask)
+
+    bpt_any_sy = agn_nii | agn_sii | agn_oi
+    bpt_any_agn = agn_nii | agn_sii | agn_oi | liner_nii | composite_nii | liner_sii | liner_oi
+    agn_bits = bpt_any_sy * agn_mask.BPT_ANY_SY 
+    agn_bits |= bpt_any_agn * agn_mask.BPT_ANY_AGN
+
+    #opt_other_agn, wise =
+    #agn_bits |= opt_other_agn * agn_mask.OPT_OTHER_AGN
+    #agn_bits |= wise * agn_mask.WISE
+    
+    # uv, xray, radio =
+    #agn_bits |= uv * agn_mask.UV
+    #agn_bits |= xray * agn_mask.XRAY
+    #agn_bits |= radio * agn_mask.RADIO
+    
     agnmaskbits_column = Column(agn_bits, name = 'AGN_MASKBITS')
     if 'AGN_MASKBITS' in T.columns:
         T['AGN_MASKBITS']=agn_bits
@@ -123,7 +158,7 @@ def update_AGNTYPE_OIBPT(T, AGN_TYPE, snr=3, snrOI=1, Kewley01=False, mask=None)
     outputs:
     T - table with new column 'AGN_TYPE'
     '''    
-    oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T)
+    oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T, snr=snr, snrOI=snrOI, Kewley01=Kewley01, mask=mask)
     bpt_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     bpt_mask = oi_bpt * AGN_TYPE.OI_BPT_AV            ## Except [OI] - other emission lines have S/N >= 3
