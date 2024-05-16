@@ -5,12 +5,12 @@ AGN QSO Summary Catalog for EDR
 :Authors:
     Becky Canning,
     Stephanie Juneau,
+    Mar Mezcua,
     Raga, 
-    Mar, 
     GQP, 
     et al.,
 
-:Version: 1.0 of 2023/04/04
+:Version: 1.0 of 2024/05/16
 
 
 This is the Readme file for the Galaxy Quasar Physics EDR AGN / QSO Summary Catalogs.
@@ -42,6 +42,67 @@ Files are located at NERSC. The parent directory is: /global/cfs/cdirs/desi/scie
 
 Data model
 ==========
+TARGETID: DESI target ID
+
+SURVEY:
+
+PROGRAM:
+
+HEALPIX:
+
+Z:
+
+ZERR:
+
+ZWARN:
+
+SPECTYPE:
+
+COADD_FIBERSTATUS:
+
+TARGET_RA:
+
+TARGET_DEC:
+
+DESI_TARGET:
+
+SCND_TARGET:
+
+BGS_TARGET:
+
+COADD_NUMEXP:
+
+COADD_EXPTIME:
+
+CMX_TARGET:
+
+SV1_DESI_TARGET:
+
+SV2_DESI_TARGET:
+
+SV3_DESI_TARGET:
+
+SV1_BGS_TARGET:
+
+SV2_BGS_TARGET:
+
+SV3_BGS_TARGET:
+
+SV1_SCND_TARGET:
+
+SV2_SCND_TARGET:
+
+SV3_SCND_TARGET:
+
+QSO_MASKBITS:
+
+AGN_MASKBITS:
+
+AGN_TYPE:
+
+SV_PRIMARY:
+
+ZCAT_PRIMARY:
 
 
 AGN diagnostics
