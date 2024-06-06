@@ -42,67 +42,69 @@ Files are located at NERSC. The parent directory is: /global/cfs/cdirs/desi/scie
 
 Data model
 ==========
-TARGETID: DESI target ID
+Name     Format     Units    Description
 
-SURVEY:
+TARGETID    int64    -    Unique identifier for each object observed by DESI
 
-PROGRAM:
+SURVEY    bytes7    -    Survey name
 
-HEALPIX:
+PROGRAM    bytes7    -    Program name
 
-Z:
+HEALPIX    int32    -    Healpix number
 
-ZERR:
+Z    float64    -    Redshift
 
-ZWARN:
+ZERR    float64    -    Redshift error
 
-SPECTYPE:
+ZWARN    int32?    -    Warning flags (0 is good)
 
-COADD_FIBERSTATUS:
+SPECTYPE    ?    -    Spectype from Redrock file
 
-TARGET_RA:
+COADD_FIBERSTATUS    ?    -    Bitwise-AND of input FIBERSTATUS
 
-TARGET_DEC:
+TARGET_RA    float64    degree    Right Ascension in decimal degrees (J2000)
 
-DESI_TARGET:
+TARGET_DEC    float64    degree    Declination in decimal degrees (J2000)
 
-SCND_TARGET:
+DESI_TARGET    int64    -    DESI (dark time program) target selection bitmask
 
-BGS_TARGET:
+SCND_TARGET    int64    -    SCND (secondary program) target selection bitmask
 
-COADD_NUMEXP:
+BGS_TARGET    int64    -    BGS (bright time program) target selection bitmask
 
-COADD_EXPTIME:
+COADD_NUMEXP
 
-CMX_TARGET:
+COADD_EXPTIME
 
-SV1_DESI_TARGET:
+CMX_TARGET
 
-SV2_DESI_TARGET:
+SV1_DESI_TARGET   ?     -    DESI (dark time program) target selection bitmask for SV1
 
-SV3_DESI_TARGET:
+SV2_DESI_TARGET    ?    -    DESI (dark time program) target selection bitmask for SV2
 
-SV1_BGS_TARGET:
+SV3_DESI_TARGET    ?    -    DESI (dark time program) target selection bitmask for SV3
 
-SV2_BGS_TARGET:
+SV1_BGS_TARGET   ?     -    BGS (bright time program) target selection bitmask for SV1
 
-SV3_BGS_TARGET:
+SV2_BGS_TARGET   ?     -    BGS (bright time program) target selection bitmask for SV2
 
-SV1_SCND_TARGET:
+SV3_BGS_TARGET   ?     -    BGS (bright time program) target selection bitmask for SV3
 
-SV2_SCND_TARGET:
+SV1_SCND_TARGET   ?     -    Secondary target selection bitmask for SV1
 
-SV3_SCND_TARGET:
+SV2_SCND_TARGET   ?     -    Secondary target selection bitmask for SV2
 
-QSO_MASKBITS:
+SV3_SCND_TARGET   ?     -    Secondary target selection bitmask for SV3
 
-AGN_MASKBITS:
+QSO_MASKBITS    ?    -    QSO selection bitmask
 
-AGN_TYPE:
+AGN_MASKBITS
 
-SV_PRIMARY:
+AGN_TYPE
 
-ZCAT_PRIMARY:
+SV_PRIMARY
+
+ZCAT_PRIMARY
 
 
 AGN diagnostics
