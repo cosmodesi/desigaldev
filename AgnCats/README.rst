@@ -10,7 +10,7 @@ AGN QSO Summary Catalog for EDR
     GQP, 
     et al.,
 
-:Version: 1.0 of 2024/05/16
+:Version: 1.0 of 2024/10/04
 
 
 This is the Readme file for the Galaxy Quasar Physics EDR AGN / QSO Summary Catalogs.
@@ -19,16 +19,7 @@ This is the Readme file for the Galaxy Quasar Physics EDR AGN / QSO Summary Cata
 Description
 ===========
 
-The 
-Modify this: 
-
-Generating the catalog uses files:
-- QSO_cat_fuji_healpix_all_targets.fits
-- fastspec-fuji.fits
-- fastphot-fuji.fits
-
-To reproduce the catalog run:
->>> python agn_qso_wrapper.py
+This AGN/QSO catalog has been created based on the emission line measurements from FastSpecFit v3.2, correspongind to the Fuji value-added catalog which was publicly released in December 2023 as the DESI Early Data Release (DESI/EDR). Most of the redshifts come from the Redrock catalog. For some QSO, the Redrock redshiftd are incorrect and have been updated using the machine-learning algorithm QuasarNet.
 
 **AGN diagnostics used in the catalog:**
 
