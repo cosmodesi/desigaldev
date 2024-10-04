@@ -19,7 +19,7 @@ This is the Readme file for the Galaxy Quasar Physics EDR AGN / QSO Summary Cata
 Description
 ===========
 
-This AGN/QSO catalog has been created based on the emission line measurements from FastSpecFit v3.2, correspongind to the Fuji value-added catalog which was publicly released in December 2023 as the DESI Early Data Release (DESI/EDR). Most of the redshifts come from the Redrock catalog. For some QSO, the Redrock redshiftd are incorrect and have been updated using the machine-learning algorithm QuasarNet.
+This AGN/QSO catalog has been created based on the emission line measurements from FastSpecFit v3.2, correspongind to the Fuji value-added catalog which was publicly released in December 2023 as the DESI Early Data Release (DESI/EDR). Most of the redshifts come from the Redrock catalog. For some QSO, the Redrock redshiftd are incorrect and have been updated using the machine-learning algorithm QuasarNet or the MgII Afterburner.
 
 **AGN diagnostics used in the catalog:**
 
@@ -58,7 +58,7 @@ Name  ||   Format   ||  Units  ||  Description
 
 TARGETID ||  int64  ||  -  ||  Unique identifier for each object observed by DESI
 
-SURVEY  ||  bytes3  ||  -  ||  Survey name
+SURVEY  ||  bytes7  ||  -  ||  Survey name
 
 PROGRAM  ||  bytes6  ||  -   || Program name
 
@@ -68,11 +68,11 @@ Z  ||  float64   || -  ||  Redshift
 
 ZERR  ||  float64  ||  -  ||  Redshift error
 
-ZWARN  ||  bytes3? ||   -  ||  Warning flags (0 is good)
+ZWARN  ||  int64 ||   -  ||  Warning flags (0 is good)
 
-SPECTYPE  ||  ? ||   -  ||  Spectype from Redrock file
+SPECTYPE  ||  bytes6 ||   -  ||  Spectype from Redrock file
 
-COADD_FIBERSTATUS  ||  ? ||   -  ||  Bitwise-AND of input FIBERSTATUS
+COADD_FIBERSTATUS  ||  int32 ||   -  ||  Bitwise-AND of input FIBERSTATUS
 
 TARGET_RA ||   float64 ||   degree ||   Right Ascension in decimal degrees (J2000)
 
@@ -84,39 +84,39 @@ SCND_TARGET ||   int64 ||   -  ||  SCND (secondary program) target selection bit
 
 BGS_TARGET ||   int64  ||  -  ||  BGS (bright time program) target selection bitmask
 
-COADD_NUMEXP
+COADD_NUMEXP ||   int16  ||  ?  ||     ?
 
-COADD_EXPTIME
+COADD_EXPTIME ||   float32  ||  ?  ||     ?
 
-CMX_TARGET
+CMX_TARGET ||   int64  ||  ?  ||     ?
 
-SV1_DESI_TARGET  || ? ||    -  ||  DESI (dark time program) target selection bitmask for SV1
+SV1_DESI_TARGET  || int64 ||    -  ||  DESI (dark time program) target selection bitmask for SV1
 
-SV2_DESI_TARGET ||   ? ||   - ||   DESI (dark time program) target selection bitmask for SV2
+SV2_DESI_TARGET ||   int64 ||   - ||   DESI (dark time program) target selection bitmask for SV2
 
-SV3_DESI_TARGET ||   ? ||   -  ||  DESI (dark time program) target selection bitmask for SV3
+SV3_DESI_TARGET ||   int64 ||   -  ||  DESI (dark time program) target selection bitmask for SV3
 
-SV1_BGS_TARGET ||  ? ||    -  ||  BGS (bright time program) target selection bitmask for SV1
+SV1_BGS_TARGET ||  int64 ||    -  ||  BGS (bright time program) target selection bitmask for SV1
 
-SV2_BGS_TARGET  || ? ||   -  ||  BGS (bright time program) target selection bitmask for SV2
+SV2_BGS_TARGET  || int64 ||   -  ||  BGS (bright time program) target selection bitmask for SV2
 
-SV3_BGS_TARGET ||  ?  ||   -  ||  BGS (bright time program) target selection bitmask for SV3
+SV3_BGS_TARGET ||  int64  ||   -  ||  BGS (bright time program) target selection bitmask for SV3
 
-SV1_SCND_TARGET ||  ? ||    -  ||  Secondary target selection bitmask for SV1
+SV1_SCND_TARGET ||  int64 ||    -  ||  Secondary target selection bitmask for SV1
 
-SV2_SCND_TARGET  || ? ||    -  ||  Secondary target selection bitmask for SV2
+SV2_SCND_TARGET  || int64 ||    -  ||  Secondary target selection bitmask for SV2
 
-SV3_SCND_TARGET ||  ?  ||   -  ||  Secondary target selection bitmask for SV3
+SV3_SCND_TARGET ||  int64  ||   -  ||  Secondary target selection bitmask for SV3
 
-QSO_MASKBITS   || ?  ||  -  ||  QSO selection bitmask
+QSO_MASKBITS   || int32  ||  -  ||  QSO selection bitmask
 
-AGN_MASKBITS
+AGN_MASKBITS || int64  ||  -  ||  AGN selection bitmask
 
-AGN_TYPE
+AGN_TYPE || int64  ||  -  ||  AGN type: UNKNOWN, TYPE1, TYPE2
 
-SV_PRIMARY
+SV_PRIMARY || boolean  ||  -  || ??
 
-ZCAT_PRIMARY
+ZCAT_PRIMARY || boolean  ||  -  || ??
 
 
 Example
