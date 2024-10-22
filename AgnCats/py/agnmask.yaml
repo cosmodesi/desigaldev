@@ -32,8 +32,8 @@ AGN_TYPE:
     # not agn would be a zero unknown optical type is 2**0
     #-optical types - 
     - [TYPE_UNKNOWN,     0, "Unknown optical type 1 or type 2 agn type"]
-    - [TYPE1,       1, "Type 1 agn (FWHM>1500 km/s or >1000 km/s in a Balmer line)"]
-    - [TYPE2,       2, "Type 2 agn (FWHM<1500 km/s or <1000 km/s in a Balmer line)"]
+    - [TYPE1,       1, "Type 1 agn (CIV and/or MgII FWHM>1200 km/s or >1200 km/s in a Halpha or Hbeta line)"]
+    - [TYPE2,       2, "Type 2 agn (CIV and/or MgII FWHM<1200 km/s or <1200 km/s in a Halpha or Hbeta line)"]
     #- agn emission line types
     - [BPT_SY,      3, "Any BPT diagnostic indicates Seyfert"]
     - [BPT_LINER,   4, "Any BPT diagnostic indicates LINER"]
