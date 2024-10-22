@@ -215,7 +215,7 @@ def SII_BPT(input, snr=3, Kewley01=False, mask=None):
     quiescent_sii = ((SNR_Ha < snr) | (SNR_Hb < snr) | (SNR_OIII < snr) | (SNR_SII < snr)) & (~zero_flux_sii)
 
     ## SII-AGN, LINER, SF
-    agnliner_sii=(sii_bpt) & ((log_oiii_hb>=Kew01_sii) | (log_sii_ha>=0.32))
+    agnliner_sii=(sii_bpt) & ((log_oiii_hb>=line_sii) | (log_sii_ha>=0.32))
     agn_sii=(agnliner_sii) & (log_oiii_hb>=Kew06_sii)
     liner_sii=(agnliner_sii) & (log_oiii_hb<Kew06_sii)
     sf_sii=(sii_bpt) & (~agnliner_sii)
