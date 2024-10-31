@@ -2,38 +2,41 @@
 
 #- yaml for Edmond's qso maker code 
 # remove the QSO_MASKBITS as just a repeat
-QSO_MASKBITS:
-    - [RR,                1, "RR determines this to be a QSO from template fitting"]
-    - [MGII,              2, "MgII afterburner detects broad line"]
-    - [QN,                3, "Quasar Net reclassifies as a QSO"]
-    - [QN_NEW_RR,         4, "Quasar Net prompts different RR redshift"]
+#QSO_MASKBITS:
+#    - [RR,                1, "RR determines this to be a QSO from template fitting"]
+#    - [MGII,              2, "MgII afterburner detects broad line"]
+#    - [QN,                3, "Quasar Net reclassifies as a QSO"]
+#    - [QN_NEW_RR,         4, "Quasar Net prompts different RR redshift"]
 
 #- AGN summary table bitmask
 AGN_MASKBITS:
-    # not agn would be a zero agn_any is 2**0
-    - [AGN_ANY,       0, "any agn classification is set"]
+    # Note: not AGN would be AGN_MASKBITS=0; AGN_MASKBITS=1 (2**0) when bit 0 (name AGN_ANY) is set
+    - [AGN_ANY,       0, "any AGN classification is set"]
     #- from Edmond's QSO catalogue definiton
     - [RR,            1, "RR determines this to be a QSO from template fitting"]
     - [MGII,          2, "MgII afterburner detects broad line"]
     - [QN,            3, "Quasar Net reclassifies as a QSO"]
     - [QN_NEW_RR,     4, "Quasar Net prompts different RR redshift"]
+    - [QN_BGS,        5, "Quasar Net reclassifies BGS target as a QSO"]
+    - [QN_ELG,        6, "Quasar Net reclassifies ELG target as a QSO"]
+    - [QN_VAR_WISE,   7, "Quasar Net reclassifies VAR_WISE_QSO target as a QSO"]
     #- from DESI data
-    #- starting at a later bit as QSO_MASKBITS is changing between releases  (5 BGS, 6 ELG, 7 VAR_WISE_QSO)
+    #- starting at a later bit as QSO_MASKBITS may change in future releases
     - [BPT_ANY_SY,    10, "At least one BPT diagnostic indicates SEYFERT"]
     - [BPT_ANY_AGN,   11, "At least one BPT diagnostic indicates SEYFERT, LINER or COMPOSITE"]
-    - [OPT_OTHER_AGN, 12, "Rest frame optical emission lines diagnostic not bpt (4000-10000 ang) indicate agn"]
-    - [UV,            13, "Rest frame UV emission lines indicate agn"]
-    - [WISE,          14, "Infrared (WISE) colours indicate agn"]
-    - [XRAY,          15, "X-rays indicate agn"]
-    - [RADIO,         16, "Radio indicates agn"]
+    - [OPT_OTHER_AGN, 12, "Rest frame optical emission lines diagnostic not BPT (4000-10000 ang) indicate AGN"]
+    - [UV,            13, "Rest frame UV emission lines indicate AGN"]
+    - [WISE,          14, "Infrared (WISE) colours indicate AGN"]
+    - [XRAY,          15, "X-rays indicate AGN"]
+    - [RADIO,         16, "Radio indicates AGN"]
 
 #- AGN detailed type information
 AGN_TYPE:
     # not agn would be a zero unknown optical type is 2**0
     #-optical types - 
-    - [TYPE_UNKNOWN,     0, "Unknown optical type 1 or type 2 agn type"]
-    - [TYPE1,       1, "Type 1 agn (CIV and/or MgII FWHM>1200 km/s or >1200 km/s in a Halpha or Hbeta line)"]
-    - [TYPE2,       2, "Type 2 agn (CIV and/or MgII FWHM<1200 km/s or <1200 km/s in a Halpha or Hbeta line)"]
+    - [OPT_TYPE_UNKNOWN, 0, "Optical/UV AGN lacking Halpha, Hbeta, MgII and CIV line constraints"]
+    - [OPT_TYPE1,        1, "Optical/UV Type 1 AGN (FWHM>=1200 km/s in Halpha, Hbeta, MgII and/or CIV line)"]
+    - [OPT_TYPE2,        2, "Optical/UV Type 2 AGN (FWHM<1200 km/s in Halpha, Hbeta, MgII and/or CIV line)"]
     #- agn emission line types
     - [BPT_SY,      3, "Any BPT diagnostic indicates Seyfert"]
     - [BPT_LINER,   4, "Any BPT diagnostic indicates LINER"]
