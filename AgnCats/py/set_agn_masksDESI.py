@@ -67,6 +67,91 @@ def update_AGN_MASKBITS(T, QSO_MASKBITS, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=
 ###
 
 ###
+### BC: update_AGNTYPE_OPTTYPES is new 3rd Nov 2024 and sets OPT_TYPE_UNKNOWN , OPT_TYPE1 , OPT_TYPE2
+### it needed also a new function in AGNdiagnosticsFunctions called
+###
+
+###
+def update_AGNTYPE_OPTTYPES(T, AGN_TYPE, snr=3, mask=None):
+    
+    from AGNdiagnosticsFunctionsDESI import AGN_OPTICAL_UV_TYPE
+    '''
+    --setting the BPT_SY and BPT_LINER bits--
+
+    inputs: 
+    T - table joined with FastSpecFit (or other emline cat)
+    AGN_TYPE - bitmask structure from yaml 
+    
+    outputs:
+    T - table with new column 'AGN_TYPE'
+    '''    
+    type_1, type_2, type_unknown = AGN_OPTICAL_UV_TYPE(T, snr=snr, mask=mask)
+
+    bpt_mask = np.zeros(len(T))    
+    # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
+    bpt_mask |= = type_unknown * AGN_TYPE.OPT_TYPE_UNKNOWN # Optical/UV AGN lacking Halpha, Hbeta, MgII and CIV line constraints
+    bpt_mask |= = type_1 * AGN_TYPE.OPT_TYPE1 # Optical/UV Type 1 AGN (FWHM>=1200 km/s in Halpha, Hbeta, MgII and/or CIV line)
+    bpt_mask |= = type_2 * AGN_TYPE.OPT_TYPE2 # Optical/UV Type 2 AGN (FWHM<1200 km/s in Halpha, Hbeta, MgII and/or CIV line)
+    #
+    bptmask_column = Column(bpt_mask, name = 'AGN_TYPE')
+    if 'AGN_TYPE' in T.columns:
+        T['AGN_TYPE']|=bpt_mask
+    else:
+        T.add_column(bptmask_column)
+    
+    return T
+###
+
+
+###
+### BC: update_AGNTYPE_ANYBPT is new 3rd Nov 2024 and sets BPT_SY and BPT_LINER in AGN_TYPE
+### however we shoudl discuss if this is irrelevent due to AGN_MASKBITS , BPT_ANY_SY and BPT_ANY_AGN...
+###
+
+###
+def update_AGNTYPE_ANYBPT(T, AGN_TYPE, snr=3, mask=None):
+    
+    from AGNdiagnosticsFunctionsDESI import NII_BPT, SII_BPT, OI_BPT
+    '''
+    --setting the BPT_SY and BPT_LINER bits--
+
+    inputs: 
+    T - table joined with FastSpecFit (or other emline cat)
+    AGN_TYPE - bitmask structure from yaml 
+    
+    outputs:
+    T - table with new column 'AGN_TYPE'
+    '''    
+    nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii, quiescent_nii = NII_BPT(T, snr=snr, mask=mask)
+    sii_bpt, sf_sii, agn_sii, liner_sii, quiescent_sii = SII_BPT(T, snr=snr, Kewley01=Kewley01, mask=mask)
+    oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T, snr=snr, snrOI=snrOI, Kewley01=Kewley01, mask=mask)
+    bpt_mask = np.zeros(len(T))    
+
+    # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
+    # Seyferts
+    #bpt_mask |= agn_nii * AGN_TYPE.NII_SY              ## [NII] - Seyfert
+    #bpt_mask |= agn_sii * AGN_TYPE.SII_SY              ## [SII] - Seyfert
+    #bpt_mask |= agn_oi * AGN_TYPE.OI_SY                ## [OI] - Seyfert
+    agn_any = agn_nii | agn_sii | agn_oi
+    bpt_mask |= agn_any * AGN_TYPE.BPT_SY
+    # LINERS
+    #bpt_mask |= liner_nii * AGN_TYPE.NII_LINER         ## [NII] - LINER
+    #bpt_mask |= liner_sii * AGN_TYPE.SII_LINER         ## [SII] - LINER
+    #bpt_mask |= liner_oi * AGN_TYPE.OI_LINER           ## [OI] - LINER    
+    liner_any = liner_nii | liner_sii | liner_oi
+    bpt_mask |= liner_any * AGN_TYPE.BPT_LINER
+    #
+    bptmask_column = Column(bpt_mask, name = 'AGN_TYPE')
+    if 'AGN_TYPE' in T.columns:
+        T['AGN_TYPE']|=bpt_mask
+    else:
+        T.add_column(bptmask_column)
+    
+    return T
+###
+
+
+###
 def update_AGNTYPE_NIIBPT(T, AGN_TYPE, snr=3, mask=None):
     
     from AGNdiagnosticsFunctionsDESI import NII_BPT
@@ -320,6 +405,11 @@ def update_AGNTYPE_WISE_colors(T, AGN_TYPE, snr=3, mask=None):
 
 
 
+
+
+###
+### THE BELOW ARE  - BC 3 Nov 2024
+###
 
 ###
 def test_bpt_mask(tab, AGN_TYPE, directory):

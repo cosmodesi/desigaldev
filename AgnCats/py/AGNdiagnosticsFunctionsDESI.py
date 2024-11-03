@@ -8,6 +8,83 @@ Find/replace: FastSpecFit_ref with correct reference
 
 ##########################################################################################################
 ##########################################################################################################
+
+###
+### BC: let's discuss 'unknown' once more 3rd Nov 2024 and also which fluxes to use when FSF does fit _BROAD_
+###
+
+def AGN_OPTICAL_UV_TYPE(input, snr=3, mask=None):
+    '''
+    If using these diagnostic fuctions please ref the appropriate references given below.
+    
+    If using DESI please reference Summary_ref_2023 and the apprpriate
+    emission line catalog (e.g. FastSpecFit ref FastSpecFit_ref)
+
+    Inputs:
+    'table' including Ha, Hb, MgII and CIV emission lines.
+    'snr' is the snr cut applied to all axes. Default is 3.
+    'mask' is an optional mask (e.g. from masked column array). Default is None.
+
+    Outputs:
+    Vectors of same dimension as rows in table which include flags for:
+    type_1, type_2, type_unknown
+    
+    'type_1' Optical/UV Type 1 AGN (FWHM>=1200 km/s in Halpha, Hbeta, MgII and/or CIV line)
+    
+    'type_2' Optical/UV Type 2 AGN (FWHM<1200 km/s in Halpha, Hbeta, MgII and/or CIV line)
+    
+    'type_unknown' Optical/UV AGN lacking Halpha, Hbeta, MgII and CIV line constraints as 
+    the lines are either not int he spectra or they are not bright enough 
+    '''
+    
+    # Mask for zero fluxes
+    zero_flux_nii = (input['HALPHA_FLUX'] == 0) | (input['HBETA_FLUX'] == 0) | \
+                    (input['OIII_5007_FLUX']  == 0) |(input['NII_6584_FLUX'] == 0)
+    if mask != None:
+        # Mask for flux avalibility - included as fastspecfit columns are maskedcolumn data
+        mask = mask     
+        zero_flux_nii = (input['HALPHA_FLUX'] == 0) | (input['HBETA_FLUX'] == 0) | \
+                        (input['OIII_5007_FLUX']  == 0) |(input['NII_6584_FLUX'] == 0) | mask
+
+    #If ivar=0 set it to NaN to avoid infinites when computing the error:
+    input['HALPHA_FLUX_IVAR']=np.where(input['HALPHA_FLUX_IVAR']==0,np.nan,input['HALPHA_FLUX_IVAR'])
+    input['HBETA_FLUX_IVAR']=np.where(input['HBETA_FLUX_IVAR']==0,np.nan,input['HBETA_FLUX_IVAR'])
+    input['MGII_2796_FLUX_IVAR']=np.where(input['MGII_2796_FLUX_IVAR']==0,np.nan,input['MGII_2796_FLUX_IVAR'])
+    input['MGII_2803_FLUX_IVAR']=np.where(input['MGII_2803_FLUX_IVAR']==0,np.nan,input['MGII_2803_FLUX_IVAR'])
+    input['CIV_1549_FLUX_IVAR']=np.where(input['CIV_1549_FLUX_IVAR']==0,np.nan,input['CIV_1549_FLUX_IVAR'])
+
+    # Mask for SNR. Default is TYPE is available to determine if one of the lines SNR >= 3
+    snr = snr
+    SNR_Ha=input['HALPHA_FLUX']*np.sqrt(input['HALPHA_FLUX_IVAR'])
+
+    SNR_Hb=input['HBETA_FLUX']*np.sqrt(input['HBETA_FLUX_IVAR'])
+    #HBETA_BROAD_FLUX
+    #HALPHA_BROAD_FLUX
+    
+    SNR_MG_2796=input['MGII_2796_FLUX']*np.sqrt(input['MGII_2796_FLUX_IVAR'])
+    SNR_MG_2803=input['MGII_2803_FLUX']*np.sqrt(input['MGII_2803_FLUX_IVAR'])
+    SNR_CIV=input['CIV_1549_FLUX']*np.sqrt(input['CIV_1549_FLUX_IVAR'])
+
+    # Define breadth in FWHM in kmps
+    broad_fwhm_HALPHA = HALPHA_SIGMA * (2. * np.sqrt(2. * np.log(2.)))
+    broad_fwhm_HBETA = HBETA_SIGMA * (2. * np.sqrt(2. * np.log(2.)))
+    broad_fwhm_MGII_2796 = MGII_2796_SIGMA * (2. * np.sqrt(2. * np.log(2.)))
+    broad_fwhm_MGII_2803 = MGII_2803_SIGMA * (2. * np.sqrt(2. * np.log(2.)))
+    broad_fwhm_CIV = CIV_1549_SIGMA * (2. * np.sqrt(2. * np.log(2.)))
+    
+    ## Tyope is unknown if all lines SNR <= 3 otherwise type is known and we classify as type 1 or type 2 based on velocities
+    type_known = (SNR_Ha >= snr) & (SNR_Hb >= snr) & (SNR_MG_2796 >= snr) & (SNR_MG_2803 >= snr) & (SNR_CIV >= snr) & (~zero_flux_nii)
+    type_unknown = (SNR_Ha < snr) & (SNR_Hb < snr) & (SNR_MG_2796 < snr) & (SNR_MG_2803 < snr) & (SNR_CIV < snr) & (zero_flux_nii)
+
+    ## Broad lines classifying an AGN Type 1 or 2
+    max_fwhm = max([broad_fwhm_HALPHA,broad_fwhm_HBETA,broad_fwhm_MGII_2796,broad_fwhm_MGII_2803,broad_fwhm_CIV)
+    type_1 = max_fwhm >= 1200.
+    type_2 = max_fwhm < 1200.
+    
+    return (type_1, type_2, type_unknown)
+
+##########################################################################################################
+##########################################################################################################
 def NII_BPT(input, snr=3, mask=None):
     '''
     If using these diagnostic fuctions please ref the appropriate references given below.
@@ -100,7 +177,7 @@ def NII_BPT(input, snr=3, mask=None):
     
 def NII_BPT_lines(x_axes):
     '''
-    BPT regions
+    This function draws the lines for the BPT regions int he NII_BPT plot
     
     Kewley et al. 2001: starburst vs AGN classification.
     Kew01_nii: log10(flux_oiii_5006/flux_hbeta)=0.61/(log10(flux_nii_6583/flux_halpha)-0.47)+1.19
@@ -114,7 +191,7 @@ def NII_BPT_lines(x_axes):
     Other BPT regions not implemented here yet:
     
     Law et al. 2021 proposed revised lines based on MaNGA observation (not implemented b/c similar to Ka03):
-log10(flux_oiii_5006/flux_hbeta)=0.438/(log10(flux_nii_6583/flux_halpha)+0.023)+1.222
+    log10(flux_oiii_5006/flux_hbeta)=0.438/(log10(flux_nii_6583/flux_halpha)+0.023)+1.222
     
     Law et al. define an extra "intermediate" region (not yet implemented)
     '''
