@@ -72,12 +72,14 @@ def AGN_OPTICAL_UV_TYPE(input, snr=3, mask=None):
     broad_fwhm_MGII_2803 = MGII_2803_SIGMA * (2. * np.sqrt(2. * np.log(2.)))
     broad_fwhm_CIV = CIV_1549_SIGMA * (2. * np.sqrt(2. * np.log(2.)))
     
-    ## Tyope is unknown if all lines SNR <= 3 otherwise type is known and we classify as type 1 or type 2 based on velocities
+    ## Type is unknown if all lines SNR <= 3 otherwise type is known and we classify as type 1 or type 2 based on velocities
     type_known = (SNR_Ha >= snr) & (SNR_Hb >= snr) & (SNR_MG_2796 >= snr) & (SNR_MG_2803 >= snr) & (SNR_CIV >= snr) & (~zero_flux_nii)
     type_unknown = (SNR_Ha < snr) & (SNR_Hb < snr) & (SNR_MG_2796 < snr) & (SNR_MG_2803 < snr) & (SNR_CIV < snr) & (zero_flux_nii)
+    
+    ## SJ: Type UNKNOWN should be an Optical/UV AGN (but lacking the S/N for all Ha, Hb, MgII, CIV)
 
     ## Broad lines classifying an AGN Type 1 or 2
-    max_fwhm = max([broad_fwhm_HALPHA,broad_fwhm_HBETA,broad_fwhm_MGII_2796,broad_fwhm_MGII_2803,broad_fwhm_CIV)
+    max_fwhm = max([broad_fwhm_HALPHA,broad_fwhm_HBETA,broad_fwhm_MGII_2796,broad_fwhm_MGII_2803,broad_fwhm_CIV])
     type_1 = max_fwhm >= 1200.
     type_2 = max_fwhm < 1200.
     
@@ -641,7 +643,7 @@ def NeV(input, snr=2.5, mask=None):
 
 def WISE_colors(input, snr=3, mask=None, diag='All'):
     '''
-    If using these diagnostic fuctions please ref Mar_&_Steph_2023
+    If using these diagnostic fuctions please ref Mar_&_Steph_2025
     and the appropriate references given below.
     
     If using DESI please reference Summary_ref_2023 and the apprpriate
@@ -685,6 +687,7 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     SNR_W3 = input['FLUX_W3']*np.sqrt(input['FLUX_IVAR_W3'])
 
     ## IR diagnostic based on W1W2 is available if flux is not zero
+    ## Note: Yao+2020 used S/N>5 for W1, W2 and S/N>2 for W3 due to being much less sensitive
     W1W2_avail = (~zero_flux_wise)&(SNR_W1>snr)&(SNR_W2>snr)
     W2W3_avail = (~zero_flux_wise)&(~zero_flux_w3)&(SNR_W2>snr)&(SNR_W3>snr)
 
@@ -705,6 +708,8 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     W2W3_vega2ab = W2_vega2ab - W3_vega2ab
 
     # Subtract offsets to go from AB to Vega (add to go from Vega to AB)
+    W1_Vega = W1 - W1_vega2ab
+    W2_Vega = W2 - W2_vega2ab
     W1W2_Vega = W1W2 - W1W2_vega2ab
     W2W3_Vega = W2W3 - W2W3_vega2ab
     
@@ -717,7 +722,7 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     agn_jarrett11 = W1W2_avail&W2W3_avail&(W2W3_Vega>x_left)&(W2W3_Vega<x_right)&(W1W2_Vega>y_bot)&(W1W2_Vega<y_top)
     sf_jarrett11 = W1W2_avail&W2W3_avail&(~agn_jarrett11)
     unavail_jarrett11 = (~W1W2_avail)|(~W2W3_avail)  #unavailable
-
+                    
     ## Stern et al. 2012 cut along just W1-W2 color
     agn_stern12 = W1W2_avail&(W1W2_Vega>0.8)
     sf_stern12 = W1W2_avail&(~agn_stern12)
@@ -736,10 +741,33 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     sf_mateos12 = W1W2_avail&W2W3_avail&(~agn_mateos12)
     unavail_mateos12 = (~W1W2_avail)|(~W2W3_avail)  #unavailable
         
+    ## Assef et al. 2013
+    # equation 2 (simplistic from Stern+12): (W1W2_Vega >= 0.8)&((W2 - W2_vega2ab)<15.05)
+    # equation 3: W1W2_Vega > alpha* exp(beta*(W2_Vega-gamma)**2)
+                    
+    ## 90% reliability
+    alpha_90 = 0.662
+    beta_90 = 0.232
+    gamma_90 = 13.97        
+                    
+    ## 75% reliability
+    alpha_75 = 0.530
+    beta_75 = 0.183
+    gamma_75 = 13.76 
+     
+    ## Choose here:
+    alpha = alpha_75
+    beta = beta_75
+    gamma = gamma_75
+                    
+    agn_assef13 = W1W2_avail&(W1W2_Vega > alpha* np.exp(beta*(W2_Vega-gamma)**2))
+    sf_assef13 = W1W2_avail&(~agn_assef13)
+    unavail_assef13 = ~W1W2_avail  #unavailable
+
     ## Yao et al. 2020 cuts
-    # Vega mags: w1w2 = (0.15 * exp(w2w3/1.38)) - 0.08 + offset
+    # Vega mags: w1w2 = (0.015 * exp(w2w3/1.38)) - 0.08 + offset
     # where offset of 0.3 is reported in paper as the 2*sigma cut to create a demarcation line
-    line_yao20 = (0.15 * np.exp(W2W3_Vega/1.38)) - 0.08 + 0.3
+    line_yao20 = (0.015 * np.exp(W2W3_Vega/1.38)) - 0.08 + 0.3
     agn_yao20 = W1W2_avail&W2W3_avail&(W1W2_Vega>line_yao20)
     unavail_yao20 = (~W1W2_avail)|(~W2W3_avail)  #unavailable
 
@@ -754,6 +782,9 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     ## Set the choice here for individual diagnostics or our default combination # agn_hviding22 not yet implemented
     if diag=='Stern12':
         agn_ir = agn_stern12
+        avail_ir = W1W2_avail
+    if diag=='Assef13':
+        agn_ir = agn_assef13
         avail_ir = W1W2_avail
     if diag=='Jarrett11':
         agn_ir = agn_jarrett11
@@ -770,7 +801,7 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     ## By default, combine the diagnostics based on W1W2W3 when all 3 bands available;
     #  otherwise use the Stern cut on W1-W2 only
     if diag=='All':
-        agn_ir = agn_mateos12 | agn_jarrett11 | (agn_stern12&~W2W3_avail) | agn_hviding22
+        agn_ir = agn_mateos12 | agn_jarrett11 | (agn_stern12&~W2W3_avail) | agn_assef13 | agn_hviding22
         avail_ir = W1W2_avail
     
     # SF defined based on the above

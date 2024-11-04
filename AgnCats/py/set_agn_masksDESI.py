@@ -13,25 +13,39 @@ def get_qso_maskbits(file):
     from desiutil.bitmask import BitMask
     file_yaml = open(file, 'r')
     yaml_defs = yaml.safe_load(file_yaml)
-    QSO_MASKBITS = BitMask('QSO_MASKBITS', yaml_defs)
+# SJ: removed QSO_MASKBITS
+#    QSO_MASKBITS = BitMask('QSO_MASKBITS', yaml_defs)
     AGN_MASKBITS = BitMask('AGN_MASKBITS', yaml_defs)
     AGN_TYPE = BitMask('AGN_TYPE', yaml_defs)
-    return QSO_MASKBITS, AGN_MASKBITS, AGN_TYPE
+# SJ: removed QSO_MASKBITS
+#    return QSO_MASKBITS, AGN_MASKBITS, AGN_TYPE
+    return AGN_MASKBITS, AGN_TYPE
 ###
 
 ###
-def update_AGN_MASKBITS(T, QSO_MASKBITS, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=False, mask=None):
+## SJ: removed QSO_MASKBITS from yaml (still exist as a column in the input file though!)
+#def update_AGN_MASKBITS(T, QSO_MASKBITS, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=False, mask=None):
+def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=False, mask=None):
 
     from AGNdiagnosticsFunctionsDESI import NII_BPT
     from AGNdiagnosticsFunctionsDESI import SII_BPT
     from AGNdiagnosticsFunctionsDESI import OI_BPT
     
     ## EC doesn't use yaml - no QN_NEW_RR but we add this
-    qsom_RR = T['QSO_MASKBITS'] & QSO_MASKBITS.RR != 0
-    qsom_mgii = (T['QSO_MASKBITS'] & QSO_MASKBITS.MGII != 0)  
-    qsom_QN = (T['QSO_MASKBITS'] & QSO_MASKBITS.QN != 0)
-    qsom_QN_RR = (T['QSO_MASKBITS'] & QSO_MASKBITS.QN_NEW_RR != 0)
+#    qsom_RR = T['QSO_MASKBITS'] & QSO_MASKBITS.RR != 0
+#    qsom_mgii = (T['QSO_MASKBITS'] & QSO_MASKBITS.MGII != 0)  
+#    qsom_QN = (T['QSO_MASKBITS'] & QSO_MASKBITS.QN != 0)
+#    qsom_QN_RR = (T['QSO_MASKBITS'] & QSO_MASKBITS.QN_NEW_RR != 0)
 
+    ## SJ: need to use AGN_MASKBITS instead
+    qsom_RR = T['QSO_MASKBITS'] & AGN_MASKBITS.RR != 0
+    qsom_mgii = (T['QSO_MASKBITS'] & AGN_MASKBITS.MGII != 0)  
+    qsom_QN = (T['QSO_MASKBITS'] & AGN_MASKBITS.QN != 0)
+    qsom_QN_RR = (T['QSO_MASKBITS'] & AGN_MASKBITS.QN_NEW_RR != 0)
+    qsom_QN_BGS = (T['QSO_MASKBITS'] & AGN_MASKBITS.QN_BGS != 0)
+    qsom_QN_ELG = (T['QSO_MASKBITS'] & AGN_MASKBITS.QN_ELG != 0)
+    qsom_QN_VAR_WISE = (T['QSO_MASKBITS'] & AGN_MASKBITS.QN_VAR_WISE != 0)
+     
     agn_bits = np.zeros(len(T))
     agn_mask = AGN_MASKBITS
 
@@ -39,6 +53,10 @@ def update_AGN_MASKBITS(T, QSO_MASKBITS, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=
     agn_bits |= qsom_mgii * agn_mask.MGII
     agn_bits |= qsom_QN * agn_mask.QN
     agn_bits |= qsom_QN_RR * agn_mask.QN_NEW_RR
+    # SJ: added these
+    agn_bits |= qsom_QN_BGS * agn_mask.QN_BGS
+    agn_bits |= qsom_QN_ELG * agn_mask.QN_ELG
+    agn_bits |= qsom_QN_VAR_WISE * agn_mask.QN_VAR_WISE
 
     nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii, quiescent_nii = NII_BPT(T, snr=snr, mask=mask)
     sii_bpt, sf_sii, agn_sii, liner_sii, quiescent_sii = SII_BPT(T, snr=snr, Kewley01=Kewley01, mask=mask)
@@ -89,9 +107,9 @@ def update_AGNTYPE_OPTTYPES(T, AGN_TYPE, snr=3, mask=None):
 
     bpt_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
-    bpt_mask |= = type_unknown * AGN_TYPE.OPT_TYPE_UNKNOWN # Optical/UV AGN lacking Halpha, Hbeta, MgII and CIV line constraints
-    bpt_mask |= = type_1 * AGN_TYPE.OPT_TYPE1 # Optical/UV Type 1 AGN (FWHM>=1200 km/s in Halpha, Hbeta, MgII and/or CIV line)
-    bpt_mask |= = type_2 * AGN_TYPE.OPT_TYPE2 # Optical/UV Type 2 AGN (FWHM<1200 km/s in Halpha, Hbeta, MgII and/or CIV line)
+    bpt_mask |= type_unknown * AGN_TYPE.OPT_TYPE_UNKNOWN # Optical/UV AGN lacking Halpha, Hbeta, MgII and CIV line constraints
+    bpt_mask |= type_1 * AGN_TYPE.OPT_TYPE1 # Optical/UV Type 1 AGN (FWHM>=1200 km/s in Halpha, Hbeta, MgII and/or CIV line)
+    bpt_mask |= type_2 * AGN_TYPE.OPT_TYPE2 # Optical/UV Type 2 AGN (FWHM<1200 km/s in Halpha, Hbeta, MgII and/or CIV line)
     #
     bptmask_column = Column(bpt_mask, name = 'AGN_TYPE')
     if 'AGN_TYPE' in T.columns:
