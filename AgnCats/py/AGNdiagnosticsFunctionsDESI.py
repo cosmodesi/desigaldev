@@ -710,8 +710,9 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     # Subtract offsets to go from AB to Vega (add to go from Vega to AB)
     W1_Vega = W1 - W1_vega2ab
     W2_Vega = W2 - W2_vega2ab
-    W1W2_Vega = W1W2 - W1W2_vega2ab
-    W2W3_Vega = W2W3 - W2W3_vega2ab
+    W3_Vega = W3 - W3_vega2ab
+    W1W2_Vega = W1_Vega - W2_Vega  #W1W2 - W1W2_vega2ab
+    W2W3_Vega = W2_Vega - W3_Vega  #W2W3 - W2W3_vega2ab
     
     ## Jarrett et al. 2011 box in W1-W2 vs. W2-W3 space in Vega mags
     y_top = 1.7 
@@ -741,28 +742,32 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     sf_mateos12 = W1W2_avail&W2W3_avail&(~agn_mateos12)
     unavail_mateos12 = (~W1W2_avail)|(~W2W3_avail)  #unavailable
         
-    ## Assef et al. 2013
+    ## Assef et al. 2018: https://ui.adsabs.harvard.edu/abs/2018ApJS..234...23A/abstract
+    
     # equation 2 (simplistic from Stern+12): (W1W2_Vega >= 0.8)&((W2 - W2_vega2ab)<15.05)
     # equation 3: W1W2_Vega > alpha* exp(beta*(W2_Vega-gamma)**2)
                     
     ## 90% reliability
-    alpha_90 = 0.662
-    beta_90 = 0.232
-    gamma_90 = 13.97        
+    alpha_90 = 0.65
+    beta_90 = 0.153
+    gamma_90 = 13.86        
                     
     ## 75% reliability
-    alpha_75 = 0.530
-    beta_75 = 0.183
-    gamma_75 = 13.76 
+    alpha_75 = 0.486
+    beta_75 = 0.092
+    gamma_75 = 13.07 
      
     ## Choose here:
-    alpha = alpha_75
-    beta = beta_75
-    gamma = gamma_75
+    alpha = alpha_90
+    beta = beta_90
+    gamma = gamma_90
+    
+    bright_a18 = W2_Vega<=gamma
                     
-    agn_assef13 = W1W2_avail&(W1W2_Vega > alpha* np.exp(beta*(W2_Vega-gamma)**2))
-    sf_assef13 = W1W2_avail&(~agn_assef13)
-    unavail_assef13 = ~W1W2_avail  #unavailable
+    agn_assef18 = W1W2_avail&((W1W2_Vega > alpha* np.exp(beta*(W2_Vega-gamma)**2))|
+                              ((W1W2_Vega > alpha)&bright_a18))
+    sf_assef18 = W1W2_avail&(~agn_assef18)
+    unavail_assef18 = ~W1W2_avail  #unavailable
 
     ## Yao et al. 2020 cuts
     # Vega mags: w1w2 = (0.015 * exp(w2w3/1.38)) - 0.08 + offset
@@ -783,8 +788,8 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     if diag=='Stern12':
         agn_ir = agn_stern12
         avail_ir = W1W2_avail
-    if diag=='Assef13':
-        agn_ir = agn_assef13
+    if diag=='Assef18':
+        agn_ir = agn_assef18
         avail_ir = W1W2_avail
     if diag=='Jarrett11':
         agn_ir = agn_jarrett11
@@ -801,7 +806,7 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     ## By default, combine the diagnostics based on W1W2W3 when all 3 bands available;
     #  otherwise use the Stern cut on W1-W2 only
     if diag=='All':
-        agn_ir = agn_mateos12 | agn_jarrett11 | (agn_stern12&~W2W3_avail) | agn_assef13 | agn_hviding22
+        agn_ir = agn_mateos12 | agn_jarrett11 | (agn_stern12&~W2W3_avail) | agn_assef18 | agn_hviding22
         avail_ir = W1W2_avail
     
     # SF defined based on the above
