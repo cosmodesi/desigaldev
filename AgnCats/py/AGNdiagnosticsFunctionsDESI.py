@@ -12,6 +12,7 @@ Find/replace: FastSpecFit_ref with correct reference
 ###
 ### BC: let's discuss 'unknown' once more 3rd Nov 2024 and also which fluxes to use when FSF does fit _BROAD_
 ###
+### SJ: We are no longer going to define "Unk", "Type 1", "Type 2" --> rewrite as BROAD_LINE BELOW
 
 def AGN_OPTICAL_UV_TYPE(input, snr=3, mask=None):
     '''
@@ -87,6 +88,84 @@ def AGN_OPTICAL_UV_TYPE(input, snr=3, mask=None):
 
 ##########################################################################################################
 ##########################################################################################################
+
+def BROAD_LINE(input, snr=3, mask=None, vel_thres=1200.):
+    '''
+    If using these diagnostic fuctions please ref the appropriate references given below.
+    
+    If using DESI please reference Summary_ref_2023 and the apprpriate
+    emission line catalog (e.g. FastSpecFit ref FastSpecFit_ref)
+
+    Inputs:
+    'table' including Ha, Hb, MgII and CIV emission lines (fluxes and widths)
+    'snr' is the snr cut applied to all axes. Default is 3.
+    'mask' is an optional mask (e.g. from masked column array). Default is None.
+
+    Outputs:
+    Vectors of same dimension as rows in table which include flags for:
+    broad_line
+    
+    If (FWHM>=1200 km/s in Halpha, Hbeta, MgII and/or CIV line)
+    '''
+    
+    # Mask for zero fluxes when NONE of the lines are available
+    zero_flux = (input['HALPHA_BROAD_FLUX']==0) & (input['HBETA_BROAD_FLUX']==0) & \
+                (input['MGII_2796_FLUX']==0) & (input['MGII_2803_FLUX']==0) & (input['CIV_1549_FLUX']==0)
+    if mask != None:
+        # Mask for flux avalibility - included as fastspecfit columns are maskedcolumn data
+        mask = mask     
+        zero_flux = mask | ((input['HALPHA_BROAD_FLUX']==0) & (input['HBETA_BROAD_FLUX']==0) & \
+                     (input['MGII_2796_FLUX']==0) & (input['MGII_2803_FLUX']==0) & (input['CIV_1549_FLUX']==0))
+
+    #If ivar=0 set it to NaN to avoid infinites when computing the error:
+    input['HALPHA_BROAD_FLUX_IVAR']=np.where(input['HALPHA_BROAD_FLUX_IVAR']==0,np.nan,input['HALPHA_BROAD_FLUX_IVAR'])
+    input['HBETA_BROAD_FLUX_IVAR']=np.where(input['HBETA_BROAD_FLUX_IVAR']==0,np.nan,input['HBETA_BROAD_FLUX_IVAR'])
+    input['MGII_2796_FLUX_IVAR']=np.where(input['MGII_2796_FLUX_IVAR']==0,np.nan,input['MGII_2796_FLUX_IVAR'])
+    input['MGII_2803_FLUX_IVAR']=np.where(input['MGII_2803_FLUX_IVAR']==0,np.nan,input['MGII_2803_FLUX_IVAR'])
+    input['CIV_1549_FLUX_IVAR']=np.where(input['CIV_1549_FLUX_IVAR']==0,np.nan,input['CIV_1549_FLUX_IVAR'])
+
+    # Mask for SNR. Default is TYPE is available to determine if one of the lines SNR >= 3
+    snr = snr
+
+    # Broad components for Balmer lines
+    SNR_Ha=input['HALPHA_BROAD_FLUX']*np.sqrt(input['HALPHA_BROAD_FLUX_IVAR'])
+    SNR_Hb=input['HBETA_BROAD_FLUX']*np.sqrt(input['HBETA_BROAD_FLUX_IVAR'])
+
+    # For MgII, sum the doublet
+    MGII_FLUX = input['MGII_2796_FLUX']+input['MGII_2803_FLUX']
+    MGII_FLUX_IVAR = 1./(1./input['MGII_2796_FLUX_IVAR'] + 1./input['MGII_2803_FLUX_IVAR'])
+    SNR_MGII = MGII_FLUX*np.sqrt(MGII_FLUX_IVAR)
+    
+    # CIV
+    SNR_CIV = input['CIV_1549_FLUX']*np.sqrt(input['CIV_1549_FLUX_IVAR'])
+
+    # Factor to convert from Gaussian sigma to FWHM
+    sig2fwhm = 2. * np.sqrt(2. * np.log(2.))
+    
+    # Define breadth in FWHM in km/s
+    broad_fwhm_HALPHA = input['HALPHA_BROAD_SIGMA'] * sig2fwhm
+    broad_fwhm_HBETA = input['HBETA_BROAD_SIGMA'] * sig2fwhm
+    broad_fwhm_MGII_2796 = input['MGII_2796_SIGMA'] * sig2fwhm
+    broad_fwhm_MGII_2803 = input['MGII_2803_SIGMA'] * sig2fwhm
+    broad_fwhm_CIV = input['CIV_1549_SIGMA'] * sig2fwhm
+        
+   # Velocity threshold for FWHM in km/s to identify a BL (FWHM > 1200 km/s by default)
+##    vel_thres = 1200. # km/s ## SJ: delete this line if we all agree with keeping it as an argument
+    
+    # Check for each line separately first
+    is_broad_Ha = (SNR_Ha>=snr) & (broad_fwhm_HALPHA>=vel_thres) & (~zero_flux)
+    is_broad_Hb = (SNR_Hb>=snr) & (broad_fwhm_HBETA>=vel_thres) & (~zero_flux)
+    is_broad_MgII = (SNR_MGII>=snr) & (broad_fwhm_MGII>=vel_thres) & (~zero_flux)
+    is_broad_CIV = (SNR_CIV>=snr) & (broad_fwhm_CIV>=vel_thres) & (~zero_flux)
+    
+    # Decision: flag a BL if any of the 4 lines meet the criteria
+    is_broad = is_broad_Ha | is_broad_Hb | is_broad_MgII | is_broad_CIV
+    
+    return (is_broad)
+
+##########################################################################################################
+##########################################################################################################
+
 def NII_BPT(input, snr=3, mask=None):
     '''
     If using these diagnostic fuctions please ref the appropriate references given below.
@@ -817,41 +896,104 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
 ##########################################################################################################
 ##########################################################################################################
 
+def MEX(input, snr=3, mask=None):
+    '''
+    MEx diagnostic diagram (Juneau et al. 2014)
+    
+    Inputs:
+    'input' including OIII and Hb fluxes and inverse variances and stellar mass (Chabrier or Kroupa IMF).
+    'snr' is the snr cut applied to Hb and OIII. Default is 3.
+    'mask' is an optional mask (e.g. from masked column array). Default is None.
+      
+    Outputs:
+    Output vectors of same dimension as rows in table which include flags for:
+    'mex', 'mex_sf', 'mex_interm', 'mex_agn'
+    
+    MEx diagram regions defined as:
+    #Top division between SF/AGN (eq. 1 of Juneau et al. 2014): 
+    log10(flux_oiii_5006/flux_hbeta) = 0.375/(log10(M*) - 10.5) + 1.14 for logM*<=10
+    #Division between SF and "intermediate" (eq. 2 of juneau et al. 2014): 
+    log10(flux_oiii_5006/flux_hbeta) > a0+a1*x+a2*x**2+a3*x**3
+    
+    where x = log10(M*)
+    '''
+    
+    # Mask for zero fluxes
+    zero_flux_mex = (input['HBETA_FLUX'] == 0) | (input['OIII_5007_FLUX'] == 0)
+    if mask != None:
+        # Mask for flux avalibility - included as fastspecfit columns are maskedcolumn data
+        mask = mask     
+        zero_flux_mex = (input['HBETA_FLUX'] == 0) | (input['OIII_5007_FLUX'] == 0) | mask
+   
+    #If ivar=0 set it to NaN to avoid infinites when computing the error:
+    input['HBETA_FLUX_IVAR']=np.where(input['HBETA_FLUX_IVAR']==0,np.nan,input['HBETA_FLUX_IVAR'])
+    input['OIII_5007_FLUX_IVAR']=np.where(input['OIII_5007_FLUX_IVAR']==0,np.nan,input['OIII_5007_FLUX_IVAR'])
+
+    # Mask for SNR. Default is NII-BPT is available if all SNR >= 3
+    snr = snr
+    SNR_Hb=input['HBETA_FLUX']*np.sqrt(input['HBETA_FLUX_IVAR'])
+    SNR_OIII=input['OIII_5007_FLUX']*np.sqrt(input['OIII_5007_FLUX_IVAR'])
+    
+    ## MEx is available (line fluxes SNR >= 3 and valid mass)
+    mex = (SNR_Hb >= snr) & (SNR_OIII >= snr) & (input['LOGMSTAR']>4.) & (~zero_flux_mex)
+    
+    # Define variables for equations 1 & 2
+    x = input['LOGMSTAR']
+    y = np.log10(input['OIII_5007_FLUX']/input['HBETA_FLUX'])
+    
+    # upper MEx
+    a0, a1, a2, a3 = 410.24, -109.333, 9.71731, -0.288244
+    mex_agn = ((y>0.375/(x-10.5)+1.14)&(x<=10)) | \\
+              ((y>a0+a1*x+a2*x**2+a3*x**3)&(x>10))
+        
+    # lower MEx
+    a0, a1, a2, a3 = 352.066, -93.8249, 8.32651, -0.246416
+    mex_sf = ((y<0.375/(x-10.5)+1.14)&(x<=9.6)) | \\
+             ((y<a0+a1*x+a2*x**2+a3*x**3)&(x>9.6))
+        
+    # MEX intermediate
+    mex_interm = (x>9.6)&(y>=a0+a1*x+a2*x**2+a3*x**3)&(~mex_agn)
+    
+    return (mex, mex_agn, mex_sf, mex_interm)
+    
+##########################################################################################################
+##########################################################################################################
+
 def Xray(input, H0=67.4, Om0=0.315, snr=3):
-	## X-ray diagnostic ##
-	#2-10 keV X-ray luminosity equal or above 1e42 erg/s indicates AGN	
-	thres=1e42
+    ## X-ray diagnostic ##
+    #2-10 keV X-ray luminosity equal or above 1e42 erg/s indicates AGN	
+    thres=1e42
 
-	#Fiducial Cosmology used in DESI from Planck 2018 results: https://ui.adsabs.harvard.edu/abs/2020A%26A...641A...6P/abstract
-	from astropy.cosmology import FlatLambdaCDM
-	cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
-	DL  = cosmo.luminosity_distance(input['z'].values) #in Mpc
-	DL_cm = 3.08567758e24*DL.value
+    #Fiducial Cosmology used in DESI from Planck 2018 results: https://ui.adsabs.harvard.edu/abs/2020A%26A...641A...6P/abstract
+    from astropy.cosmology import FlatLambdaCDM
+    cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
+    DL  = cosmo.luminosity_distance(input['z'].values) #in Mpc
+    DL_cm = 3.08567758e24*DL.value
 
-	#Convert the CSC 2-7 keV flux to 2-10 keV and compute the LX2-10 keV
-	#Conversion factor =  1.334E-15 erg cm^-2 s^-1 for an unabsorbed flux of 1E-15 erg cm^-2 s^-1 using PIMMS (https://cxc.harvard.edu/toolkit/pimms.jsp) and assuming gamma=1.8
-	factor =     1.334E-15 #for gamma=1.8
-	flux_2_10=(input['FLUX_2_7']/1E-15)*factor
-	LX210= 4*pi*DL_cm**2*flux_2_10  #in erg/s
+    #Convert the CSC 2-7 keV flux to 2-10 keV and compute the LX2-10 keV
+    #Conversion factor =  1.334E-15 erg cm^-2 s^-1 for an unabsorbed flux of 1E-15 erg cm^-2 s^-1 using PIMMS (https://cxc.harvard.edu/toolkit/pimms.jsp) and assuming gamma=1.8
+    factor =     1.334E-15 #for gamma=1.8
+    flux_2_10=(input['FLUX_2_7']/1E-15)*factor
+    LX210= 4*pi*DL_cm**2*flux_2_10  #in erg/s
 
-	#Apply K-correction:
-	gamma=1.8
-	k = (1+input['z'])**(gamma-2)
-	LX210_Kcorr=k*LX210
+    #Apply K-correction:
+    gamma=1.8
+    k = (1+input['z'])**(gamma-2)
+    LX210_Kcorr=k*LX210
 
-	#Mask for zero flux
-	zero_flux_xray= input['FLUX_2_7']==0
+    #Mask for zero flux
+    zero_flux_xray= input['FLUX_2_7']==0
 
-	#Mask for SNR
-	snr=snr
-	SNR_Xray=input['FLUX_2_7']/input['FLUX_2_7_err']
+    #Mask for SNR
+    snr=snr
+    SNR_Xray=input['FLUX_2_7']/input['FLUX_2_7_err']
 
-	## Xray diagnostic is available if flux is not zero and SNR_Xray >= 3
-	xray = (SNR_Xray >= snr) & (~zero_flux_xray)
+    ## Xray diagnostic is available if flux is not zero and SNR_Xray >= 3
+    xray = (SNR_Xray >= snr) & (~zero_flux_xray)
 
-	## Xray-AGN, SF, footprint
-	agn_xray= (xray) & (LX210_Kcorr >= thres)
-	sf_xray= (xray) & ~agn_xray
-	fp_xray = (zero_flux_xray) & (input['FLUX_2_7_err'] > 0) 
+    ## Xray-AGN, SF, footprint
+    agn_xray= (xray) & (LX210_Kcorr >= thres)
+    sf_xray= (xray) & ~agn_xray
+    fp_xray = (zero_flux_xray) & (input['FLUX_2_7_err'] > 0) 
 
-	return (agn_xray, sf_xray, fp_xray)
+    return (agn_xray, sf_xray, fp_xray)
