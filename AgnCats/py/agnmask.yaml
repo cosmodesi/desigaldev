@@ -52,7 +52,7 @@ AGN_TYPE:
     - [SII_SY,      9, "SII BPT Seyfert (update_AGNTYPE_SIIBPT)"]
     - [SII_LINER,   10, "SII BPT LINER (update_AGNTYPE_SIIBPT)"]
     #- [SII_QUIES,   15, "SII BPT Quiescent, Lines detected with (S/N) < 3 (update_AGNTYPE_SIIBPT)- REMOVE"]
-    - [OI_BPT,      11, "OI BPT dianostic is available (update_AGNTYPE_OIBPT)"]
+    - [OI_BPT,      11, "OI BPT diagnostic is available (update_AGNTYPE_OIBPT)"]
     - [OI_SF,       12, "OI BPT Star-forming (update_AGNTYPE_OIBPT)"]
     - [OI_SY,       13, "OI BPT Seyfert (update_AGNTYPE_OIBPT)"]
     - [OI_LINER,    14, "OI BPT LINER (update_AGNTYPE_OIBPT)"]
