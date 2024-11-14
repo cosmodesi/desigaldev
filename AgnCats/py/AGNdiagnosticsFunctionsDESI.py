@@ -9,86 +9,6 @@ Find/replace: FastSpecFit_ref with correct reference
 ##########################################################################################################
 ##########################################################################################################
 
-###
-### BC: let's discuss 'unknown' once more 3rd Nov 2024 and also which fluxes to use when FSF does fit _BROAD_
-###
-### SJ: We are no longer going to define "Unk", "Type 1", "Type 2" --> rewrite as BROAD_LINE BELOW
-
-def AGN_OPTICAL_UV_TYPE(input, snr=3, mask=None):
-    '''
-    If using these diagnostic fuctions please ref the appropriate references given below.
-    
-    If using DESI please reference Summary_ref_2023 and the apprpriate
-    emission line catalog (e.g. FastSpecFit ref FastSpecFit_ref)
-
-    Inputs:
-    'table' including Ha, Hb, MgII and CIV emission lines.
-    'snr' is the snr cut applied to all axes. Default is 3.
-    'mask' is an optional mask (e.g. from masked column array). Default is None.
-
-    Outputs:
-    Vectors of same dimension as rows in table which include flags for:
-    type_1, type_2, type_unknown
-    
-    'type_1' Optical/UV Type 1 AGN (FWHM>=1200 km/s in Halpha, Hbeta, MgII and/or CIV line)
-    
-    'type_2' Optical/UV Type 2 AGN (FWHM<1200 km/s in Halpha, Hbeta, MgII and/or CIV line)
-    
-    'type_unknown' Optical/UV AGN lacking Halpha, Hbeta, MgII and CIV line constraints as 
-    the lines are either not int he spectra or they are not bright enough 
-    '''
-    
-    # Mask for zero fluxes
-    zero_flux_nii = (input['HALPHA_FLUX'] == 0) | (input['HBETA_FLUX'] == 0) | \
-                    (input['OIII_5007_FLUX']  == 0) |(input['NII_6584_FLUX'] == 0)
-    if mask != None:
-        # Mask for flux avalibility - included as fastspecfit columns are maskedcolumn data
-        mask = mask     
-        zero_flux_nii = (input['HALPHA_FLUX'] == 0) | (input['HBETA_FLUX'] == 0) | \
-                        (input['OIII_5007_FLUX']  == 0) |(input['NII_6584_FLUX'] == 0) | mask
-
-    #If ivar=0 set it to NaN to avoid infinites when computing the error:
-    input['HALPHA_FLUX_IVAR']=np.where(input['HALPHA_FLUX_IVAR']==0,np.nan,input['HALPHA_FLUX_IVAR'])
-    input['HBETA_FLUX_IVAR']=np.where(input['HBETA_FLUX_IVAR']==0,np.nan,input['HBETA_FLUX_IVAR'])
-    input['MGII_2796_FLUX_IVAR']=np.where(input['MGII_2796_FLUX_IVAR']==0,np.nan,input['MGII_2796_FLUX_IVAR'])
-    input['MGII_2803_FLUX_IVAR']=np.where(input['MGII_2803_FLUX_IVAR']==0,np.nan,input['MGII_2803_FLUX_IVAR'])
-    input['CIV_1549_FLUX_IVAR']=np.where(input['CIV_1549_FLUX_IVAR']==0,np.nan,input['CIV_1549_FLUX_IVAR'])
-
-    # Mask for SNR. Default is TYPE is available to determine if one of the lines SNR >= 3
-    snr = snr
-    SNR_Ha=input['HALPHA_FLUX']*np.sqrt(input['HALPHA_FLUX_IVAR'])
-
-    SNR_Hb=input['HBETA_FLUX']*np.sqrt(input['HBETA_FLUX_IVAR'])
-    #HBETA_BROAD_FLUX
-    #HALPHA_BROAD_FLUX
-    
-    SNR_MG_2796=input['MGII_2796_FLUX']*np.sqrt(input['MGII_2796_FLUX_IVAR'])
-    SNR_MG_2803=input['MGII_2803_FLUX']*np.sqrt(input['MGII_2803_FLUX_IVAR'])
-    SNR_CIV=input['CIV_1549_FLUX']*np.sqrt(input['CIV_1549_FLUX_IVAR'])
-
-    # Define breadth in FWHM in kmps
-    broad_fwhm_HALPHA = HALPHA_SIGMA * (2. * np.sqrt(2. * np.log(2.)))
-    broad_fwhm_HBETA = HBETA_SIGMA * (2. * np.sqrt(2. * np.log(2.)))
-    broad_fwhm_MGII_2796 = MGII_2796_SIGMA * (2. * np.sqrt(2. * np.log(2.)))
-    broad_fwhm_MGII_2803 = MGII_2803_SIGMA * (2. * np.sqrt(2. * np.log(2.)))
-    broad_fwhm_CIV = CIV_1549_SIGMA * (2. * np.sqrt(2. * np.log(2.)))
-    
-    ## Type is unknown if all lines SNR <= 3 otherwise type is known and we classify as type 1 or type 2 based on velocities
-    type_known = (SNR_Ha >= snr) & (SNR_Hb >= snr) & (SNR_MG_2796 >= snr) & (SNR_MG_2803 >= snr) & (SNR_CIV >= snr) & (~zero_flux_nii)
-    type_unknown = (SNR_Ha < snr) & (SNR_Hb < snr) & (SNR_MG_2796 < snr) & (SNR_MG_2803 < snr) & (SNR_CIV < snr) & (zero_flux_nii)
-    
-    ## SJ: Type UNKNOWN should be an Optical/UV AGN (but lacking the S/N for all Ha, Hb, MgII, CIV)
-
-    ## Broad lines classifying an AGN Type 1 or 2
-    max_fwhm = max([broad_fwhm_HALPHA,broad_fwhm_HBETA,broad_fwhm_MGII_2796,broad_fwhm_MGII_2803,broad_fwhm_CIV])
-    type_1 = max_fwhm >= 1200.
-    type_2 = max_fwhm < 1200.
-    
-    return (type_1, type_2, type_unknown)
-
-##########################################################################################################
-##########################################################################################################
-
 def BROAD_LINE(input, snr=3, mask=None, vel_thres=1200.):
     '''
     If using these diagnostic fuctions please ref the appropriate references given below.
@@ -185,8 +105,7 @@ def NII_BPT(input, snr=3, mask=None):
     nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii, quiescent_nii
     
     'nii_bpt' flag for SNR in all lines higher than snr and no zerofluxes
-    'quiescent_nii' flag for SNR less than snr in one or many lines no zerofluxes
-
+    
     'agn_nii' a Kew01 AGN and Scha07 Seyfert
     flag SNR>snr & [ log(oiii/hb)>=Kew01_nii & log(oiii/hb)>Scha07 | log(nii/ha)>=0.47 ]
 
@@ -244,9 +163,6 @@ def NII_BPT(input, snr=3, mask=None):
     ## NII-BPT is available (All lines SNR >= 3)
     nii_bpt = (SNR_Ha >= snr) & (SNR_Hb >= snr) & (SNR_OIII >= snr) & (SNR_NII >= snr) & (~zero_flux_nii)
 
-    ## NII-Quiescent (SNR < 3 for one or more lines)
-    quiescent_nii=((SNR_Ha<snr) | (SNR_Hb<snr) | (SNR_OIII<snr) | (SNR_NII<snr)) & (~zero_flux_nii) 
-
     ## NII-AGN, LINER, COMP, SF
     agnliner_nii=(nii_bpt) & ((log_oiii_hb>=Kew01_nii) | (log_nii_ha>=0.47))
     agn_nii=(agnliner_nii) & (log_oiii_hb>=Scha07) 
@@ -254,7 +170,7 @@ def NII_BPT(input, snr=3, mask=None):
     composite_nii=(nii_bpt) & ((log_oiii_hb>=Ka03) | (log_nii_ha>=0.05)) & (~agnliner_nii)
     sf_nii=(nii_bpt) & (~agnliner_nii) & (~composite_nii)
     
-    return (nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii, quiescent_nii)
+    return (nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii)
     
 def NII_BPT_lines(x_axes):
     '''
@@ -369,16 +285,13 @@ def SII_BPT(input, snr=3, Kewley01=False, mask=None):
     ## SII-BPT is available (All lines SNR >= 3)
     sii_bpt = (SNR_Ha >= snr) & (SNR_Hb >= snr) & (SNR_OIII >= snr) & (SNR_SII >= snr) & (~zero_flux_sii)
 
-    ## SII-Quiescent -- (SNR < 3 for one or more lines)
-    quiescent_sii = ((SNR_Ha < snr) | (SNR_Hb < snr) | (SNR_OIII < snr) | (SNR_SII < snr)) & (~zero_flux_sii)
-
     ## SII-AGN, LINER, SF
     agnliner_sii=(sii_bpt) & ((log_oiii_hb>=line_sii) | (log_sii_ha>=0.32))
     agn_sii=(agnliner_sii) & (log_oiii_hb>=Kew06_sii)
     liner_sii=(agnliner_sii) & (log_oiii_hb<Kew06_sii)
     sf_sii=(sii_bpt) & (~agnliner_sii)
 
-    return (sii_bpt, sf_sii, agn_sii, liner_sii, quiescent_sii)
+    return (sii_bpt, sf_sii, agn_sii, liner_sii)
 
 ##########################################################################################################
 ##########################################################################################################
@@ -514,7 +427,7 @@ def WHAN(input, snr=3, mask=None):
     input['HALPHA_FLUX_IVAR']=np.where(input['HALPHA_FLUX_IVAR']==0,np.nan,input['HALPHA_FLUX_IVAR'])
     input['NII_6584_FLUX_IVAR']=np.where(input['NII_6584_FLUX_IVAR']==0,np.nan,input['NII_6584_FLUX_IVAR'])
 
-    # Mask for SNR. Default is OI-BPT is available if Ha, Hb, OIII SNR >= 3 and OI SNR >= 1.
+    # Mask for SNR. Default is WHAN is available if Ha, NII SNR >= 3.
     snr = snr
     SNR_Ha=input['HALPHA_FLUX']*np.sqrt(input['HALPHA_FLUX_IVAR'])
     SNR_NII=input['NII_6584_FLUX']*np.sqrt(input['NII_6584_FLUX_IVAR'])
@@ -580,7 +493,7 @@ def BLUE(input, snr=3, snrOII=1, mask=None):
     input['HBETA_FLUX_IVAR']=np.where(input['HBETA_FLUX_IVAR']==0,np.nan,input['HBETA_FLUX_IVAR'])
     input['OIII_5007_FLUX_IVAR']=np.where(input['OIII_5007_FLUX_IVAR']==0,np.nan,input['OIII_5007_FLUX_IVAR'])
 
-    # Mask for SNR. Default is OI-BPT is available if Ha, Hb, OIII SNR >= 3 and OI SNR >= 1.
+    # Mask for SNR. Default is BLUE is available if Hb, OIII SNR >= 3 and OII SNR >= 1.
     snr = snr
     snrOII=snrOII
     SNR_Hb=input['HBETA_FLUX']*np.sqrt(input['HBETA_FLUX_IVAR'])
@@ -607,6 +520,127 @@ def BLUE(input, snr=3, snrOII=1, mask=None):
     
     return (blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue)
 
+##########################################################################################################
+##########################################################################################################
+
+def MEX(input, snr=3, mask=None):
+    '''
+    MEx diagnostic diagram (Juneau et al. 2014)
+    
+    Inputs:
+    'input' including OIII and Hb fluxes and inverse variances and stellar mass (Chabrier or Kroupa IMF).
+    'snr' is the snr cut applied to Hb and OIII. Default is 3.
+    'mask' is an optional mask (e.g. from masked column array). Default is None.
+      
+    Outputs:
+    Output vectors of same dimension as rows in table which include flags for:
+    'mex', 'mex_sf', 'mex_interm', 'mex_agn'
+    
+    MEx diagram regions defined as:
+    #Top division between SF/AGN (eq. 1 of Juneau et al. 2014): 
+    log10(flux_oiii_5006/flux_hbeta) = 0.375/(log10(M*) - 10.5) + 1.14 for logM*<=10
+    #Division between SF and "intermediate" (eq. 2 of juneau et al. 2014): 
+    log10(flux_oiii_5006/flux_hbeta) > a0+a1*x+a2*x**2+a3*x**3
+    
+    where x = log10(M*)
+    '''
+    
+    # Mask for zero fluxes
+    zero_flux_mex = (input['HBETA_FLUX'] == 0) | (input['OIII_5007_FLUX'] == 0)
+    if mask != None:
+        # Mask for flux avalibility - included as fastspecfit columns are maskedcolumn data
+        mask = mask     
+        zero_flux_mex = (input['HBETA_FLUX'] == 0) | (input['OIII_5007_FLUX'] == 0) | mask
+   
+    #If ivar=0 set it to NaN to avoid infinites when computing the error:
+    input['HBETA_FLUX_IVAR']=np.where(input['HBETA_FLUX_IVAR']==0,np.nan,input['HBETA_FLUX_IVAR'])
+    input['OIII_5007_FLUX_IVAR']=np.where(input['OIII_5007_FLUX_IVAR']==0,np.nan,input['OIII_5007_FLUX_IVAR'])
+
+    # Mask for SNR. Default is MEx is available if all SNR >= 3
+    snr = snr
+    SNR_Hb=input['HBETA_FLUX']*np.sqrt(input['HBETA_FLUX_IVAR'])
+    SNR_OIII=input['OIII_5007_FLUX']*np.sqrt(input['OIII_5007_FLUX_IVAR'])
+    
+    ## MEx is available (line fluxes SNR >= 3 and valid mass)
+    mex = (SNR_Hb >= snr) & (SNR_OIII >= snr) & (input['LOGMSTAR']>4.) & (~zero_flux_mex)
+    
+    # Define variables for equations 1 & 2
+    x = input['LOGMSTAR']
+    y = np.log10(input['OIII_5007_FLUX']/input['HBETA_FLUX'])
+    
+    # upper MEx
+    a0, a1, a2, a3 = 410.24, -109.333, 9.71731, -0.288244
+    mex_agn = ((y>0.375/(x-10.5)+1.14)&(x<=10)) | \\
+              ((y>a0+a1*x+a2*x**2+a3*x**3)&(x>10))
+        
+    # lower MEx
+    a0, a1, a2, a3 = 352.066, -93.8249, 8.32651, -0.246416
+    mex_sf = ((y<0.375/(x-10.5)+1.14)&(x<=9.6)) | \\
+             ((y<a0+a1*x+a2*x**2+a3*x**3)&(x>9.6))
+        
+    # MEX intermediate
+    mex_interm = (x>9.6)&(y>=a0+a1*x+a2*x**2+a3*x**3)&(~mex_agn)
+    
+    return (mex, mex_agn, mex_sf, mex_interm)
+    
+##########################################################################################################
+##########################################################################################################
+
+def KEX(input, snr=3, mask=None):
+    '''
+    KEx diagnostic diagram (Zhang & Hao 2018)
+    
+    Inputs:
+    'input' including OIII and Hb fluxes and OIII width.
+    'snr' is the snr cut applied to Hb and OIII. Default is 3.
+    'mask' is an optional mask (e.g. from masked column array). Default is None.
+      
+    Outputs:
+    Output vectors of same dimension as rows in table which include flags for:
+    'kex', 'kex_sf', 'kex_interm', 'kex_agn'
+    
+    KEx diagram regions defined as:
+    #Main division between SF/AGN (eq. 1 of Zhang & Hao 2018): 
+    log10(flux_oiii_5006/flux_hbeta) = -2*sigma_oiii + 4.2
+    
+    #Division between SF and "intermediate" (eq. 2 of Zhang & Hao 2018): 
+    log10(flux_oiii_5006/flux_hbeta) = 3
+    '''
+    
+    # Mask for zero fluxes
+    zero_flux_mex = (input['HBETA_FLUX'] == 0) | (input['OIII_5007_FLUX'] == 0)
+    if mask != None:
+        # Mask for flux avalibility - included as fastspecfit columns are maskedcolumn data
+        mask = mask     
+        zero_flux_kex = (input['HBETA_FLUX'] == 0) | (input['OIII_5007_FLUX'] == 0) | mask
+   
+    #If ivar=0 set it to NaN to avoid infinites when computing the error:
+    input['HBETA_FLUX_IVAR']=np.where(input['HBETA_FLUX_IVAR']==0,np.nan,input['HBETA_FLUX_IVAR'])
+    input['OIII_5007_FLUX_IVAR']=np.where(input['OIII_5007_FLUX_IVAR']==0,np.nan,input['OIII_5007_FLUX_IVAR'])
+
+    # Mask for SNR. Default is KEx is available if all SNR >= 3
+    snr = snr
+    SNR_Hb=input['HBETA_FLUX']*np.sqrt(input['HBETA_FLUX_IVAR'])
+    SNR_OIII=input['OIII_5007_FLUX']*np.sqrt(input['OIII_5007_FLUX_IVAR'])
+    
+    ## KEx is available (line fluxes SNR >= 3 and valid OIII width)
+    kex = (SNR_Hb >= snr) & (SNR_OIII >= snr) & (input['OIII_5007_SIGMA']>0) & (~zero_flux_kex)
+    
+    # Define variables for equations 1 & 2
+    x = input['OIII_5007_SIGMA']
+    y = np.log10(input['OIII_5007_FLUX']/input['HBETA_FLUX'])
+    
+    # Upper KEX
+    kex_agn=(y>=-2.*x + 4.2) & (y>=3.)
+  
+    # Lower KEX
+    kex_sf=y < -2.*x + 4.2
+
+    # KEX intermediate
+	kex_interm= (y>=-2.*x+4.2) & (y<3.) & (~kex_agn)
+    
+    return (kex, kex_agn, kex_sf, kex_interm)
+    
 ##########################################################################################################
 ##########################################################################################################
 
@@ -893,69 +927,6 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     
     return (avail_ir, agn_ir, sf_ir)
 
-##########################################################################################################
-##########################################################################################################
-
-def MEX(input, snr=3, mask=None):
-    '''
-    MEx diagnostic diagram (Juneau et al. 2014)
-    
-    Inputs:
-    'input' including OIII and Hb fluxes and inverse variances and stellar mass (Chabrier or Kroupa IMF).
-    'snr' is the snr cut applied to Hb and OIII. Default is 3.
-    'mask' is an optional mask (e.g. from masked column array). Default is None.
-      
-    Outputs:
-    Output vectors of same dimension as rows in table which include flags for:
-    'mex', 'mex_sf', 'mex_interm', 'mex_agn'
-    
-    MEx diagram regions defined as:
-    #Top division between SF/AGN (eq. 1 of Juneau et al. 2014): 
-    log10(flux_oiii_5006/flux_hbeta) = 0.375/(log10(M*) - 10.5) + 1.14 for logM*<=10
-    #Division between SF and "intermediate" (eq. 2 of juneau et al. 2014): 
-    log10(flux_oiii_5006/flux_hbeta) > a0+a1*x+a2*x**2+a3*x**3
-    
-    where x = log10(M*)
-    '''
-    
-    # Mask for zero fluxes
-    zero_flux_mex = (input['HBETA_FLUX'] == 0) | (input['OIII_5007_FLUX'] == 0)
-    if mask != None:
-        # Mask for flux avalibility - included as fastspecfit columns are maskedcolumn data
-        mask = mask     
-        zero_flux_mex = (input['HBETA_FLUX'] == 0) | (input['OIII_5007_FLUX'] == 0) | mask
-   
-    #If ivar=0 set it to NaN to avoid infinites when computing the error:
-    input['HBETA_FLUX_IVAR']=np.where(input['HBETA_FLUX_IVAR']==0,np.nan,input['HBETA_FLUX_IVAR'])
-    input['OIII_5007_FLUX_IVAR']=np.where(input['OIII_5007_FLUX_IVAR']==0,np.nan,input['OIII_5007_FLUX_IVAR'])
-
-    # Mask for SNR. Default is NII-BPT is available if all SNR >= 3
-    snr = snr
-    SNR_Hb=input['HBETA_FLUX']*np.sqrt(input['HBETA_FLUX_IVAR'])
-    SNR_OIII=input['OIII_5007_FLUX']*np.sqrt(input['OIII_5007_FLUX_IVAR'])
-    
-    ## MEx is available (line fluxes SNR >= 3 and valid mass)
-    mex = (SNR_Hb >= snr) & (SNR_OIII >= snr) & (input['LOGMSTAR']>4.) & (~zero_flux_mex)
-    
-    # Define variables for equations 1 & 2
-    x = input['LOGMSTAR']
-    y = np.log10(input['OIII_5007_FLUX']/input['HBETA_FLUX'])
-    
-    # upper MEx
-    a0, a1, a2, a3 = 410.24, -109.333, 9.71731, -0.288244
-    mex_agn = ((y>0.375/(x-10.5)+1.14)&(x<=10)) | \\
-              ((y>a0+a1*x+a2*x**2+a3*x**3)&(x>10))
-        
-    # lower MEx
-    a0, a1, a2, a3 = 352.066, -93.8249, 8.32651, -0.246416
-    mex_sf = ((y<0.375/(x-10.5)+1.14)&(x<=9.6)) | \\
-             ((y<a0+a1*x+a2*x**2+a3*x**3)&(x>9.6))
-        
-    # MEX intermediate
-    mex_interm = (x>9.6)&(y>=a0+a1*x+a2*x**2+a3*x**3)&(~mex_agn)
-    
-    return (mex, mex_agn, mex_sf, mex_interm)
-    
 ##########################################################################################################
 ##########################################################################################################
 
