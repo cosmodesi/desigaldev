@@ -68,7 +68,7 @@ AGN_TYPE:
     - [BLUE_LINER,  24, "Blue diagram LINER (update_AGNTYPE_BLUE)"]
     - [BLUE_SF,     25, "Blue diagram Star-forming (update_AGNTYPE_BLUE)"]
     - [BLUE_SFAGN,  26, "Blue diagram Star-forming/AGN (update_AGNTYPE_BLUE)"]
-    - [HEII_BPT,    27, "He II BPT diagnostic is avalible (update_AGNTYPE_HeII)"]
+    - [HEII_BPT,    27, "He II BPT diagnostic is available (update_AGNTYPE_HeII)"]
     - [HEII_AGN,    28, "He II BPT AGN (update_AGNTYPE_HeII)"]
     - [HEII_SF,     29, "He II BPT Star-forming (update_AGNTYPE_HeII)"]
     - [NEV,         30, "Ne V is available (update_AGNTYPE_NeV)"]
