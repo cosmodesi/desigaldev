@@ -347,7 +347,7 @@ def update_AGNTYPE_BLUE(T, OPT_UV_TYPE, snr=3, snrOII=1, mask=None):
 ###
 
 
-### SJ: add MEx here (then KEx)
+### Mass-Excitation (MEx)
 ###
 def update_AGNTYPE_MEX(T, OPT_UV_TYPE, snr=3, mask=None):
     
@@ -370,6 +370,28 @@ def update_AGNTYPE_MEX(T, OPT_UV_TYPE, snr=3, mask=None):
     return T
 ###
 
+### Kinematics-Excitation (KEx)
+###
+def update_AGNTYPE_KEX(T, OPT_UV_TYPE, snr=3, mask=None):
+    
+    from AGNdiagnosticsFunctionsDESI import KEX
+
+    kex, kex_agn, kex_sf, kex_interm = KEX(T, snr=snr, mask=mask)
+
+    agn_mask = np.zeros(len(T))    
+    agn_mask = kex * OPT_UV_TYPE.KEX
+    agn_mask |= kex_agn * OPT_UV_TYPE.KEX_AGN
+    agn_mask |= kex_sf * OPT_UV_TYPE.KEX_SF
+    agn_mask |= kex_interm * OPT_UV_TYPE.KEX_INTERM    
+
+    agnmask_column = Column(agn_mask, name = 'OPT_UV_TYPE')
+    if 'OPT_UV_TYPE' in T.columns:
+        T['OPT_UV_TYPE']|=agn_mask
+    else:
+        T.add_column(agnmask_column)
+    
+    return T
+###
 
 ###
 def update_AGNTYPE_HeII(T, OPT_UV_TYPE, snr=3, mask=None):
