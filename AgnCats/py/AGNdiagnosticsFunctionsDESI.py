@@ -262,14 +262,15 @@ def SII_BPT(input, snr=3, Kewley01=False, mask=None):
     input['OIII_5007_FLUX_IVAR']=np.where(input['OIII_5007_FLUX_IVAR']==0,np.nan,input['OIII_5007_FLUX_IVAR'])
     input['SII_6716_FLUX_IVAR']=np.where(input['SII_6716_FLUX_IVAR']==0,np.nan,input['SII_6716_FLUX_IVAR'])
     input['SII_6731_FLUX_IVAR']=np.where(input['SII_6731_FLUX_IVAR']==0,np.nan,input['SII_6731_FLUX_IVAR'])
+    SII_FLUX = input['SII_6716_FLUX'] + input['SII_6731_FLUX']
+    SII_FLUX_IVAR = 1/ (1/input['SII_6716_FLUX_IVAR'] + 1/input['SII_6731_FLUX_IVAR'])
 
     # Mask for SNR. Default is SII-BPT is available if all SNR >= 3
     snr = snr
     SNR_Ha=input['HALPHA_FLUX']*np.sqrt(input['HALPHA_FLUX_IVAR'])
     SNR_Hb=input['HBETA_FLUX']*np.sqrt(input['HBETA_FLUX_IVAR'])
     SNR_OIII=input['OIII_5007_FLUX']*np.sqrt(input['OIII_5007_FLUX_IVAR'])
-    SNR_SII=(input['SII_6716_FLUX']+input['SII_6731_FLUX']) / \
-            (1/np.sqrt(input['SII_6716_FLUX_IVAR'])+1/np.sqrt(input['SII_6731_FLUX_IVAR']))
+    SNR_SII = SII_FLUX*np.sqrt(SII_FLUX_IVAR)
 
     # Define regions    
     log_sii_ha=np.log10((input['SII_6716_FLUX']+input['SII_6731_FLUX'])/input['HALPHA_FLUX'])
