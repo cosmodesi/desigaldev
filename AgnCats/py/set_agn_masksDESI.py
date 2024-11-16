@@ -9,7 +9,7 @@ from astropy.table import Column
 
 ###
 # Retrieve the bitmasks definitions from the yaml file
-# Note: QSO_MASKBITS are applied to the first bits of AGN_MASKBITS
+# Note: QSO_MASKBITS are applied to the first 9 bits of AGN_MASKBITS
 #       OPT_UV_TYPE and IR_TYPE include definitions for detailed classification
 def get_qso_maskbits(file):
     import yaml
@@ -26,7 +26,6 @@ def get_qso_maskbits(file):
 
 ###
 ## SJ: removed QSO_MASKBITS from yaml (still exist as a column in the input file though!)
-#def update_AGN_MASKBITS(T, QSO_MASKBITS, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=False, mask=None):
 def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=False, mask=None):
 
     from AGNdiagnosticsFunctionsDESI import NII_BPT
@@ -35,12 +34,6 @@ def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=False, mask=No
     from AGNdiagnosticsFunctionsDESI import BROAD_LINE
     from AGNdiagnosticsFunctionsDESI import WISE_colors
     
-    ## EC doesn't use yaml - no QN_NEW_RR but we add this
-#    qsom_RR = T['QSO_MASKBITS'] & QSO_MASKBITS.RR != 0
-#    qsom_mgii = (T['QSO_MASKBITS'] & QSO_MASKBITS.MGII != 0)  
-#    qsom_QN = (T['QSO_MASKBITS'] & QSO_MASKBITS.QN != 0)
-#    qsom_QN_RR = (T['QSO_MASKBITS'] & QSO_MASKBITS.QN_NEW_RR != 0)
-
     ## SJ: need to use AGN_MASKBITS instead
     qsom_RR = T['QSO_MASKBITS'] & AGN_MASKBITS.RR != 0
     qsom_mgii = (T['QSO_MASKBITS'] & AGN_MASKBITS.MGII != 0)  
@@ -62,9 +55,6 @@ def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=False, mask=No
     agn_bits |= qsom_QN_ELG * agn_mask.QN_ELG
     agn_bits |= qsom_QN_VAR_WISE * agn_mask.QN_VAR_WISE
 
-    # SJ: need to remove quiescent
-#    nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii, quiescent_nii = NII_BPT(T, snr=snr, mask=mask)
-#    sii_bpt, sf_sii, agn_sii, liner_sii, quiescent_sii = SII_BPT(T, snr=snr, Kewley01=Kewley01, mask=mask)
     # BPT classifications from individual diagnostics
     nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii = NII_BPT(T, snr=snr, mask=mask)
     sii_bpt, sf_sii, agn_sii, liner_sii = SII_BPT(T, snr=snr, Kewley01=Kewley01, mask=mask)
@@ -77,7 +67,7 @@ def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=False, mask=No
     agn_bits |= bpt_any_agn * agn_mask.BPT_ANY_AGN
 
     # Whether there is a broad line (FWHM>= 1200 km/s)
-    bl = BROAD_LINE(T, snr=snr, mask=mask, fwhm=1200.)
+    bl = BROAD_LINE(T, snr=snr, mask=mask, vel_thres=1200.)
     agn_bits |= bl * agn_mask.BROAD_LINE 
    
     # SJ: Add here for WHAN, MEx, KEx, Blue
@@ -139,51 +129,6 @@ def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=False, mask=No
 #     return T
 # ###
 
-
-### SJ:  delete all this as we removed BPT_SY and BPT_LINER from OPT_UV_TYPE
-#
-# def update_AGNTYPE_ANYBPT(T, OPT_UV_TYPE, snr=3, mask=None):
-    
-#     from AGNdiagnosticsFunctionsDESI import NII_BPT, SII_BPT, OI_BPT
-#     '''
-#     --setting the BPT_SY and BPT_LINER bits--
-
-#     inputs: 
-#     T - table joined with FastSpecFit (or other emline cat)
-#     OPT_UV_TYPE - bitmask structure from yaml 
-    
-#     outputs:
-#     T - table with new column 'OPT_UV_TYPE'
-#     '''    
-#     nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii, quiescent_nii = NII_BPT(T, snr=snr, mask=mask)
-#     sii_bpt, sf_sii, agn_sii, liner_sii, quiescent_sii = SII_BPT(T, snr=snr, Kewley01=Kewley01, mask=mask)
-#     oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T, snr=snr, snrOI=snrOI, Kewley01=Kewley01, mask=mask)
-#     bpt_mask = np.zeros(len(T))    
-
-#     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
-#     # Seyferts
-#     #bpt_mask |= agn_nii * OPT_UV_TYPE.NII_SY              ## [NII] - Seyfert
-#     #bpt_mask |= agn_sii * OPT_UV_TYPE.SII_SY              ## [SII] - Seyfert
-#     #bpt_mask |= agn_oi * OPT_UV_TYPE.OI_SY                ## [OI] - Seyfert
-#     agn_any = agn_nii | agn_sii | agn_oi
-#     bpt_mask |= agn_any * OPT_UV_TYPE.BPT_SY
-#     # LINERS
-#     #bpt_mask |= liner_nii * OPT_UV_TYPE.NII_LINER         ## [NII] - LINER
-#     #bpt_mask |= liner_sii * OPT_UV_TYPE.SII_LINER         ## [SII] - LINER
-#     #bpt_mask |= liner_oi * OPT_UV_TYPE.OI_LINER           ## [OI] - LINER    
-#     liner_any = liner_nii | liner_sii | liner_oi
-#     bpt_mask |= liner_any * OPT_UV_TYPE.BPT_LINER
-#     #
-#     bptmask_column = Column(bpt_mask, name = 'OPT_UV_TYPE')
-#     if 'OPT_UV_TYPE' in T.columns:
-#         T['OPT_UV_TYPE']|=bpt_mask
-#     else:
-#         T.add_column(bptmask_column)
-    
-#     return T
-###
-
-
 ###
 def update_AGNTYPE_NIIBPT(T, OPT_UV_TYPE, snr=3, mask=None):
     
@@ -198,15 +143,14 @@ def update_AGNTYPE_NIIBPT(T, OPT_UV_TYPE, snr=3, mask=None):
     outputs:
     T - table with new column 'OPT_UV_TYPE'
     '''    
-    nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii, quiescent_nii = NII_BPT(T, snr=snr, mask=mask)
+    nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii = NII_BPT(T, snr=snr, mask=mask)
     bpt_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
-    bpt_mask = nii_bpt * OPT_UV_TYPE.NII_BPT_AV           ## All the emission lines have S/N >= 3
+    bpt_mask = nii_bpt * OPT_UV_TYPE.NII_BPT              ## All the emission lines have S/N >= 3
     bpt_mask |= sf_nii * OPT_UV_TYPE.NII_SF               ## [NII] - Star Forming
     bpt_mask |= agn_nii * OPT_UV_TYPE.NII_SY              ## [NII] - Seyfert
     bpt_mask |= liner_nii * OPT_UV_TYPE.NII_LINER         ## [NII] - LINER
     bpt_mask |= composite_nii * OPT_UV_TYPE.NII_COMP      ## [NII] - Composite
-#    bpt_mask |= quiescent_nii * OPT_UV_TYPE.NII_QUIES     ## [NII] - Quiescent -- S/N one of the lines < 3
     #  
     bptmask_column = Column(bpt_mask, name = 'OPT_UV_TYPE')
     if 'OPT_UV_TYPE' in T.columns:
@@ -231,14 +175,13 @@ def update_AGNTYPE_SIIBPT(T, OPT_UV_TYPE, snr=3, Kewley01=False, mask=None):
     outputs:
     T - table with new column 'OPT_UV_TYPE'
     '''    
-    sii_bpt, sf_sii, agn_sii, liner_sii, quiescent_sii = SII_BPT(T, snr=snr, Kewley01=Kewley01, mask=mask)
+    sii_bpt, sf_sii, agn_sii, liner_sii = SII_BPT(T, snr=snr, Kewley01=Kewley01, mask=mask)
     bpt_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
-    bpt_mask = sii_bpt * OPT_UV_TYPE.SII_BPT_AV          ## All the emission lines have S/N >= 3
+    bpt_mask = sii_bpt * OPT_UV_TYPE.SII_BPT              ## All the emission lines have S/N >= 3
     bpt_mask |= sf_sii * OPT_UV_TYPE.SII_SF               ## [SII] - Star Forming
     bpt_mask |= agn_sii * OPT_UV_TYPE.SII_SY              ## [SII] - Seyfert
     bpt_mask |= liner_sii * OPT_UV_TYPE.SII_LINER         ## [SII] - LINER
-#    bpt_mask |= quiescent_sii * OPT_UV_TYPE.SII_QUIES     ## [SII] - Quiescent -- S/N for one of the lines < 3
     #  
     bptmask_column = Column(bpt_mask, name = 'OPT_UV_TYPE')
     if 'OPT_UV_TYPE' in T.columns:
@@ -266,7 +209,7 @@ def update_AGNTYPE_OIBPT(T, OPT_UV_TYPE, snr=3, snrOI=1, Kewley01=False, mask=No
     oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T, snr=snr, snrOI=snrOI, Kewley01=Kewley01, mask=mask)
     bpt_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
-    bpt_mask = oi_bpt * OPT_UV_TYPE.OI_BPT_AV            ## Except [OI] - other emission lines have S/N >= 3
+    bpt_mask = oi_bpt * OPT_UV_TYPE.OI_BPT                ## Except [OI] - other emission lines have S/N >= 3
     bpt_mask |= sf_oi * OPT_UV_TYPE.OI_SF                 ## [OI] - Star Forming
     bpt_mask |= agn_oi * OPT_UV_TYPE.OI_SY                ## [OI] - Seyfert
     bpt_mask |= liner_oi * OPT_UV_TYPE.OI_LINER           ## [OI] - LINER
@@ -297,7 +240,7 @@ def update_AGNTYPE_WHAN(T, OPT_UV_TYPE, snr=3, mask=None):
     whan, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive = WHAN(T, snr=snr, mask=mask)
     agn_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
-    agn_mask = whan * OPT_UV_TYPE.WHAN_AV            ## WHAN is available (Halpha and [NII])
+    agn_mask = whan * OPT_UV_TYPE.WHAN                ## WHAN is available (Halpha and [NII])
     agn_mask |= whan_sf * OPT_UV_TYPE.WHAN_SF         ## WHAN Star-forming
     agn_mask |= whan_sagn * OPT_UV_TYPE.WHAN_SAGN     ## WHAN Strong AGN
     agn_mask |= whan_wagn * OPT_UV_TYPE.WHAN_WAGN          ## WHAN Weak AGN
@@ -410,9 +353,9 @@ def update_AGNTYPE_HeII(T, OPT_UV_TYPE, snr=3, mask=None):
     heii_bpt, agn_heii, sf_heii = HeII_BPT(T, snr=snr, mask=None)
     agn_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
-    agn_mask = heii_bpt * OPT_UV_TYPE.HEII_BPT_AV           ## 
-    agn_mask |= agn_heii * OPT_UV_TYPE.HEII_AGN         ## 
-    agn_mask |= sf_heii * OPT_UV_TYPE.HEII_SF     ## 
+    agn_mask = heii_bpt * OPT_UV_TYPE.HEII_BPT
+    agn_mask |= agn_heii * OPT_UV_TYPE.HEII_AGN
+    agn_mask |= sf_heii * OPT_UV_TYPE.HEII_SF
     #  
     agnmask_column = Column(agn_mask, name = 'OPT_UV_TYPE')
     if 'OPT_UV_TYPE' in T.columns:
@@ -440,9 +383,9 @@ def update_AGNTYPE_NeV(T, OPT_UV_TYPE, snr=2.5, mask=None):
     nev, agn_nev, sf_nev = NeV(T, snr=snr, mask=None)
     agn_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
-    agn_mask = nev * OPT_UV_TYPE.NEV_AV           ## 
-    agn_mask |= agn_nev * OPT_UV_TYPE.NEV_AGN         ## 
-    agn_mask |= sf_nev * OPT_UV_TYPE.NEV_SF     ## 
+    agn_mask = nev * OPT_UV_TYPE.NEV
+    agn_mask |= agn_nev * OPT_UV_TYPE.NEV_AGN
+    agn_mask |= sf_nev * OPT_UV_TYPE.NEV_SF
     #  
     agnmask_column = Column(agn_mask, name = 'OPT_UV_TYPE')
     if 'OPT_UV_TYPE' in T.columns:
@@ -471,11 +414,13 @@ def update_AGNTYPE_WISE_colors(T, IR_TYPE, snr=3, mask=None):
     agn_mask = np.zeros(len(T))
         
     # 'Jarrett11'
+    ## using this example to save the wise_w123 info (where W1, W2, W3 are all above S/N cut)
     wise_w123, agn_ir, sf_ir = WISE_colors(T, snr=snr, mask=None, diag='Jarrett11')
-    agn_mask |= agn_ir * IR_TYPE.WISE_AGN_J11
+    agn_mask = agn_ir * IR_TYPE.WISE_AGN_J11
     agn_mask |= sf_ir * IR_TYPE.WISE_SF_J11
 
     # 'Stern12'
+    ## using this example to save the wise_w12 info (where W1, W2 are both above S/N cut)
     wise_w12, agn_ir, sf_ir = WISE_colors(T, snr=snr, mask=None, diag='Stern12')
     agn_mask |= agn_ir * IR_TYPE.WISE_AGN_S12
     agn_mask |= sf_ir * IR_TYPE.WISE_SF_S12
@@ -631,24 +576,20 @@ def update_AGNTYPE_BPT_all(T, OPT_UV_TYPE):
     
     ## If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     ## [NII]-BPT masks
-    bpt_mask = nii_bpt * bpt_type.NII_BPT_AV           ## All the emission lines have S/N >= 3
+    bpt_mask = nii_bpt * bpt_type.NII_BPT              ## All the emission lines have S/N >= 3
     bpt_mask |= sf_nii * bpt_type.NII_SF               ## [NII] - Star Forming
     bpt_mask |= agn_nii * bpt_type.NII_SY              ## [NII] - Seyfert
     bpt_mask |= liner_nii * bpt_type.NII_LINER         ## [NII] - LINER
     bpt_mask |= composite_nii * bpt_type.NII_COMP      ## [NII] - Composite
-# SJ: delete
-#    bpt_mask |= quiescent_nii * bpt_type.NII_QUIES     ## [NII] - Quiescent -- S/N one of the lines < 3
     
     ## [SII]-BPT masks
-    bpt_mask |= sii_bpt * bpt_type.SII_BPT_AV          ## All the emission lines have S/N >= 3
+    bpt_mask |= sii_bpt * bpt_type.SII_BPT             ## All the emission lines have S/N >= 3
     bpt_mask |= sf_sii * bpt_type.SII_SF               ## [SII] - Star Forming
     bpt_mask |= agn_sii * bpt_type.SII_SY              ## [SII] - Seyfert
     bpt_mask |= liner_sii * bpt_type.SII_LINER         ## [SII] - LINER
-# SJ: delete
-#    bpt_mask |= quiescent_sii * bpt_type.SII_QUIES     ## [SII] - Quiescent -- S/N for one of the lines < 3
 
     ## [OI]-BPT masks
-    bpt_mask |= oi_bpt * bpt_type.OI_BPT_AV            ## Except [OI] - other emission lines have S/N >= 3
+    bpt_mask |= oi_bpt * bpt_type.OI_BPT               ## Except [OI] - other emission lines have S/N >= 3
     bpt_mask |= sf_oi * bpt_type.OI_SF                 ## [OI] - Star Forming
     bpt_mask |= agn_oi * bpt_type.OI_SY                ## [OI] - Seyfert
     bpt_mask |= liner_oi * bpt_type.OI_LINER           ## [OI] - LINER
@@ -688,24 +629,20 @@ def create_bpt_mask_all(T, OPT_UV_TYPE):
     
     ## If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     ## [NII]-BPT masks
-    bpt_mask = nii_bpt * bpt_type.NII_BPT_AV           ## All the emission lines have S/N >= 3
+    bpt_mask = nii_bpt * bpt_type.NII_BPT              ## All the emission lines have S/N >= 3
     bpt_mask |= sf_nii * bpt_type.NII_SF               ## [NII] - Star Forming
     bpt_mask |= agn_nii * bpt_type.NII_SY              ## [NII] - Seyfert
     bpt_mask |= liner_nii * bpt_type.NII_LINER         ## [NII] - LINER
     bpt_mask |= composite_nii * bpt_type.NII_COMP      ## [NII] - Composite
-# SJ: delete
-#    bpt_mask |= quiescent_nii * bpt_type.NII_QUIES     ## [NII] - Quiescent -- S/N one of the lines < 3
-    
+   
     ## [SII]-BPT masks
-    bpt_mask |= sii_bpt * bpt_type.SII_BPT_AV          ## All the emission lines have S/N >= 3
+    bpt_mask |= sii_bpt * bpt_type.SII_BPT             ## All the emission lines have S/N >= 3
     bpt_mask |= sf_sii * bpt_type.SII_SF               ## [SII] - Star Forming
     bpt_mask |= agn_sii * bpt_type.SII_SY              ## [SII] - Seyfert
     bpt_mask |= liner_sii * bpt_type.SII_LINER         ## [SII] - LINER
-# SJ: delete
-#    bpt_mask |= quiescent_sii * bpt_type.SII_QUIES     ## [SII] - Quiescent -- S/N for one of the lines < 3
 
     ## [OI]-BPT masks
-    bpt_mask |= oi_bpt * bpt_type.OI_BPT_AV            ## Except [OI] - other emission lines have S/N >= 3
+    bpt_mask |= oi_bpt * bpt_type.OI_BPT               ## Except [OI] - other emission lines have S/N >= 3
     bpt_mask |= sf_oi * bpt_type.OI_SF                 ## [OI] - Star Forming
     bpt_mask |= agn_oi * bpt_type.OI_SY                ## [OI] - Seyfert
     bpt_mask |= liner_oi * bpt_type.OI_LINER           ## [OI] - LINER
