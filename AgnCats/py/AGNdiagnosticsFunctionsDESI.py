@@ -69,13 +69,12 @@ def BROAD_LINE(input, snr=3, mask=None, vel_thres=1200.):
     broad_fwhm_MGII_2803 = input['MGII_2803_SIGMA'] * sig2fwhm
     broad_fwhm_CIV = input['CIV_1549_SIGMA'] * sig2fwhm
         
-   # Velocity threshold for FWHM in km/s to identify a BL (FWHM > 1200 km/s by default)
-##    vel_thres = 1200. # km/s ## SJ: delete this line if we all agree with keeping it as an argument
+    # Velocity threshold for FWHM in km/s to identify a BL (FWHM >= 1200 km/s by default)
     
     # Check for each line separately first
     is_broad_Ha = (SNR_Ha>=snr) & (broad_fwhm_HALPHA>=vel_thres) & (~zero_flux)
     is_broad_Hb = (SNR_Hb>=snr) & (broad_fwhm_HBETA>=vel_thres) & (~zero_flux)
-    is_broad_MgII = (SNR_MGII>=snr) & (broad_fwhm_MGII>=vel_thres) & (~zero_flux)
+    is_broad_MgII = (SNR_MGII>=snr) & (broad_fwhm_MGII_2796>=vel_thres) & (~zero_flux)
     is_broad_CIV = (SNR_CIV>=snr) & (broad_fwhm_CIV>=vel_thres) & (~zero_flux)
     
     # Decision: flag a BL if any of the 4 lines meet the criteria
@@ -571,13 +570,11 @@ def MEX(input, snr=3, mask=None):
     
     # upper MEx
     a0, a1, a2, a3 = 410.24, -109.333, 9.71731, -0.288244
-    mex_agn = ((y>0.375/(x-10.5)+1.14)&(x<=10)) | \\
-              ((y>a0+a1*x+a2*x**2+a3*x**3)&(x>10))
+    mex_agn = ((y>0.375/(x-10.5)+1.14)&(x<=10)) | ((y>a0+a1*x+a2*x**2+a3*x**3)&(x>10))
         
     # lower MEx
     a0, a1, a2, a3 = 352.066, -93.8249, 8.32651, -0.246416
-    mex_sf = ((y<0.375/(x-10.5)+1.14)&(x<=9.6)) | \\
-             ((y<a0+a1*x+a2*x**2+a3*x**3)&(x>9.6))
+    mex_sf = ((y<0.375/(x-10.5)+1.14)&(x<=9.6)) | ((y<a0+a1*x+a2*x**2+a3*x**3)&(x>9.6))
         
     # MEX intermediate
     mex_interm = (x>9.6)&(y>=a0+a1*x+a2*x**2+a3*x**3)&(~mex_agn)
@@ -609,7 +606,7 @@ def KEX(input, snr=3, mask=None):
     '''
     
     # Mask for zero fluxes
-    zero_flux_mex = (input['HBETA_FLUX'] == 0) | (input['OIII_5007_FLUX'] == 0)
+    zero_flux_kex = (input['HBETA_FLUX'] == 0) | (input['OIII_5007_FLUX'] == 0)
     if mask != None:
         # Mask for flux avalibility - included as fastspecfit columns are maskedcolumn data
         mask = mask     
@@ -638,7 +635,7 @@ def KEX(input, snr=3, mask=None):
     kex_sf=y < -2.*x + 4.2
 
     # KEX intermediate
-	kex_interm= (y>=-2.*x+4.2) & (y<3.) & (~kex_agn)
+    kex_interm= (y>=-2.*x+4.2) & (y<3.) & (~kex_agn)
     
     return (kex, kex_agn, kex_sf, kex_interm)
     
@@ -755,7 +752,7 @@ def NeV(input, snr=2.5, mask=None):
 ##########################################################################################################
 ##########################################################################################################
 
-def WISE_colors(input, snr=3, mask=None, diag='All'):
+def WISE_colors(input, snr=3, mask=None, diag='All', weak_agn=False):
     '''
     If using these diagnostic fuctions please ref Mar_&_Steph_2025
     and the appropriate references given below.
@@ -770,6 +767,7 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
             FLUX_W1, FLUX_IVAR_W1, FLUX_W2, FLUX_IVAR_W2, FLUX_W3, FLUX_IVAR_W3
     'snr' is the snr cut applied to WISE magnitudes. Default is 3.
     'mask' is an optional mask (e.g. from masked column array). Default is None.
+    'weak_agn' to optionally return weak (low-power) AGN from Yao+20 (only works for Yao20 or All)
       
     Outputs:
     Output vectors of same dimension as rows in table which include flags for:
@@ -857,7 +855,6 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     unavail_mateos12 = (~W1W2_avail)|(~W2W3_avail)  #unavailable
         
     ## Assef et al. 2018: https://ui.adsabs.harvard.edu/abs/2018ApJS..234...23A/abstract
-    
     # equation 2 (simplistic from Stern+12): (W1W2_Vega >= 0.8)&((W2 - W2_vega2ab)<15.05)
     # equation 3: W1W2_Vega > alpha* exp(beta*(W2_Vega-gamma)**2)
                     
@@ -887,9 +884,11 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     # Vega mags: w1w2 = (0.015 * exp(w2w3/1.38)) - 0.08 + offset
     # where offset of 0.3 is reported in paper as the 2*sigma cut to create a demarcation line
     line_yao20 = (0.015 * np.exp(W2W3_Vega/1.38)) - 0.08 + 0.3
-    agn_yao20 = W1W2_avail&W2W3_avail&(W1W2_Vega>line_yao20)
+    strong_agn_yao20 = W1W2_avail&W2W3_avail&(agn_jarrett11|agn_stern12)
+    # Line for low-power AGN
+    weak_agn_yao20 = W1W2_avail&W2W3_avail&(W1W2_Vega>line_yao20)&~strong_agn_yao20
     unavail_yao20 = (~W1W2_avail)|(~W2W3_avail)  #unavailable
-
+    
     ## Hviding et al. 2022 cuts in (y=)W1-W2 vs. (x=)W2-W3 space in Vega mags (eq. 3)
     x_left = 1.734
     x_right = 3.916
@@ -912,7 +911,8 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
         agn_ir = agn_mateos12
         avail_ir = W1W2_avail&W2W3_avail
     if diag=='Yao20':
-        agn_ir = agn_yao20
+        agn_ir = strong_agn_yao20
+        wagn_ir = weak_agn_yao20  # not used for now (would need code changes)
         avail_ir = W1W2_avail&W2W3_avail
     if diag=='Hviding22':
         agn_ir = agn_hviding22
@@ -922,11 +922,17 @@ def WISE_colors(input, snr=3, mask=None, diag='All'):
     if diag=='All':
         agn_ir = agn_mateos12 | agn_jarrett11 | (agn_stern12&~W2W3_avail) | agn_assef18 | agn_hviding22
         avail_ir = W1W2_avail
-    
+        # By default, not considering weak (low-power) AGN; only return if specified
+        wagn_ir = weak_agn_yao20 & ~agn_ir
+     
     # SF defined based on the above
     sf_ir = avail_ir & (~agn_ir)
     
-    return (avail_ir, agn_ir, sf_ir)
+    # By default, not considering weak (low-power) AGN from Yao+20; only return if specified
+    if weak_agn==False:
+        return (avail_ir, agn_ir, sf_ir)
+    else:
+        return (avail_ir, agn_ir, sf_ir&~wagn_ir, wagn_ir)
 
 ##########################################################################################################
 ##########################################################################################################
