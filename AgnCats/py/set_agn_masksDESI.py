@@ -11,7 +11,7 @@ from astropy.table import Column
 # Retrieve the bitmasks definitions from the yaml file
 # Note: QSO_MASKBITS are applied to the first 9 bits of AGN_MASKBITS
 #       OPT_UV_TYPE and IR_TYPE include definitions for detailed classification
-def get_qso_maskbits(file):
+def get_agn_maskbits(file):
     import yaml
     from desiutil.bitmask import BitMask
     file_yaml = open(file, 'r')
@@ -26,13 +26,17 @@ def get_qso_maskbits(file):
 
 ###
 ## SJ: removed QSO_MASKBITS from yaml (still exist as a column in the input file though!)
-def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=False, mask=None):
+def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, snrOII=1, Kewley01=False, mask=None):
 
     from AGNdiagnosticsFunctionsDESI import NII_BPT
     from AGNdiagnosticsFunctionsDESI import SII_BPT
     from AGNdiagnosticsFunctionsDESI import OI_BPT
     from AGNdiagnosticsFunctionsDESI import BROAD_LINE
     from AGNdiagnosticsFunctionsDESI import WISE_colors
+    from AGNdiagnosticsFunctionsDESI import MEX
+    from AGNdiagnosticsFunctionsDESI import KEX
+    from AGNdiagnosticsFunctionsDESI import BLUE
+    from AGNdiagnosticsFunctionsDESI import WHAN
     
     ## SJ: need to use AGN_MASKBITS instead
     qsom_RR = T['QSO_MASKBITS'] & AGN_MASKBITS.RR != 0
@@ -71,6 +75,10 @@ def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=False, mask=No
     agn_bits |= bl * agn_mask.BROAD_LINE 
    
     # SJ: Add here for WHAN, MEx, KEx, Blue
+    whan, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive = WHAN(T, snr=snr, mask=mask)
+    mex, mex_agn, mex_sf, mex_interm = MEX(T, snr=snr, mask=mask)
+    blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = BLUE(T, snr=snr, snrOII=snrOII, mask=mask)
+    kex, kex_agn, kex_sf, kex_interm = KEX(T, snr=snr, mask=mask)
     #opt_other_agn =
     #agn_bits |= opt_other_agn * agn_mask.OPT_OTHER_AGN
 
@@ -91,43 +99,6 @@ def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, Kewley01=False, mask=No
         T.add_column(agnmaskbits_column)
     return T
 ###
-
-###
-### BC: update_AGNTYPE_OPTTYPES is new 3rd Nov 2024 and sets OPT_TYPE_UNKNOWN , OPT_TYPE1 , OPT_TYPE2
-### it needed also a new function in AGNdiagnosticsFunctions called
-### 
-### SJ: replacing this with BROAD_LINE
-###
-# ### SJ: commenting out (to delete)
-# def update_AGNTYPE_OPTTYPES(T, OPT_UV_TYPE, snr=3, mask=None):
-    
-#     from AGNdiagnosticsFunctionsDESI import AGN_OPTICAL_UV_TYPE
-#     '''
-#     --setting the BPT_SY and BPT_LINER bits--
-
-#     inputs: 
-#     T - table joined with FastSpecFit (or other emline cat)
-#     OPT_UV_TYPE - bitmask structure from yaml 
-    
-#     outputs:
-#     T - table with new column 'OPT_UV_TYPE'
-#     '''    
-#     type_1, type_2, type_unknown = AGN_OPTICAL_UV_TYPE(T, snr=snr, mask=mask)
-
-#     bpt_mask = np.zeros(len(T))    
-#     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
-#     bpt_mask |= type_unknown * OPT_UV_TYPE.OPT_TYPE_UNKNOWN # Optical/UV AGN lacking Halpha, Hbeta, MgII and CIV line constraints
-#     bpt_mask |= type_1 * OPT_UV_TYPE.OPT_TYPE1 # Optical/UV Type 1 AGN (FWHM>=1200 km/s in Halpha, Hbeta, MgII and/or CIV line)
-#     bpt_mask |= type_2 * OPT_UV_TYPE.OPT_TYPE2 # Optical/UV Type 2 AGN (FWHM<1200 km/s in Halpha, Hbeta, MgII and/or CIV line)
-#     #
-#     bptmask_column = Column(bpt_mask, name = 'OPT_UV_TYPE')
-#     if 'OPT_UV_TYPE' in T.columns:
-#         T['OPT_UV_TYPE']|=bpt_mask
-#     else:
-#         T.add_column(bptmask_column)
-    
-#     return T
-# ###
 
 ###
 def update_AGNTYPE_NIIBPT(T, OPT_UV_TYPE, snr=3, mask=None):
@@ -270,7 +241,7 @@ def update_AGNTYPE_BLUE(T, OPT_UV_TYPE, snr=3, snrOII=1, mask=None):
     outputs:
     T - table with new column 'OPT_UV_TYPE'
     '''    
-    blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = BLUE(T, snr=snr, snrOII=snrOII, mask=None)
+    blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = BLUE(T, snr=snr, snrOII=snrOII, mask=mask)
     agn_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     agn_mask = blue * OPT_UV_TYPE.BLUE
