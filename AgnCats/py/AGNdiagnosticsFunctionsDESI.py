@@ -451,7 +451,7 @@ def WHAN(input, snr=3, mask=None):
 ##########################################################################################################
 ##########################################################################################################
 
-def BLUE(input, snr=3, snrOII=1, mask=None):
+def BLUE(input, snr=3, snrOII=3, mask=None):
     '''
     If using these diagnostic fuctions please ref the appropriate references given below.
     
@@ -489,34 +489,52 @@ def BLUE(input, snr=3, snrOII=1, mask=None):
         zero_flux_blue= (input['HBETA_FLUX']==0) | (input['OIII_5007_FLUX']==0) | \
                         (input['OII_3726_FLUX']==0) | mask
 
+    ## SJ: DO WE NEED THIS?? We only take sqrt(IVAR) so a zero is fine (it gives SNR=0)
     #If ivar=0 set it to NaN to avoid infinites when computing the error:
-    input['HBETA_FLUX_IVAR']=np.where(input['HBETA_FLUX_IVAR']==0,np.nan,input['HBETA_FLUX_IVAR'])
-    input['OIII_5007_FLUX_IVAR']=np.where(input['OIII_5007_FLUX_IVAR']==0,np.nan,input['OIII_5007_FLUX_IVAR'])
+#    input['HBETA_FLUX_IVAR']=np.where(input['HBETA_FLUX_IVAR']==0,np.nan,input['HBETA_FLUX_IVAR'])
+#    input['OIII_5007_FLUX_IVAR']=np.where(input['OIII_5007_FLUX_IVAR']==0,np.nan,input['OIII_5007_FLUX_IVAR'])
 
     # Mask for SNR. Default is BLUE is available if Hb, OIII SNR >= 3 and OII SNR >= 1.
     snr = snr
     snrOII=snrOII
     SNR_Hb=input['HBETA_FLUX']*np.sqrt(input['HBETA_FLUX_IVAR'])
     SNR_OIII=input['OIII_5007_FLUX']*np.sqrt(input['OIII_5007_FLUX_IVAR'])
-    SNR_OII=input['OII_3726_FLUX']*np.sqrt(input['OII_3726_FLUX_IVAR'])
+    SNR_Hb_EW = input['HBETA_EW']*np.sqrt(input['HBETA_EW_IVAR'])
 
-    # Define regions
-    log_ewoii_ewhb = np.log10(input['OII_3726_EW']/input['HBETA_EW'])
+    # [OII]3727 is the sum of the doublet [OII]3726,3729
+    OII_EW = input['OII_3726_EW']+input['OII_3729_EW']
+    OII_EW_IVAR = 1./ (1./input['OII_3726_EW_IVAR'] + 1./input['OII_3729_EW_IVAR'])
+    SNR_OII_EW = OII_EW*np.sqrt(OII_EW_IVAR)
+    
+    # Parameters for horizontal and vertical axes
+    log_ewoii_ewhb = np.log10(OII_EW/input['HBETA_EW'])
     log_oiii_hb=np.log10(input['OIII_5007_FLUX']/input['HBETA_FLUX'])
+    
+    # Define regions
     main_blue = 0.11/(log_ewoii_ewhb-0.92)+0.85
+
+    # Mixed region
     eq3_blue1 = -(log_ewoii_ewhb-1.0)**2-0.1*log_ewoii_ewhb+0.25
     eq3_blue2 = (log_ewoii_ewhb-0.2)**2-0.6
+    
+    # Seyfert/LINER
     eq4_blue = 0.95*log_ewoii_ewhb - 0.4
 
     ## BLUE is available (SNR for the 3 lines other than OII >= 3)
-    blue = (SNR_Hb >= snr) & (SNR_OIII >= snr) & (SNR_OII >= snrOII) & (~zero_flux_blue)
+    blue = (SNR_Hb >= snr) & (SNR_OIII >= snr) & (SNR_Hb_EW >= snr) & (SNR_OII_EW >= snrOII) & (~zero_flux_blue)
 
     ## BLUE-AGN, SF/LINER/Composite, LINER, SF, SF/AGN
-    agn_blue = blue & ((log_oiii_hb>=main_blue) | (log_ewoii_ewhb>=0.92))
-    sflin_blue = blue & ((log_oiii_hb<=eq3_blue1) | (log_oiii_hb>=eq3_blue2))
-    liner_blue = (agn_blue) & (log_oiii_hb<eq4_blue) & (~sflin_blue)
-    sf_blue = blue & (~agn_blue) & (~liner_blue) & (~sflin_blue) & (log_oiii_hb<0.3)
-    sfagn_blue = blue & (~agn_blue) & (~liner_blue) & (~sflin_blue) & (log_oiii_hb>=0.3)
+    # Region that overlaps with other classes (set an extra bit for info)
+    sflin_blue = blue & ((log_oiii_hb<=eq3_blue1) & (log_oiii_hb>=eq3_blue2))
+
+    # AGN will be sub-divided between Seyfert2 & LINER
+    agnlin_blue = blue & ((log_oiii_hb>=main_blue) | (log_ewoii_ewhb>=0.92))
+    agn_blue = agnlin_blue & (log_oiii_hb>=eq4_blue)
+    liner_blue = agnlin_blue & (log_oiii_hb<eq4_blue)
+
+    # SF 
+    sf_blue = blue & (~agnlin_blue) & (log_oiii_hb<0.3)
+    sfagn_blue = blue & (~agnlin_blue) & (log_oiii_hb>=0.3) 
     
     return (blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue)
 
@@ -680,7 +698,7 @@ def HeII_BPT(input, snr=3, mask=None):
     input['HEII_4686_FLUX_IVAR']=np.where(input['HEII_4686_FLUX_IVAR']==0,np.nan,input['HEII_4686_FLUX_IVAR'])
     input['NII_6584_FLUX_IVAR']=np.where(input['NII_6584_FLUX_IVAR']==0,np.nan,input['NII_6584_FLUX_IVAR'])
 
-    # Mask for SNR. Default is OI-BPT is available if Ha, Hb, OIII SNR >= 3 and OI SNR >= 1.
+    # Mask for SNR. Default is HeII-BPT is available if Ha, Hb, NII, HeII SNR >= 3
     snr = snr
     SNR_Ha=input['HALPHA_FLUX']*np.sqrt(input['HALPHA_FLUX_IVAR'])
     SNR_Hb=input['HBETA_FLUX']*np.sqrt(input['HBETA_FLUX_IVAR'])
@@ -688,15 +706,18 @@ def HeII_BPT(input, snr=3, mask=None):
     SNR_NII=input['NII_6584_FLUX']*np.sqrt(input['NII_6584_FLUX_IVAR'])
 
     # Define regions
-    log_nii_ha=np.log10(input['NII_6584_FLUX']/input['HALPHA_FLUX'])
-    log_heii_hb=np.log10(input['HEII_4686_FLUX']/input['HBETA_FLUX'])
-    Shir12=-1.22+1/(8.92*log_nii_ha+1.32)
+    log_nii_ha = np.log10(input['NII_6584_FLUX']/input['HALPHA_FLUX'])
+    log_heii_hb = np.log10(input['HEII_4686_FLUX']/input['HBETA_FLUX'])
+    Shir12 = -1.22+1/(8.92*log_nii_ha+1.32)
+
+    # Value where denominator goes to zero (non-finite)
+    log_nii_ha_0 = -1.32/8.92
 
     ## HeII-BPT is available (All lines SNR >= 3)
     heii_bpt = (SNR_Ha >= snr) & (SNR_Hb >= snr) & (SNR_HeII >= snr) & (SNR_NII >= snr) & (~zero_flux_heii)
 
     ## HeII-AGN, SF
-    agn_heii=(heii_bpt) & (log_heii_hb>=Shir12)
+    agn_heii=(heii_bpt) & ((log_heii_hb>=Shir12) | (log_nii_ha>=log_nii_ha_0))
     sf_heii=(heii_bpt) & ~agn_heii
 
     return (heii_bpt, agn_heii, sf_heii)
