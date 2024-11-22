@@ -180,7 +180,7 @@ def update_AGNTYPE_OIBPT(T, OPT_UV_TYPE, snr=3, snrOI=1, Kewley01=False, mask=No
     oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T, snr=snr, snrOI=snrOI, Kewley01=Kewley01, mask=mask)
     bpt_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
-    bpt_mask = oi_bpt * OPT_UV_TYPE.OI_BPT                ## Except [OI] - other emission lines have S/N >= 3
+    bpt_mask = oi_bpt * OPT_UV_TYPE.OI_BPT                ## Except [OI] - other em lines have S/N >= 3
     bpt_mask |= sf_oi * OPT_UV_TYPE.OI_SF                 ## [OI] - Star Forming
     bpt_mask |= agn_oi * OPT_UV_TYPE.OI_SY                ## [OI] - Seyfert
     bpt_mask |= liner_oi * OPT_UV_TYPE.OI_LINER           ## [OI] - LINER
