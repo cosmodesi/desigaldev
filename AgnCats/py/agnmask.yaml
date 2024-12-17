@@ -16,11 +16,11 @@ AGN_MASKBITS:
     #- (note: starting at a later bit as QSO_MASKBITS may change in future releases)
     - [BPT_ANY_SY,    10, "At least one BPT diagnostic indicates SEYFERT (robust AGN)"]
     - [BPT_ANY_AGN,   11, "At least one BPT diagnostic indicates SEYFERT, LINER or COMPOSITE"]
-    - [BROAD_LINE,    12, "Lines with FWHN >=1200 km/s in Halpha, Hbeta, MgII and/or CIV line"]
+    - [BROAD_LINE,    12, "Lines with FWHM >=1200 km/s in Halpha, Hbeta, MgII and/or CIV line"]
     - [OPT_OTHER_AGN, 13, "Rest frame optical emission lines diagnostic not BPT (4000-10000 ang) indicate AGN"]
     - [UV,            14, "Rest frame UV emission lines indicate AGN"]
     #- from ancillary multiwavelength data 
-    - [WISE_ANY_AGN,  15, "At least one Infrared (WISE) colour diagnostic indicate AGN"]
+    - [WISE_ANY_AGN,  15, "At least one infrared (WISE) colour diagnostic indicates AGN"]
     - [XRAY,          16, "X-rays indicate AGN (not yet implemented)"]
     - [RADIO,         17, "Radio indicates AGN (not yet implemented)"]
 
@@ -28,7 +28,7 @@ AGN_MASKBITS:
 #AGN_TYPE:
 OPT_UV_TYPE:
     #- optical / UV emission line types
-    - [NII_BPT,     0, "NII BPT diagnostic is avalible (update_AGNTYPE_NIIBPT)"]
+    - [NII_BPT,     0, "NII BPT diagnostic is available (update_AGNTYPE_NIIBPT)"]
     - [NII_SF,      1, "NII BPT Star-forming (update_AGNTYPE_NIIBPT)"]
     - [NII_COMP,    2, "NII BPT Composite (update_AGNTYPE_NIIBPT)"]
     - [NII_SY,      3, "NII BPT Seyfert (update_AGNTYPE_NIIBPT)"]
