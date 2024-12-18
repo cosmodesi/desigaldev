@@ -1,8 +1,8 @@
 import numpy as np
 
 '''notes for us:
-Find/replace: Mar_&_Steph_2023 with correct reference 
-Find/replace: Summary_ref_2023 with correct reference
+Find/replace: Mar_&_Steph_2025 with correct reference 
+Find/replace: Summary_ref_2025 with correct reference
 Find/replace: FastSpecFit_ref with correct reference
 '''
 
@@ -385,10 +385,10 @@ def OI_BPT(input, snr=3, snrOI=1, Kewley01=False, mask=None):
 
 def WHAN(input, snr=3, mask=None):
     '''
-    If using these diagnostic fuctions please ref Mar_&_Steph_2023
+    If using these diagnostic fuctions please ref Mar_&_Steph_2025
     and the appropriate references given below.
     
-    If using DESI please reference Summary_ref_2023 and the apprpriate
+    If using DESI please reference Summary_ref_2025 and the apprpriate
     emission line catalog (e.g. FastSpecFit ref FastSpecFit_ref)
 
     --original diagram WHAN diagram (Cid Fernandes et al. 2011)--
@@ -597,7 +597,8 @@ def MEX(input, snr=3, mask=None):
     # MEX intermediate
     mex_interm = (x>9.6)&(y>=a0+a1*x+a2*x**2+a3*x**3)&(~mex_agn)
     
-    return (mex, mex_agn, mex_sf, mex_interm)
+    # Return whether it's available and then the 3 classes when also available
+    return (mex, mex&mex_agn, mex&mex_sf, mex&mex_interm)
     
 ##########################################################################################################
 ##########################################################################################################
@@ -655,17 +656,18 @@ def KEX(input, snr=3, mask=None):
     # KEX intermediate
     kex_interm= (y>=-2.*x+4.2) & (y<3.) & (~kex_agn)
     
-    return (kex, kex_agn, kex_sf, kex_interm)
+    # Return whether it's available and then the 3 classes when also available
+    return (kex, kex&kex_agn, kex&kex_sf, kex&kex_interm)
     
 ##########################################################################################################
 ##########################################################################################################
 
 def HeII_BPT(input, snr=3, mask=None):
     '''
-    If using these diagnostic fuctions please ref Mar_&_Steph_2023
+    If using these diagnostic fuctions please ref Mar_&_Steph_2025
     and the appropriate references given below.
     
-    If using DESI please reference Summary_ref_2023 and the apprpriate
+    If using DESI please reference Summary_ref_2025 and the apprpriate
     emission line catalog (e.g. FastSpecFit ref FastSpecFit_ref)
 
     --original diagram BPT DIAGRAM Shirazi & Brinchmann 2012--
@@ -727,10 +729,10 @@ def HeII_BPT(input, snr=3, mask=None):
 
 def NeV(input, snr=2.5, mask=None):
     '''
-    If using these diagnostic fuctions please ref Mar_&_Steph_2023
+    If using these diagnostic fuctions please ref Mar_&_Steph_2025
     and the appropriate references given below.
     
-    If using DESI please reference Summary_ref_2023 and the apprpriate
+    If using DESI please reference Summary_ref_2025 and the apprpriate
     emission line catalog (e.g. FastSpecFit ref FastSpecFit_ref)
 
     --NeV diagnostic--
@@ -778,7 +780,7 @@ def WISE_colors(input, snr=3, mask=None, diag='All', weak_agn=False):
     If using these diagnostic fuctions please ref Mar_&_Steph_2025
     and the appropriate references given below.
     
-    If using DESI please reference Summary_ref_2023 and the apprpriate
+    If using DESI please reference Summary_ref_2025 and the apprpriate
     photometry catalog (e.g., Tractor or Photometry VAC)
 
     --WISE Color diagnostic--

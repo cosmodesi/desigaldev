@@ -427,9 +427,9 @@ def update_AGNTYPE_WISE_colors(T, IR_TYPE, snr=3, mask=None):
         
 
     # If W1, W2 fluxes are above threshold snr (required for Stern+ and Assef+)
-    agn_mask = wise_w12 * IR_TYPE.WISE_W12
+    agn_mask |= wise_w12 * IR_TYPE.WISE_W12
     # If W1, W2, W3 fluxes are above threshold snr (required for Jarrett+, Mateos+, Yao+, Hviding+)
-    agn_mask = wise_w123 * IR_TYPE.WISE_W123
+    agn_mask |= wise_w123 * IR_TYPE.WISE_W123
 
     # Turn into a table column
     agnmask_column = Column(agn_mask, name = 'IR_TYPE')
