@@ -18,7 +18,7 @@ This is the Readme file for the Galaxy Quasar Physics EDR AGN / QSO Summary Cata
 Description
 ===========
 
-This AGN/QSO catalog has been created based on the emission line measurements from FastSpecFit v3.2, corresponding to the Fuji value-added catalog which was publicly released in December 2023 as the DESI Early Data Release (DESI/EDR): https://fastspecfit.readthedocs.io/en/latest/fuji.html. Most of the redshifts come from the Redrock catalog. For some QSO, the Redrock redshifts are incorrect and have been updated using the machine-learning algorithm QuasarNet or the MgII Afterburner.
+This AGN/QSO catalog has been created based on the emission line measurements from FastSpecFit v2.1, corresponding to the Iron value-added catalog which will publicly released in 2025 as the DESI First Data Release (DESI/DR1): https://fastspecfit.readthedocs.io/en/latest/iron.html. Most of the redshifts come from the Redrock catalog. For some QSO, the Redrock redshifts are incorrect and have been updated using the machine-learning algorithm QuasarNet or the MgII Afterburner.
 
 **AGN diagnostics used in the catalog:**
 
