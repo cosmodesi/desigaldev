@@ -1,4 +1,4 @@
-AGN QSO Summary Catalog for EDR
+AGN QSO Summary Catalog for DR1
 ======================
 
 Authors:
@@ -166,7 +166,7 @@ EXTNAME = AUXDATA
 Example
 =======
 
-An example notebook *AGNQSO_summary_cat.ipynb* is presented which provides an interactive example of the catalog generation steps.
+An example notebook *how_to_use_AGN_summary.ipynb* is presented which provides an interactive example of the catalog generation steps.
 
 
 File location and structure
