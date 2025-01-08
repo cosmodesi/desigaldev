@@ -75,7 +75,7 @@ EXTNAME = AGNCAT
 | ZWARN |  int64 |   -  |  Warning flags (0 is good) |
 | SPECTYPE  |  char[6] |   -  |  Spectral type of Redrock best fit template (e.g. GALAXY, QSO, STAR) |
 | COADD_FIBERSTATUS  |  int32 |  -  |  Bitwise-AND of input FIBERSTATUS |
-| TARGET_RA |   float64 |   degr |   Right Ascension in decimal degrees (J2000) |
+| TARGET_RA |   float64 |   deg |   Right Ascension in decimal degrees (J2000) |
 | TARGET_DEC |   float64  |  deg  |  Declination in decimal degrees (J2000) |
 | DESI_TARGET |   int64 |   -  |  DESI (dark time program) target selection bitmask |
 | SCND_TARGET |   int64 |  -  | SCND (secondary program) target selection bitmask |
