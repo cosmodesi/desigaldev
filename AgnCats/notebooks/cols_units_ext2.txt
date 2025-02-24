@@ -43,7 +43,7 @@
 | HALPHA_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
 | HALPHA_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
 | HALPHA_EW	| float32| 	Angstrom	| Rest-frame emission-line equivalent width | 
-| HALPHA_EW_IVAR	| float32| 	| Angstrom^-2| Inverse variance of equivalent width |
+| HALPHA_EW_IVAR| float32| Angstrom^-2| Inverse variance of equivalent width |
 | HALPHA_SIGMA	| float32	| km / s	| Gaussian emission-line width |
 | HALPHA_BROAD_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
 | HALPHA_BROAD_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux|
