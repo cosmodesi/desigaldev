@@ -1,0 +1,57 @@
+| Name  | Format | Units | Description |
+| LOGMSTAR | float32  |  solMass | Logarithmic stellar mass (h=1.0, Chabrier+2003 initial mass function) |
+| FLUX_W1  |  float32  | nanomaggy | WISE flux in W1 (AB) |
+| FLUX_W2  |  float32  | nanomaggy | WISE flux in W2 (AB) |
+| FLUX_W3  |  float32  | nanomaggy | WISE flux in W3 (AB) |
+| FLUX_IVAR_W1	| float32 |	nanomaggy^-2 | Inverse variance of FLUX_W1 (AB) |
+| FLUX_IVAR_W2	| float32 |	nanomaggy^-2 | Inverse variance of FLUX_W2 (AB) |
+| FLUX_IVAR_W3	| float32 |	nanomaggy^-2 | Inverse variance of FLUX_W3 (AB) |
+| CIV_1549_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| CIV_1549_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
+| CIV_1549_SIGMA	| float32	| km / s	| Gaussian emission-line width |
+| MGII_2796_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| MGII_2796_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
+| MGII_2796_SIGMA	| float32	| km / s	| Gaussian emission-line width |
+| MGII_2803_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| MGII_2803_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
+| MGII_2803_SIGMA	| float32	| km / s	| Gaussian emission-line width |
+| OII_3726_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| OII_3726_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
+| OII_3726_EW	| float32| 	Angstrom	| Rest-frame emission-line equivalent width | 
+| OII_3726_EW_IVAR	| float32	| Angstrom^-2| Inverse variance of equivalent width |
+| OII_3729_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| OII_3729_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
+| OII_3729_EW	| float32| 	Angstrom	| Rest-frame emission-line equivalent width | 
+| OII_3729_EW_IVAR	| float32	| Angstrom^-2| Inverse variance of equivalent width |
+| NEV_3426_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| NEV_3426_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
+| HEII_4686_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| HEII_4686_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
+| HBETA_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| HBETA_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux|
+| HBETA_EW	| float32| 	Angstrom	| Rest-frame emission-line equivalent width | 
+| HBETA_EW_IVAR	| float32	| Angstrom^-2| Inverse variance of equivalent width |
+| HBETA_BROAD_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| HBETA_BROAD_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux|
+| HBETA_BROAD_SIGMA	| float32| 	km / s	| Gaussian emission-line width | 
+| HBETA_BROAD_CHI2	| float32	| Angstrom	| Chi-squared of the line-fit |
+| OIII_5007_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| OIII_5007_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
+| OIII_5007_SIGMA	| float32	| km / s	| Gaussian emission-line width |
+| OI_6300_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| OI_6300_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
+| HALPHA_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| HALPHA_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
+| HALPHA_EW	| float32| 	Angstrom	| Rest-frame emission-line equivalent width | 
+| HALPHA_EW_IVAR	| float32| 	| Angstrom^-2| Inverse variance of equivalent width |
+| HALPHA_SIGMA	| float32	| km / s	| Gaussian emission-line width |
+| HALPHA_BROAD_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| HALPHA_BROAD_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux|
+| HALPHA_BROAD_SIGMA	| float32| 	km / s	| Gaussian emission-line width | 
+| HALPHA_BROAD_VSHIFT	| float32	| km / s	| Velocity shift relative to Z |
+| NII_6584_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| NII_6584_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |    
+| SII_6716_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| SII_6716_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
+| SII_6731_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
+| SII_6731_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |

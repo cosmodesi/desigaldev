@@ -9,10 +9,10 @@ Authors:
     GQP, 
     et al.,
 
-Version: 1.0 of 2024/12/20
+Version: 1.0 of 2025/02/04
 
 
-This is the Readme file for the Galaxy Quasar Physics EDR AGN / QSO Summary Catalogs.
+This is the Readme file for the Galaxy and Quasar Physics EDR AGN / QSO Summary Catalog.
 
 
 Description
@@ -54,7 +54,7 @@ This AGN/QSO catalog has been created based on the emission line measurements fr
 Data model
 ==========
 **EXTENSIONS**
-| Number   | EXTNAME   |   Ver  |  Type    |  Dimensions   | Contents   |
+| Number   | EXTNAME   |   Ver  |  Type    |  Dimensions   | Description   |
 | ----- | ------ |------ | ------    |    ------  |    ------  | 
 |  HDU00  | PRIMARY  |     1  | PrimaryHDU |   ()    |  Keywords only |   
 |  HDU01  | AGNCAT   |     1  | BinTableHDU |  1397603R x 35C  | Table with summary catalog |
@@ -64,7 +64,7 @@ Data model
 
 EXTNAME = AGNCAT
 
-| Name  | Format | Units | Description |
+| Name  | Type   | Units | Description |
 | ----- | ------ |------ | ------ |
 | TARGETID |  int64  |  -  |  Unique identifier for each object observed by DESI |
 | SURVEY  |  char[7]  |  -  |  Survey name |
@@ -101,7 +101,7 @@ EXTNAME = AGNCAT
 
 EXTNAME = AUXDATA
 
-| Name  | Format | Units | Description |
+| Name  | Type   | Units | Description |
 | ----- | ------ |------ | ------ |
 | TARGETID |  int64  |  -  |  Unique identifier for each object observed by DESI |
 | SURVEY  |  char[7]  |  -  |  Survey name |
@@ -166,10 +166,10 @@ EXTNAME = AUXDATA
 Example
 =======
 
-An example notebook *AGNQSO_summary_cat.ipynb* is presented which provides an interactive example of the catalog generation steps.
+An example notebook *how_to_use_AGN_summary.ipynb* is presented which provides example usage of the AGN / QSO summary catalog. 
 
 
-File location and structure
-===========================
+File location
+=============
 
 Files are located at NERSC. The parent directory is: /global/cfs/cdirs/desi/science/gqp/agncatalog 

@@ -1,19 +1,8 @@
 AGN QSO Summary Catalog for DR1
 ======================
+Version: 1.0 of 2025/03/19
 
-Authors:
-    Becky Canning,
-    Stephanie Juneau,
-    Mar Mezcua,
-    Raga Pucha, 
-    GQP, 
-    et al.,
-
-Version: 0.0 of 2024/12/20
-
-
-This is the Readme file for the Galaxy Quasar Physics EDR AGN / QSO Summary Catalogs.
-
+This is the Readme file for the DESI Galaxy and Quasar Physics DR1 AGN / QSO Summary Catalogs.
 
 Description
 ===========
@@ -46,7 +35,7 @@ This AGN/QSO catalog has been created based on the emission line measurements fr
 
 - HeII BPT diagram from Shirazi & Brinchmann (2012)
 
-- NeV diagnostic: detection of [NeV]λ3426 implies hard radiation with photon energies above 96.6 eV, indicating AGN
+- NeV diagnostic: detection of \[NeV]λ3426 implies hard radiation with photon energies above 96.6 eV, indicating AGN
 
 - WISE diagnostics cuts from Jarrett et al. (2011), Mateos et al. (2012), Stern et al. (2012), Assef et al. (2018), Yao et al. (2020), and Hviding et al. (2022)
     
@@ -64,7 +53,7 @@ Data model
 
 EXTNAME = AGNCAT
 
-| Name  | Format | Units | Description |
+| Name  | Type | Units | Description |
 | ----- | ------ |------ | ------ |
 | TARGETID |  int64  |  -  |  Unique identifier for each object observed by DESI |
 | SURVEY  |  char[7]  |  -  |  Survey name |
@@ -106,7 +95,7 @@ EXTNAME = AUXDATA
 | TARGETID |  int64  |  -  |  Unique identifier for each object observed by DESI |
 | SURVEY  |  char[7]  |  -  |  Survey name |
 | PROGRAM |  char[6]  |  -   | DESI program type - BRIGHT, DARK, BACKUP, OTHER |
-| LOGMSTAR | float32  |  Msun | Logarithmic stellar mass (h=1.0, Chabrier+2003 initial mass function) |
+| LOGMSTAR | float32  |  solMass | Logarithmic stellar mass (h=1.0, Chabrier+2003 initial mass function) |
 | FLUX_W1  |  float32  | nanomaggy | WISE flux in W1 (AB) |
 | FLUX_W2  |  float32  | nanomaggy | WISE flux in W2 (AB) |
 | FLUX_W3  |  float32  | nanomaggy | WISE flux in W3 (AB) |
@@ -125,11 +114,11 @@ EXTNAME = AUXDATA
 | OII_3726_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
 | OII_3726_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
 | OII_3726_EW	| float32| 	Angstrom	| Rest-frame emission-line equivalent width | 
-| OII_3726_EW_IVAR	| float32	| 1 / Angstrom2	| Inverse variance of equivalent width |
+| OII_3726_EW_IVAR	| float32	| Angstrom-2	| Inverse variance of equivalent width |
 | OII_3729_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
 | OII_3729_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
 | OII_3729_EW	| float32| 	Angstrom	| Rest-frame emission-line equivalent width | 
-| OII_3729_EW_IVAR	| float32	| 1 / Angstrom2	| Inverse variance of equivalent width |
+| OII_3729_EW_IVAR	| float32	| Angstrom-2	| Inverse variance of equivalent width |
 | NEV_3426_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
 | NEV_3426_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
 | HEII_4686_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
@@ -137,7 +126,7 @@ EXTNAME = AUXDATA
 | HBETA_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
 | HBETA_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux|
 | HBETA_EW	| float32| 	Angstrom	| Rest-frame emission-line equivalent width | 
-| HBETA_EW_IVAR	| float32	| 1 / Angstrom2	| Inverse variance of equivalent width |
+| HBETA_EW_IVAR	| float32	| Angstrom-2	| Inverse variance of equivalent width |
 | HBETA_BROAD_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
 | HBETA_BROAD_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux|
 | HBETA_BROAD_SIGMA	| float32| 	km / s	| Gaussian emission-line width | 
@@ -150,7 +139,7 @@ EXTNAME = AUXDATA
 | HALPHA_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
 | HALPHA_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux |
 | HALPHA_EW	| float32| 	Angstrom	| Rest-frame emission-line equivalent width | 
-| HALPHA_SIGMA	| float32	| km / s	| Gaussian emission-line width |
+| HALPHA_EW_IVAR	| float32	| Angstrom-2	| Inverse variance of equivalent width |
 | HALPHA_BROAD_FLUX	| float32	| 10**-17 erg/(s cm2)| 	Gaussian-integrated emission-line flux |
 | HALPHA_BROAD_FLUX_IVAR	| float32| 	10**+34 (s2 cm4) / erg2	| Inverse variance of integrated flux|
 | HALPHA_BROAD_SIGMA	| float32| 	km / s	| Gaussian emission-line width | 
@@ -166,10 +155,11 @@ EXTNAME = AUXDATA
 Example
 =======
 
-An example notebook *how_to_use_AGN_summary.ipynb* is presented which provides an interactive example of the catalog generation steps.
+An example notebook *how_to_use_AGN_summary.ipynb* is presented which provides example use cases to read and use the catalog (Note: will be updated for public version).
 
 
 File location and structure
 ===========================
 
-Files are located at NERSC. The parent directory is: /global/cfs/cdirs/desi/science/gqp/agncatalog 
+Files are located at NERSC. The parent directory is: /global/cfs/cdirs/desi/science/gqp/agncatalog (PUBLIC)
+(ADD GITHUB link to desihub and move the how-to and the code for paper figures)
