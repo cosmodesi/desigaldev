@@ -1,8 +1,8 @@
-## Raga Pucha: First draft of the function 
+## Raga Pucha: First draft of the function (2021)
 ## Need to add detailed comments to the script
 ## Returns a lot of warnings because of division by zero - have to use filterwarnings after checking everything
-## Version: 2021 December 21
-## Edited: B. Canning 24th April 2022, 2023, S. Juneau November 2024
+## Version: 2025 February 25
+## Edited: B. Canning 24th April 2022, 2023, S. Juneau November 2024, Feb 2025
 
 import numpy as np
 from astropy.table import Column
@@ -74,13 +74,16 @@ def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, snrOII=1, Kewley01=Fals
     bl = BROAD_LINE(T, snr=snr, mask=mask, vel_thres=1200.)
     agn_bits |= bl * agn_mask.BROAD_LINE 
    
-    # SJ: Add here for WHAN, MEx, KEx, Blue
+    # Other (non-BPT) optical diagnostics: WHAN, MEx, KEx, Blue
     whan, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive = WHAN(T, snr=snr, mask=mask)
     mex, mex_agn, mex_sf, mex_interm = MEX(T, snr=snr, mask=mask)
     blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = BLUE(T, snr=snr, snrOII=snrOII, mask=mask)
     kex, kex_agn, kex_sf, kex_interm = KEX(T, snr=snr, mask=mask)
-    #opt_other_agn =
-    #agn_bits |= opt_other_agn * agn_mask.OPT_OTHER_AGN
+
+    # Combine them for the OPT_OTHER_AGN (keeping mostly more confident ones and 
+    # exclusing possible weak AGN / blended classes)
+    opt_other_agn = whan_sagn|mex_agn|agn_blue|kex_agn
+    agn_bits |= opt_other_agn * agn_mask.OPT_OTHER_AGN
 
     # Overall WISE classification (combining all diagnostics
     snr_wise = 3.
@@ -91,10 +94,14 @@ def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, snrOII=1, Kewley01=Fals
     #agn_bits |= uv * agn_mask.UV
     #agn_bits |= xray * agn_mask.XRAY
     #agn_bits |= radio * agn_mask.RADIO
-    
+
+    # Finally, add the AGN_ANY definition based on confident AGNs
+    agn_any = qsom_RR|qsom_mgii|qsom_QN|qsom_QN_BGS|qsom_QN_ELG|qsom_QN_VAR_WISE|bpt_any_sy|agn_wise
+    agn_bits |= agn_any * agn_mask.AGN_ANY
+
     agnmaskbits_column = Column(agn_bits, name = 'AGN_MASKBITS')
     if 'AGN_MASKBITS' in T.columns:
-        T['AGN_MASKBITS']=agn_bits
+        T['AGN_MASKBITS']|=agn_bits
     else:
         T.add_column(agnmaskbits_column)
     return T
@@ -497,7 +504,7 @@ def update_AGNTYPE_BPT_all(T, OPT_UV_TYPE):
     
     bptmask_column = Column(bpt_mask, name = 'OPT_UV_TYPE')
     if 'OPT_UV_TYPE' in T.columns:
-        T['OPT_UV_TYPE']=bpt_mask
+        T['OPT_UV_TYPE']|=bpt_mask
     else:
         T.add_column(bptmask_column)
         
@@ -550,7 +557,7 @@ def create_bpt_mask_all(T, OPT_UV_TYPE):
     
     bptmask_column = Column(bpt_mask, name = 'OPT_UV_TYPE')
     if 'OPT_UV_TYPE' in T.columns:
-        T['OPT_UV_TYPE']=bpt_mask
+        T['OPT_UV_TYPE']|=bpt_mask
     else:
         T.add_column(bptmask_column)
     

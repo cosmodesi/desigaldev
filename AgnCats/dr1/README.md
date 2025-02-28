@@ -155,11 +155,12 @@ EXTNAME = AUXDATA
 Example
 =======
 
-An example notebook *how_to_use_AGN_summary.ipynb* is presented which provides example use cases to read and use the catalog (Note: will be updated for public version).
-
+An example notebook *how_to_use_AGN_summary.ipynb* is presented which demonstrates how to read and use the catalog.
+(to do: add GitHub link here for the public version of the notebook)
 
 File location and structure
 ===========================
 
-Files are located at NERSC. The parent directory is: /global/cfs/cdirs/desi/science/gqp/agncatalog (PUBLIC)
-(ADD GITHUB link to desihub and move the how-to and the code for paper figures)
+The public catalog is available at: https://data.desi.lbl.gov/public/dr1/vac/dr1/agnqso/
+For DESI colleagues with direct file access at NERSC, the parent directory is:
+`/global/cfs/cdirs/desi/science/gqp/agncatalog/dr1/`
