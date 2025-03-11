@@ -624,12 +624,12 @@ def KEX(input, snr=3, mask=None):
     log10(flux_oiii_5006/flux_hbeta) = 3
     '''
     
-    # Mask for zero fluxes
-    zero_flux_kex = (input['HBETA_FLUX'] == 0) | (input['OIII_5007_FLUX'] == 0)
-    if mask != None:
-        # Mask for flux avalibility - included as fastspecfit columns are maskedcolumn data
-        mask = mask     
-        zero_flux_kex = (input['HBETA_FLUX'] == 0) | (input['OIII_5007_FLUX'] == 0) | mask
+    # Masks:
+    if mask is None:
+        mask = np.zeros_like(input['HBETA_FLUX'], dtype=bool)
+    
+    # Mask zero fluxes
+    zero_flux_kex = (input['HBETA_FLUX'] <= 0.) | (input['OIII_5007_FLUX'] <= 0.) | mask    # Mask for zero fluxes
    
     #If ivar=0 set it to NaN to avoid infinites when computing the error:
     input['HBETA_FLUX_IVAR']=np.where(input['HBETA_FLUX_IVAR']==0,np.nan,input['HBETA_FLUX_IVAR'])
@@ -648,13 +648,13 @@ def KEX(input, snr=3, mask=None):
     y = np.log10(input['OIII_5007_FLUX']/input['HBETA_FLUX'])
     
     # Upper KEX
-    kex_agn=(y>=-2.*x + 4.2) & (y>=3.)
+    kex_agn=(y>=-2.*x + 4.2) & (y>=0.3)
   
     # Lower KEX
     kex_sf=y < -2.*x + 4.2
 
     # KEX intermediate
-    kex_interm= (y>=-2.*x+4.2) & (y<3.) & (~kex_agn)
+    kex_interm= (y>=-2.*x+4.2) & (y<0.3) & (~kex_agn)
     
     # Return whether it's available and then the 3 classes when also available
     return (kex, kex&kex_agn, kex&kex_sf, kex&kex_interm)
