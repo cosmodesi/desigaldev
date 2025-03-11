@@ -644,7 +644,7 @@ def KEX(input, snr=3, mask=None):
     kex = (SNR_Hb >= snr) & (SNR_OIII >= snr) & (input['OIII_5007_SIGMA']>0) & (~zero_flux_kex)
     
     # Define variables for equations 1 & 2
-    x = input['OIII_5007_SIGMA']
+    x = np.log10(input['OIII_5007_SIGMA'])
     y = np.log10(input['OIII_5007_FLUX']/input['HBETA_FLUX'])
     
     # Upper KEX
