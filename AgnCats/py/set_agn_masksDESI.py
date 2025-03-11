@@ -82,7 +82,7 @@ def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, snrOII=1, Kewley01=Fals
 
     # Combine them for the OPT_OTHER_AGN (keeping mostly more confident ones and 
     # exclusing possible weak AGN / blended classes)
-    opt_other_agn = whan_sagn|mex_agn|agn_blue|kex_agn
+    opt_other_agn = whan_sagn | mex_agn | agn_blue | kex_agn
     agn_bits |= opt_other_agn * agn_mask.OPT_OTHER_AGN
 
     # Overall WISE classification (combining all diagnostics
@@ -96,7 +96,7 @@ def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, snrOII=1, Kewley01=Fals
     #agn_bits |= radio * agn_mask.RADIO
 
     # Finally, add the AGN_ANY definition based on confident AGNs
-    agn_any = qsom_RR|qsom_mgii|qsom_QN|qsom_QN_BGS|qsom_QN_ELG|qsom_QN_VAR_WISE|bpt_any_sy|agn_wise
+    agn_any = qsom_RR | qsom_mgii | qsom_QN | qsom_QN_BGS | qsom_QN_ELG | qsom_QN_VAR_WISE | bpt_any_sy | agn_wise | opt_other_agn
     agn_bits |= agn_any * agn_mask.AGN_ANY
 
     agnmaskbits_column = Column(agn_bits, name = 'AGN_MASKBITS')
