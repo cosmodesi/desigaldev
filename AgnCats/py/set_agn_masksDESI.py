@@ -25,7 +25,6 @@ def get_agn_maskbits(file):
 ###
 
 ###
-## SJ: removed QSO_MASKBITS from yaml (still exist as a column in the input file though!)
 def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, snrOII=1, Kewley01=False, mask=None):
 
     from AGNdiagnosticsFunctionsDESI import NII_BPT
