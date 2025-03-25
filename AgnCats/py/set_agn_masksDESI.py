@@ -2,7 +2,7 @@
 ## Need to add detailed comments to the script
 ## Returns a lot of warnings because of division by zero - have to use filterwarnings after checking everything
 ## Version: 2025 February 25
-## Edited: B. Canning 24th April 2022, 2023, S. Juneau November 2024, Feb 2025
+## Edited: B. Canning 2023; S. Juneau November 2024, Feb 2025
 
 import numpy as np
 from astropy.table import Column
