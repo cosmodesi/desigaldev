@@ -383,7 +383,7 @@ def OI_BPT(input, snr=3, snrOI=1, Kewley01=False, mask=None):
 ##########################################################################################################
 ##########################################################################################################
 
-def WHAN(input, snr=3, mask=None):
+def WHAN(input, snr=3, snr_ew=1, mask=None):
     '''
     If using these diagnostic fuctions please ref Mar_&_Steph_2025
     and the appropriate references given below.
@@ -394,7 +394,7 @@ def WHAN(input, snr=3, mask=None):
     --original diagram WHAN diagram (Cid Fernandes et al. 2011)--
     
     Inputs:
-    'input' including Ha, NII fluexes and inverse variances and the Ha equivanlent width.
+    'input' including Ha, NII fluxes, Ha equivalent width and inverse variances.
     'snr' is the snr cut applied to all axes. Default is 3.
     'mask' is an optional mask (e.g. from masked column array). Default is None.
       
@@ -431,20 +431,25 @@ def WHAN(input, snr=3, mask=None):
     snr = snr
     SNR_Ha=input['HALPHA_FLUX']*np.sqrt(input['HALPHA_FLUX_IVAR'])
     SNR_NII=input['NII_6584_FLUX']*np.sqrt(input['NII_6584_FLUX_IVAR'])
+    SNR_HaEW=input['HALPHA_EW']*np.sqrt(input['HALPHA_EW_IVAR'])
 
     # Define regions
     ew_ha_6562=input['HALPHA_EW']
     log_nii_ha=np.log10(input['NII_6584_FLUX']/input['HALPHA_FLUX'])
 
-    ## WHAN is available (NII and Halpha lines SNR >= 3)
-    whan = (SNR_Ha >= snr) & (SNR_NII >= snr) & (~zero_flux_whan)
+    ## WHAN is available: 
+    # - NII and Halpha line flux SNR >= snr (=3 by default) when using the [NII]/Ha ratio
+    # - Halpha EW measured at > snr_ew (=1 by default) sigma significance when cutting just on EW
+    whan_ew_cut = (SNR_HaEW >= snr_ew) & (~zero_flux_whan)
+    whan_flux_cut = (SNR_Ha >= snr) & (SNR_NII >= snr) & (~zero_flux_whan)
+    whan = whan_ew_cut | whan_flux_cut
 
     ## WHAN-SF, strong AGN, weak AGN, retired, passive
-    whan_sf=(log_nii_ha<-0.4) & (ew_ha_6562>=3)
-    whan_sagn=(log_nii_ha>=-0.4) & (ew_ha_6562>=6)
-    whan_wagn=(log_nii_ha>=-0.4) & (ew_ha_6562<6) & (ew_ha_6562>=3)
-    whan_retired=(ew_ha_6562<3) & (ew_ha_6562>=0.5)
-    whan_passive=ew_ha_6562<0.5
+    whan_sf=whan_flux_cut & (log_nii_ha<-0.4) & (ew_ha_6562>=3)
+    whan_sagn=whan_flux_cut & (log_nii_ha>=-0.4) & (ew_ha_6562>=6)
+    whan_wagn=whan_flux_cut & (log_nii_ha>=-0.4) & (ew_ha_6562<6) & (ew_ha_6562>=3)
+    whan_retired=whan_ew_cut & (ew_ha_6562<3) & (ew_ha_6562>=0.5)
+    whan_passive=whan_ew_cut & ew_ha_6562<0.5
 
     return (whan, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive)
 
