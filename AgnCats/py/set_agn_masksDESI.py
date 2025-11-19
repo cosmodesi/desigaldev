@@ -60,8 +60,8 @@ def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, snrOII=1, Kewley01=Fals
 
     # BPT classifications from individual diagnostics
     nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii = NII_BPT(T, snr=snr, mask=mask)
-    sii_bpt, sf_sii, agn_sii, liner_sii = SII_BPT(T, snr=snr, Kewley01=Kewley01, mask=mask)
-    oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T, snr=snr, snrOI=snrOI, Kewley01=Kewley01, mask=mask)
+    sii_bpt, sf_sii, agn_sii, liner_sii = SII_BPT(T, snr=snr, kewley01=Kewley01, mask=mask)
+    oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T, snr=snr, snr_oi=snrOI, kewley01=Kewley01, mask=mask)
 
     # Combined BPT classification
     bpt_any_sy = agn_nii | agn_sii | agn_oi
@@ -76,7 +76,7 @@ def update_AGN_MASKBITS(T, AGN_MASKBITS, snr=3, snrOI=1, snrOII=1, Kewley01=Fals
     # Other (non-BPT) optical diagnostics: WHAN, MEx, KEx, Blue
     whan, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive = WHAN(T, snr=snr, mask=mask)
     mex, mex_agn, mex_sf, mex_interm = MEX(T, snr=snr, mask=mask)
-    blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = BLUE(T, snr=snr, snrOII=snrOII, mask=mask)
+    blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = BLUE(T, snr=snr, snr_oii=snrOII, mask=mask)
     kex, kex_agn, kex_sf, kex_interm = KEX(T, snr=snr, mask=mask)
 
     # Combine them for the OPT_OTHER_AGN (keeping mostly more confident ones and 
@@ -152,7 +152,7 @@ def update_AGNTYPE_SIIBPT(T, OPT_UV_TYPE, snr=3, Kewley01=False, mask=None):
     outputs:
     T - table with new column 'OPT_UV_TYPE'
     '''    
-    sii_bpt, sf_sii, agn_sii, liner_sii = SII_BPT(T, snr=snr, Kewley01=Kewley01, mask=mask)
+    sii_bpt, sf_sii, agn_sii, liner_sii = SII_BPT(T, snr=snr, kewley01=Kewley01, mask=mask)
     bpt_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     bpt_mask = sii_bpt * OPT_UV_TYPE.SII_BPT              ## All the emission lines have S/N >= 3
@@ -183,7 +183,7 @@ def update_AGNTYPE_OIBPT(T, OPT_UV_TYPE, snr=3, snrOI=1, Kewley01=False, mask=No
     outputs:
     T - table with new column 'OPT_UV_TYPE'
     '''    
-    oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T, snr=snr, snrOI=snrOI, Kewley01=Kewley01, mask=mask)
+    oi_bpt, sf_oi, agn_oi, liner_oi = OI_BPT(T, snr=snr, snr_oi=snrOI, kewley01=Kewley01, mask=mask)
     bpt_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     bpt_mask = oi_bpt * OPT_UV_TYPE.OI_BPT                ## Except [OI] - other em lines have S/N >= 3
@@ -247,7 +247,7 @@ def update_AGNTYPE_BLUE(T, OPT_UV_TYPE, snr=3, snrOII=1, mask=None):
     outputs:
     T - table with new column 'OPT_UV_TYPE'
     '''    
-    blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = BLUE(T, snr=snr, snrOII=snrOII, mask=mask)
+    blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = BLUE(T, snr=snr, snr_oii=snrOII, mask=mask)
     agn_mask = np.zeros(len(T))    
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     agn_mask = blue * OPT_UV_TYPE.BLUE
