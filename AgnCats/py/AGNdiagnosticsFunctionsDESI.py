@@ -11,6 +11,7 @@ Benjamin Floyd (University of Portsmouth)
 
 Library containing all AGN/Galaxy diagnostic functions.
 """
+
 import numpy as np
 from astropy.table import MaskedColumn, Table
 from numpy.typing import NDArray
@@ -20,10 +21,6 @@ from numpy.typing import NDArray
 # Find/replace: Mar_&_Steph_2025 with correct reference
 # Find/replace: Summary_ref_2025 with correct reference
 # Find/replace: FastSpecFit_ref with correct reference
-
-
-##########################################################################################################
-##########################################################################################################
 
 def BROAD_LINE(input_table: Table, snr: int = 3, mask: MaskedColumn = None, vel_thres: float = 1200.) -> NDArray[bool]:
     r"""Assigns ``BROAD_LINE`` bitmask to object.
@@ -992,8 +989,8 @@ NDArray[bool]]:
 
 # TODO: BenFloyd - This function needs to be split up like the optical diagnostics are.
 def WISE_colors(input_table: Table, snr: float | int = 3, mask: MaskedColumn = None, diag: str = 'All',
-                weak_agn: bool = False) -> (tuple[NDArray[bool] | NDArray[bool] | NDArray[bool]] |
-                                            tuple[NDArray[bool] | NDArray[bool] | NDArray[bool] | NDArray[bool]]):
+                weak_agn: bool = False) -> (tuple[NDArray[bool], NDArray[bool], NDArray[bool]] |
+                                            tuple[NDArray[bool], NDArray[bool], NDArray[bool], NDArray[bool]]):
     """WISE Color diagnostics
 
     Regions defined as:
