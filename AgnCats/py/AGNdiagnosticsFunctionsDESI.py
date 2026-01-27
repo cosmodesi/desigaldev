@@ -87,7 +87,6 @@ def broad_line(input_table: Table, snr: int | float = 3, mask: MaskedColumn = No
     broad_fwhm_ha = input_table['HALPHA_BROAD_SIGMA'] * sig2fwhm
     broad_fwhm_hb = input_table['HBETA_BROAD_SIGMA'] * sig2fwhm
     broad_fwhm_mgii_2796 = input_table['MGII_2796_SIGMA'] * sig2fwhm
-    broad_fwhm_mgii_2803 = input_table['MGII_2803_SIGMA'] * sig2fwhm  # TODO: BenFloyd - Not used.
     broad_fwhm_civ = input_table['CIV_1549_SIGMA'] * sig2fwhm
 
     # Check for each line separately first
@@ -591,12 +590,6 @@ def blue(input_table: Table, snr: int | float = 3, snr_oii: int | float = 3, mas
                           (input_table['OIII_5007_FLUX'] == 0) |
                           (input_table['OII_3726_FLUX'] == 0) | mask)
 
-    # TODO: BenFloyd - Following up on this.
-    ## SJ: DO WE NEED THIS?? We only take sqrt(IVAR) so a zero is fine (it gives SNR=0)
-    # If ivar=0 set it to NaN to avoid infinities when computing the error:
-    #    input_table['HBETA_FLUX_IVAR']=np.where(input_table['HBETA_FLUX_IVAR']==0,np.nan,input_table['HBETA_FLUX_IVAR'])
-    #    input_table['OIII_5007_FLUX_IVAR']=np.where(input_table['OIII_5007_FLUX_IVAR']==0,np.nan,input_table['OIII_5007_FLUX_IVAR'])
-
     # Mask for SNR. Default is BLUE is available if Hb, OIII SNR >= 3 and OII SNR >= 1.
     snr_hb = input_table['HBETA_FLUX'] * np.sqrt(input_table['HBETA_FLUX_IVAR'])
     snr_oiii = input_table['OIII_5007_FLUX'] * np.sqrt(input_table['OIII_5007_FLUX_IVAR'])
@@ -877,16 +870,17 @@ def heii_bpt(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None
 
 def nev(input_table: Table, snr: int | float = 2.5, mask: MaskedColumn = None) -> (
         tuple[NDArray[bool], NDArray[bool], NDArray[bool]]):
-    r"""[NeV] diagnostic originally by [ref]_
+    r"""[NeV] diagnostic based on high ionization potential.
 
-     If using these diagnostic functions please ref Mar_&_Steph_2025 and the appropriate references given below.
-
-    If using DESI please reference Summary_ref_2025 and the appropriate emission line catalog
-    (e.g. FastSpecFit ref FastSpecFit_ref)
+    [Ne V] diagnostic is defined by the detection of the [NeV] :math:`\lambda3426` emission line which implies
+    hard radiation from photon energies :math:`kT > 96.6` eV, indicating AGN activity. Please see [Ost06]_ for further
+    discussion and references within.
 
     Notes:
-        [Ne V] diagnostic is defined by the detection of the [NeV] :math:`\lambda3426` emission line which implies
-        hard radiation from photon energies :math:`kT > 96.6` eV, indicating AGN activity.
+        If using these diagnostic functions please ref Mar_&_Steph_2025 and the appropriate references given below.
+
+        If using DESI please reference Summary_ref_2025 and the appropriate emission line catalog
+        (e.g. FastSpecFit ref FastSpecFit_ref)
 
     Args:
         input_table: Table including [NeV] flux and inverse variance.
@@ -897,7 +891,7 @@ def nev(input_table: Table, snr: int | float = 2.5, mask: MaskedColumn = None) -
         Tuple of arrays of same dimension as rows in ``input_table`` which include flags for
         ``nev_avail``, ``agn_nev``, ``sf_nev``.
 
-    .. [ref] TODO Need actual reference. Cleri+23? Berg+21? Schmidt+98?
+    .. [Ost06] 2006agna.book.....O
     """
 
     # Mask for zero fluxes
@@ -920,7 +914,6 @@ def nev(input_table: Table, snr: int | float = 2.5, mask: MaskedColumn = None) -
     agn_nev = nev_avail & (snr_nev >= snr)
     sf_nev = ~agn_nev
 
-    # TODO: BenFloyd Figure out why inspection thinks that the types should be tuple[int, int|Any, int].
     return nev_avail, agn_nev, sf_nev
 
 
