@@ -640,7 +640,7 @@ def mex(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None) -> 
     MeX diagram regions defined as:
         Top division between SF/AGN (Eq. 1 of [Jun14]_):
             ``mex_upper``:
-            :math:` = y
+            :math:` y =
             \begin{cases}
             0.375 / (x - 10.5) + 1.14 & x \leq 10 \\
             a_0 + a_1 x + a_2 x^2 + a_3 x^3 & \text{otherwise}
