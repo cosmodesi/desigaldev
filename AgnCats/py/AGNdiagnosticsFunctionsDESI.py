@@ -525,7 +525,7 @@ def whan(input_table: Table, snr: int | float = 3, snr_ew: int | float = 1, mask
     whan_sagn = whan_flux_cut & (log_nii_ha >= -0.4) & (ew_ha_6562 >= 6)
     whan_wagn = whan_flux_cut & (log_nii_ha >= -0.4) & (ew_ha_6562 < 6) & (ew_ha_6562 >= 3)
     whan_retired = whan_ew_cut & (ew_ha_6562 < 3) & (ew_ha_6562 >= 0.5)
-    whan_passive = whan_ew_cut & ew_ha_6562 < 0.5
+    whan_passive = whan_ew_cut & (ew_ha_6562 < 0.5)
 
     return whan_avail, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive
 
