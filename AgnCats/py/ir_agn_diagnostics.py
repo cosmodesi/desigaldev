@@ -420,8 +420,8 @@ def wise_assef18_r(input_table: Table, snr: int | float = 3, reliability: Litera
         raise ValueError('Reliability parameter must be either 75 or 90.')
 
     # Apply reliability-optimized selection criteria (Equation 4 of Assef+18)
-    agn_assef18 = ((((w1w2_vega > alpha * np.exp(beta * (w2_vega - gamma) ** 2)) & (w2_vega > gamma)) |
-                    ((w1w2_vega > alpha) & w2_vega <= gamma)) &
+    agn_assef18 = (((w1w2_vega > alpha * np.exp(beta * (w2_vega - gamma) ** 2)) & (w2_vega > gamma)) |
+                    ((w1w2_vega > alpha) & (w2_vega <= gamma)) &
                    w1w2_avail)
 
     # Define non-AGN as the inverse selection
