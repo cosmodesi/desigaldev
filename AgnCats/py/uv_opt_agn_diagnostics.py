@@ -1,5 +1,5 @@
 """
-AGNdiagnosticsFunctionsDESI.py
+uv_opt_agn_diagnostics.py
 
 Library containing all AGN/Galaxy diagnostic functions used in the DESI AGN/Galaxy Classification VAC.
 
@@ -24,9 +24,9 @@ from numpy.typing import NDArray
 
 def broad_line(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None, vel_thresh: float = 1200.) -> (
         NDArray[bool]):
-    r"""Assigns ``BROAD_LINE`` bitmask to object.
+    r"""Provides mask indicating that a galaxy has at least one broad emission line.
 
-    This function will assign the ``BROAD_LINE`` bitmask to any object that has a FWHM of at least the value defined by
+    This function will produce a boolean mask to any object that has a FWHM of at least the value defined by
     ``vel_thresh`` in km/s for *any* of the following lines: :math:`H\alpha`, :math:`H\beta`, Mg II], C IV.
 
     Notes:
@@ -122,7 +122,8 @@ def nii_bpt(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None)
             1.05 * \log_10(flux_{[NII]_\lambda6583} / flux_{H\alpha}) + 0.45`
 
     Other BPT regions not implemented here:
-        [Law21]_ Law et al. 2021: Proposed revised lines based on MaNGA observation (not implemented because similar to [Ka03]_):
+        [Law21]_ Law et al. 2021: Proposed revised lines based on MaNGA observation (not implemented because similar
+        to [Ka03]_):
             :math:`\log_10(flux_{[OIII]_\lambda5006} / flux_{H\beta}) =
             \frac{0.438}{\log_10(flux_{[NII]_\lambda6583} / flux_{H\alpha}) + 0.023} + 1.222`
 
@@ -185,10 +186,10 @@ def nii_bpt(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None)
                                                  np.nan, input_table['NII_6584_FLUX_IVAR'])
 
     # Mask for SNR. Default is NII-BPT is available if all SNR >= 3
-    SNR_Ha = input_table['HALPHA_FLUX'] * np.sqrt(input_table['HALPHA_FLUX_IVAR'])
-    SNR_Hb = input_table['HBETA_FLUX'] * np.sqrt(input_table['HBETA_FLUX_IVAR'])
-    SNR_OIII = input_table['OIII_5007_FLUX'] * np.sqrt(input_table['OIII_5007_FLUX_IVAR'])
-    SNR_NII = input_table['NII_6584_FLUX'] * np.sqrt(input_table['NII_6584_FLUX_IVAR'])
+    snr_ha = input_table['HALPHA_FLUX'] * np.sqrt(input_table['HALPHA_FLUX_IVAR'])
+    snr_hb = input_table['HBETA_FLUX'] * np.sqrt(input_table['HBETA_FLUX_IVAR'])
+    snr_oiii = input_table['OIII_5007_FLUX'] * np.sqrt(input_table['OIII_5007_FLUX_IVAR'])
+    snr_nii = input_table['NII_6584_FLUX'] * np.sqrt(input_table['NII_6584_FLUX_IVAR'])
 
     # Define regions
     log_nii_ha = np.log10(input_table['NII_6584_FLUX'] / input_table['HALPHA_FLUX'])
@@ -198,50 +199,16 @@ def nii_bpt(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None)
     ka03 = 0.61 / (log_nii_ha - 0.05) + 1.3
 
     ## NII-BPT is available (All lines SNR >= 3)
-    nii_bpt_avail = (SNR_Ha >= snr) & (SNR_Hb >= snr) & (SNR_OIII >= snr) & (SNR_NII >= snr) & (~zero_flux_nii)
+    nii_bpt_avail = (snr_ha >= snr) & (snr_hb >= snr) & (snr_oiii >= snr) & (snr_nii >= snr) & (~zero_flux_nii)
 
     ## NII-AGN, LINER, COMP, SF
-    agnliner_nii = (nii_bpt_avail) & ((log_oiii_hb >= kew01_nii) | (log_nii_ha >= 0.47))
-    agn_nii = (agnliner_nii) & (log_oiii_hb >= scha07)
-    liner_nii = (agnliner_nii) & (log_oiii_hb < scha07)
-    composite_nii = (nii_bpt_avail) & ((log_oiii_hb >= ka03) | (log_nii_ha >= 0.05)) & (~agnliner_nii)
-    sf_nii = (nii_bpt_avail) & (~agnliner_nii) & (~composite_nii)
+    agnliner_nii = nii_bpt_avail & ((log_oiii_hb >= kew01_nii) | (log_nii_ha >= 0.47))
+    agn_nii = agnliner_nii & (log_oiii_hb >= scha07)
+    liner_nii = agnliner_nii & (log_oiii_hb < scha07)
+    composite_nii = nii_bpt_avail & ((log_oiii_hb >= ka03) | (log_nii_ha >= 0.05)) & (~agnliner_nii)
+    sf_nii = nii_bpt_avail & (~agnliner_nii) & (~composite_nii)
 
     return nii_bpt_avail, sf_nii, agn_nii, liner_nii, composite_nii
-
-# TODO: BenFloyd - This should be moved to a util library to keep this library focused on just diagnostics
-def NII_BPT_lines(x_axes):
-    '''
-    This function draws the lines for the BPT regions int he NII_BPT plot
-    
-    Kewley et al. 2001: starburst vs AGN classification.
-    Kew01_nii: log10(flux_oiii_5006/flux_hbeta)=0.61/(log10(flux_nii_6583/flux_halpha)-0.47)+1.19
-
-    Kauffmann et al. 2003: starburst vs composites.
-    Ka03: log10(flux_oiii_5006/flux_hbeta)=0.61/(log10(flux_nii_6583/flux_halpha)-0.05)+1.3
-    
-    Schawinsky et al. 2007: Seyferts vs LINERS
-    Scha07: log10(flux_oiii_5006/flux_hbeta)=1.05*log10(flux_nii_6583/flux_halpha)+0.45
-    
-    Other BPT regions not implemented here yet:
-    
-    Law et al. 2021 proposed revised lines based on MaNGA observation (not implemented b/c similar to Ka03):
-    log10(flux_oiii_5006/flux_hbeta)=0.438/(log10(flux_nii_6583/flux_halpha)+0.023)+1.222
-    
-    Law et al. define an extra "intermediate" region (not yet implemented)
-    '''
-    Kew01_nii = 0.61 / (x_axes - 0.47) + 1.19
-    n = np.where(x_axes >= 0.47)
-    Kew01_nii[n] = np.nan
-
-    Ka03 = 0.61 / (x_axes - 0.05) + 1.3
-    n = np.where(x_axes >= 0.05)
-    Ka03[n] = np.nan
-
-    Scha07 = 1.05 * x_axes + 0.45
-    n = np.where(Scha07 < Kew01_nii)
-    Scha07[n] = np.nan
-    return Kew01_nii, Ka03, Scha07
 
 
 def sii_bpt(input_table: Table, snr: int | float = 3, kewley01: bool = False, mask: MaskedColumn = None) -> (
@@ -303,7 +270,7 @@ def sii_bpt(input_table: Table, snr: int | float = 3, kewley01: bool = False, ma
         # Mask for flux availability - included as fastspecfit columns are MaskedColumn data
         zero_flux_sii |= mask
 
-        # If ivar=0 set it to NaN to avoid infinites when computing the error:
+    # If ivar=0 set it to NaN to avoid infinities when computing the error:
     input_table['HALPHA_FLUX_IVAR'] = np.where(input_table['HALPHA_FLUX_IVAR'] == 0,
                                                np.nan, input_table['HALPHA_FLUX_IVAR'])
     input_table['HBETA_FLUX_IVAR'] = np.where(input_table['HBETA_FLUX_IVAR'] == 0,
@@ -640,7 +607,7 @@ def mex(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None) -> 
     MeX diagram regions defined as:
         Top division between SF/AGN (Eq. 1 of [Jun14]_):
             ``mex_upper``:
-            :math:` = y
+            :math:` y =
             \begin{cases}
             0.375 / (x - 10.5) + 1.14 & x \leq 10 \\
             a_0 + a_1 x + a_2 x^2 + a_3 x^3 & \text{otherwise}
@@ -915,246 +882,3 @@ def nev(input_table: Table, snr: int | float = 2.5, mask: MaskedColumn = None) -
     sf_nev = ~agn_nev
 
     return nev_avail, agn_nev, sf_nev
-
-
-##########################################################################################################
-##########################################################################################################
-
-# TODO: BenFloyd - This function needs to be split up like the optical diagnostics are.
-def WISE_colors(input_table: Table, snr: float | int = 3, mask: MaskedColumn = None, diag: str = 'All',
-                weak_agn: bool = False) -> (tuple[NDArray[bool], NDArray[bool], NDArray[bool]] |
-                                            tuple[NDArray[bool], NDArray[bool], NDArray[bool], NDArray[bool]]):
-    """WISE Color diagnostics
-
-    Regions defined as:
-    Region defined in WISE infrared color space, indicating AGN. Note of caution: The points outside the AGN region may
-    still include a significant fraction of AGN and are best considered as "uncertain" rather than "star-forming" or
-    "non-AGN"
-
-    Notes:
-        If using these diagnostic functions please ref Mar_&_Steph_2025 and the appropriate references given below.
-
-        If using DESI please reference Summary_ref_2025 and the appropriate photometry catalog (e.g., Tractor or
-        Photometry VAC)
-
-    Args:
-        input_table: Table including WISE fluxes and inverse variances for W1, W2, and W3 bands.
-        snr: SNR cut applied to WISE fluxes. Default is ``3``.
-        mask: Optional mask (e.g., from masked column array). Default is ``None``.
-        diag: String indicating which WISE AGN selection to use. Must be one of ``'Stern12'``, ``'Assef18'``,
-            ``'Jarrett11'``, ``Mateos12``, ``'Yao20'``, ``'Hviding22'``, or ``'All'``. Defaults to ``'All'``.
-            Note: Selecting ``'All'`` produces an AGN selection that is a union combination of all the individual
-            selections. If ``'Yao20'`` is used, the function can output an additional selection for `week_agn`.
-        weak_agn: Boolean flag to optionally output ``weak_agn`` as a selection. Only valid for ``'Yao20'`` selection.
-
-    Returns:
-        Tuple of arrays of same dimension as rows in ``input_table`` which include flags for
-        ``avail_ir``, ``agn_ir``, ``sf_ir``, and optionally ``weak_agn`` if ``'Yao20'`` selection used.
-    """
-
-    # Mask for zero fluxes
-    zero_flux_wise = (input_table['FLUX_W1'] == 0) | (input_table['FLUX_W2'] == 0)
-    zero_flux_w3 = (input_table['FLUX_W3'] == 0)
-    if mask != None:
-        # Mask for flux availability - included if input_table photometry is missing/masked
-        mask = mask  # TODO: BenFloyd - Redundant statement?
-        zero_flux_wise = (input_table['FLUX_W1'] == 0) | (input_table['FLUX_W2'] == 0) | mask
-        zero_flux_w3 = (input_table['FLUX_W3'] == 0) | mask
-
-    # If ivar=0 set it to NaN to avoid infinites when computing the error:
-    input_table['FLUX_IVAR_W1'] = np.where(input_table['FLUX_IVAR_W1'] == 0, np.nan, input_table['FLUX_IVAR_W1'])
-    input_table['FLUX_IVAR_W2'] = np.where(input_table['FLUX_IVAR_W2'] == 0, np.nan, input_table['FLUX_IVAR_W2'])
-    input_table['FLUX_IVAR_W3'] = np.where(input_table['FLUX_IVAR_W3'] == 0, np.nan, input_table['FLUX_IVAR_W3'])
-
-    # Mask for SNR.
-    snr = snr  # TODO: BenFloyd - Redundant statement?
-    SNR_W1 = input_table['FLUX_W1'] * np.sqrt(input_table['FLUX_IVAR_W1'])
-    SNR_W2 = input_table['FLUX_W2'] * np.sqrt(input_table['FLUX_IVAR_W2'])
-    SNR_W3 = input_table['FLUX_W3'] * np.sqrt(input_table['FLUX_IVAR_W3'])
-
-    ## IR diagnostic based on W1W2 is available if flux is not zero
-    ## Note: Yao+2020 used S/N>5 for W1, W2 and S/N>2 for W3 due to being much less sensitive
-    W1W2_avail = (~zero_flux_wise) & (SNR_W1 > snr) & (SNR_W2 > snr)
-    W2W3_avail = (~zero_flux_wise) & (~zero_flux_w3) & (SNR_W2 > snr) & (SNR_W3 > snr)
-
-    # Convert to AB magnitudes (most diagnostics use Vega mags so need to apply offsets)
-    W1 = 22.5 - 2.5 * np.log10(input_table['FLUX_W1'])
-    W2 = 22.5 - 2.5 * np.log10(input_table['FLUX_W2'])
-    W3 = 22.5 - 2.5 * np.log10(input_table['FLUX_W3'])
-    W1W2 = W1 - W2
-    W2W3 = W2 - W3
-
-    # Offsets from Vega to AB magnitudes (Jarrett+2011) 
-    W1_vega2ab = 2.699
-    W2_vega2ab = 3.339
-    W3_vega2ab = 5.174
-
-    # Offsets from Vega to AB WISE colors
-    W1W2_vega2ab = W1_vega2ab - W2_vega2ab
-    W2W3_vega2ab = W2_vega2ab - W3_vega2ab
-
-    # Subtract offsets to go from AB to Vega (add to go from Vega to AB)
-    W1_Vega = W1 - W1_vega2ab
-    W2_Vega = W2 - W2_vega2ab
-    W3_Vega = W3 - W3_vega2ab
-    W1W2_Vega = W1_Vega - W2_Vega  # W1W2 - W1W2_vega2ab
-    W2W3_Vega = W2_Vega - W3_Vega  # W2W3 - W2W3_vega2ab
-
-    ## Jarrett et al. 2011 box in W1-W2 vs. W2-W3 space in Vega mags
-    y_top = 1.7
-    y_bot = 0.1 * W2W3_Vega + 0.38
-    x_left = 2.2
-    x_right = 4.2
-
-    agn_jarrett11 = W1W2_avail & W2W3_avail & (W2W3_Vega > x_left) & (W2W3_Vega < x_right) & (W1W2_Vega > y_bot) & (
-            W1W2_Vega < y_top)
-    # TODO: BenFloyd - The following selections are not used
-    sf_jarrett11 = W1W2_avail & W2W3_avail & (~agn_jarrett11)
-    unavail_jarrett11 = (~W1W2_avail) | (~W2W3_avail)  # unavailable
-
-    ## Stern et al. 2012 cut along just W1-W2 color
-    agn_stern12 = W1W2_avail & (W1W2_Vega > 0.8)
-    # TODO: BenFloyd - The following selections are not used
-    sf_stern12 = W1W2_avail & (~agn_stern12)
-    unavail_stern12 = ~W1W2_avail  # unavailable
-
-    ## Mateos et al. 2012 box in W1-W2 vs. W2-W3 space
-    x_M12 = W2W3 / (2.5)  # from eqn 1 using AB mags
-    y_M12 = W1W2 / (2.5)
-
-    # top/bottom around the power-law
-    y_top = 0.315 * x_M12 + 0.297  # eqn 1 + offset
-    y_bot = 0.315 * x_M12 - 0.110  # eqn 1 - offset
-    y_pl = -3.172 * x_M12 + 0.436  # eqn 2 for the power-law
-
-    agn_mateos12 = W1W2_avail & W2W3_avail & (y_M12 > y_bot) & (y_M12 > y_pl) & (y_M12 < y_top)
-    # TODO: BenFloyd - The following selections are not used
-    sf_mateos12 = W1W2_avail & W2W3_avail & (~agn_mateos12)
-    unavail_mateos12 = (~W1W2_avail) | (~W2W3_avail)  # unavailable
-
-    ## Assef et al. 2018: https://ui.adsabs.harvard.edu/abs/2018ApJS..234...23A/abstract
-    # equation 2 (simplistic from Stern+12): (W1W2_Vega >= 0.8)&((W2 - W2_vega2ab)<15.05)
-    # equation 3: W1W2_Vega > alpha* exp(beta*(W2_Vega-gamma)**2)
-
-    ## 90% reliability
-    alpha_90 = 0.65
-    beta_90 = 0.153
-    gamma_90 = 13.86
-
-    # TODO: BenFloyd - The following parameterization is not implemented.
-    ## 75% reliability
-    alpha_75 = 0.486
-    beta_75 = 0.092
-    gamma_75 = 13.07
-
-    ## Choose here:
-    alpha = alpha_90
-    beta = beta_90
-    gamma = gamma_90
-
-    bright_a18 = W2_Vega <= gamma
-
-    agn_assef18 = W1W2_avail & ((W1W2_Vega > alpha * np.exp(beta * (W2_Vega - gamma) ** 2)) |
-                                ((W1W2_Vega > alpha) & bright_a18))
-    sf_assef18 = W1W2_avail & (~agn_assef18)
-    unavail_assef18 = ~W1W2_avail  # unavailable
-
-    ## Yao et al. 2020 cuts
-    # Vega mags: w1w2 = (0.015 * exp(w2w3/1.38)) - 0.08 + offset
-    # where offset of 0.3 is reported in paper as the 2*sigma cut to create a demarcation line
-    line_yao20 = (0.015 * np.exp(W2W3_Vega / 1.38)) - 0.08 + 0.3
-    strong_agn_yao20 = W1W2_avail & W2W3_avail & (agn_jarrett11 | agn_stern12)
-    # Line for low-power AGN
-    weak_agn_yao20 = W1W2_avail & W2W3_avail & (W1W2_Vega > line_yao20) & ~strong_agn_yao20
-    unavail_yao20 = (~W1W2_avail) | (~W2W3_avail)  # unavailable
-
-    ## Hviding et al. 2022 cuts in (y=)W1-W2 vs. (x=)W2-W3 space in Vega mags (eq. 3)
-    x_left = 1.734
-    x_right = 3.916
-    y_bot1 = 0.0771 * W2W3_Vega + 0.319
-    y_bot2 = 0.261 * W2W3_Vega - 0.260
-    agn_hviding22 = W1W2_avail & W2W3_avail & (W2W3_Vega > x_left) & (W2W3_Vega < x_right) & (W1W2_Vega > y_bot1) & (
-            W1W2_Vega > y_bot2)
-    # TODO: BenFloyd - The following selection is not used
-    unavail_hviding22 = (~W1W2_avail) | (~W2W3_avail)  # unavailable
-
-    ## Set the choice here for individual diagnostics or our default combination # agn_hviding22 not yet implemented
-    if diag == 'Stern12':
-        agn_ir = agn_stern12
-        avail_ir = W1W2_avail
-    if diag == 'Assef18':
-        agn_ir = agn_assef18
-        avail_ir = W1W2_avail
-    if diag == 'Jarrett11':
-        agn_ir = agn_jarrett11
-        avail_ir = W1W2_avail & W2W3_avail
-    if diag == 'Mateos12':
-        agn_ir = agn_mateos12
-        avail_ir = W1W2_avail & W2W3_avail
-    if diag == 'Yao20':
-        agn_ir = strong_agn_yao20
-        wagn_ir = weak_agn_yao20  # not used for now (would need code changes)
-        avail_ir = W1W2_avail & W2W3_avail
-    if diag == 'Hviding22':
-        agn_ir = agn_hviding22
-        avail_ir = W1W2_avail & W2W3_avail
-    ## By default, combine the diagnostics based on W1W2W3 when all 3 bands available;
-    #  otherwise use the Stern cut on W1-W2 only
-    if diag == 'All':
-        agn_ir = agn_mateos12 | agn_jarrett11 | (agn_stern12 & ~W2W3_avail) | agn_assef18 | agn_hviding22
-        avail_ir = W1W2_avail
-        # By default, not considering weak (low-power) AGN; only return if specified
-        wagn_ir = weak_agn_yao20 & ~agn_ir
-
-    # SF defined based on the above
-    sf_ir = avail_ir & (~agn_ir)
-
-    # By default, not considering weak (low-power) AGN from Yao+20; only return if specified
-    if not weak_agn:
-        return avail_ir, agn_ir, sf_ir
-    else:
-        return avail_ir, agn_ir, sf_ir & ~wagn_ir, wagn_ir
-
-
-##########################################################################################################
-##########################################################################################################
-
-# TODO: - BenFloyd - Not updating this function as it is as yet not fully implemented
-def Xray(input, H0=67.4, Om0=0.315, snr=3):
-    ## X-ray diagnostic ##
-    # 2-10 keV X-ray luminosity equal or above 1e42 erg/s indicates AGN
-    thres = 1e42
-
-    # Fiducial Cosmology used in DESI from Planck 2018 results: https://ui.adsabs.harvard.edu/abs/2020A%26A...641A...6P/abstract
-    from astropy.cosmology import FlatLambdaCDM
-    cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
-    DL = cosmo.luminosity_distance(input['z'].values)  # in Mpc
-    DL_cm = 3.08567758e24 * DL.value
-
-    # Convert the CSC 2-7 keV flux to 2-10 keV and compute the LX2-10 keV
-    # Conversion factor =  1.334E-15 erg cm^-2 s^-1 for an unabsorbed flux of 1E-15 erg cm^-2 s^-1 using PIMMS (https://cxc.harvard.edu/toolkit/pimms.jsp) and assuming gamma=1.8
-    factor = 1.334E-15  # for gamma=1.8
-    flux_2_10 = (input['FLUX_2_7'] / 1E-15) * factor
-    LX210 = 4 * np.pi * DL_cm ** 2 * flux_2_10  # in erg/s
-
-    # Apply K-correction:
-    gamma = 1.8
-    k = (1 + input['z']) ** (gamma - 2)
-    LX210_Kcorr = k * LX210
-
-    # Mask for zero flux
-    zero_flux_xray = input['FLUX_2_7'] == 0
-
-    # Mask for SNR
-    snr = snr
-    SNR_Xray = input['FLUX_2_7'] / input['FLUX_2_7_err']
-
-    ## Xray diagnostic is available if flux is not zero and SNR_Xray >= 3
-    xray = (SNR_Xray >= snr) & (~zero_flux_xray)
-
-    ## Xray-AGN, SF, footprint
-    agn_xray = (xray) & (LX210_Kcorr >= thres)
-    sf_xray = (xray) & ~agn_xray
-    fp_xray = (zero_flux_xray) & (input['FLUX_2_7_err'] > 0)
-
-    return (agn_xray, sf_xray, fp_xray)
