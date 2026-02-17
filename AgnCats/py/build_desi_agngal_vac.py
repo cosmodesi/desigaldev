@@ -54,12 +54,12 @@ qso_maker_cols = ['TARGETID', 'Z', 'ZERR', 'ZWARN', 'SPECTYPE', 'COADD_FIBERSTAT
                   'Z_RR', 'Z_QN', 'C_LYA', 'C_CIV', 'C_CIII', 'C_MgII', 'C_Hbeta', 'C_Halpha',
                   'QSO_MASKBITS', 'SURVEY', 'PROGRAM']
 
-qso_maker_catalog = Table(fitsio.read(str(desi_specprod['SPECPROD']['qso_maker']), ext=1, columns=qso_maker_cols))
+
 
 zcat_cols = ['DESI_TARGET','BGS_TARGET','SCND_TARGET','CMX_TARGET','SV1_DESI_TARGET','SV1_BGS_TARGET','SV1_SCND_TARGET',
                'SV2_DESI_TARGET','SV2_BGS_TARGET','SV2_SCND_TARGET','SV3_DESI_TARGET','SV3_BGS_TARGET','SV3_SCND_TARGET']
 
-redshift_catalog = Table(fitsio.read(str(desi_specprod['SPECPROD']['zcat']), ext=1, columns=zcat_cols + desi_specprod['SPECPROD']['zcat_cols']))
+
 
 fsf_data_cols=['TARGETID','SURVEY','PROGRAM','LOGMSTAR',
                'CIV_1549_FLUX','CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
@@ -86,28 +86,96 @@ fsf_meta_cols=['TARGETID','SURVEY','PROGRAM','PHOTSYS','LS_ID',
                'EBV','MW_TRANSMISSION_G','MW_TRANSMISSION_R','MW_TRANSMISSION_Z',
                'MW_TRANSMISSION_W1','MW_TRANSMISSION_W2','MW_TRANSMISSION_W3','MW_TRANSMISSION_W4']
 
-fsf_data_catalog = Table(fitsio.read(str(desi_specprod['SPECPROD']['fast_spec']), columns=fsf_data_cols, ext=1))
-fsf_meta_catalog = Table(fitsio.read(str(desi_specprod['SPECPROD']['fast_spec']), columns=fsf_meta_cols, ext=2))
-fsf_meta_catalog.remove_columns(set(fsf_data_catalog.colnames).intersection(fsf_meta_catalog.colnames))
 
-fsf_catalog = hstack([fsf_data_catalog, fsf_meta_catalog])
+def read_fastspecfit(fastspec_path: Path, fastspec_data_colnames: list[str],
+                     fastspec_meta_colnames: list[str]) -> Table:
+    """Reads and merges the FastSpecFit catalog extensions into a single table.
 
-# Main identifiers for Joins
-keys_for_join=['TARGETID','SURVEY','PROGRAM']
+    Args:
+        fastspec_path:
+            Path to the FastSpecFit catalog.
+        fastspec_data_colnames:
+            Data Extension columns to be read in.
+        fastspec_meta_colnames:
+            Meta Extension columns to be read in.
 
-# Join FSF with qso-maker then zcat
-fsf_qsom = join(fsf_catalog, qso_maker_catalog, keys=keys_for_join, join_type='left')
+    Returns:
+        Merged table of the two extensions.
+    """
 
-# Do asserts to check if joined table maintains consistency
-assert all(fsf_qsom['OBJTYPE'] == 'TGT') # This was originally done after the qsom-zcat join
-assert all(fsf_qsom['Z'] > 0.001)
-assert all(fsf_qsom['COADD_EXPTIME'] > 0.0)
+    # Read in the two extensions and cast as a table.
+    fastspec_data_catalog = Table(fitsio.read(str(fastspec_path), columns=fastspec_data_colnames, ext=1))
+    fastspec_meta_catalog = Table(fitsio.read(str(fastspec_path), columns=fastspec_meta_colnames, ext=2))
 
-fsf_qsom_zcat = join(fsf_qsom, redshift_catalog, keys=keys_for_join, join_type='left')
+    # Remove any common columns between the extensions.
+    fastspec_meta_catalog.remove_columns(set(fastspec_data_colnames).intersection(fastspec_meta_colnames))
 
-# Final check to make sure that we retain the same number of rows (probably not necessary)
-assert len(fsf_qsom_zcat) == len(fsf_qsom)
+    # As the two extensions are already row-aligned we can do a fast hstack operation rather than a full join.
+    fastspec_catalog = hstack([fastspec_data_catalog, fastspec_meta_catalog])
 
-# def read_input_catalogs():
+    return fastspec_catalog
+
+
+def read_input_catalogs(specprod_info: dict[str, Path | list[str]], fastspec_data_colnames: list[str],
+                        fastspec_meta_colnames: list[str], qsom_colnames: list[str],
+                        redshift_colnames: list[str]) -> Table:
+    """Reads in the input catalogs and merges them into a single table to be used for AGN/Galaxy classification.
+
+    Args:
+        specprod_info:
+            Dictionary with information about the targeted data release. Must include path names to relevant catalogs
+            and associated data-release specific column names.
+        fastspec_data_colnames:
+            List of column names to be read in for the FastSpecFit catalog (data extension).
+        fastspec_meta_colnames:
+            List of column names to be read in for the FastSpecFit catalog (meta extension).
+        qsom_colnames:
+            List of column names to be read in for the QSO-Maker catalog.
+        redshift_colnames:
+            List of column names to be read in for the redshift catalog.
+
+    Returns:
+        Joined table of the three input catalogs.
+    """
+
+    # Read in and merge the FastSpecFit catalog extensions into a combined table
+    fastspec_catalog = read_fastspecfit(specprod_info['fast_spec'], fastspec_data_colnames, fastspec_meta_colnames)
+
+    # Read in the QSO-Maker catalog
+    qso_maker_catalog = Table(fitsio.read(str(specprod_info['qso_maker']), ext=1, columns=qsom_colnames))
+
+    # Read in the Redshift catalog (columns used will be the data-release specific columns and global columns)
+    redshift_catalog = Table(fitsio.read(str(specprod_info['zcat']), ext=1,
+                                         columns=redshift_colnames + specprod_info['zcat_cols']))
+
+    # Main identifiers for Joins
+    keys_for_join = ['TARGETID', 'SURVEY', 'PROGRAM']
+
+    # Join FastSpecFit with QSO-Maker
+    desi_catalog = join(fastspec_catalog, qso_maker_catalog, keys=keys_for_join, join_type='left')
+
+    # Test for consistency
+    try:
+        assert all(desi_catalog['Z'] < 0.001)
+    except AssertionError:
+        raise ValueError('Joined FastSpecFit + QSO-Maker catalog contains objects z < 0.001') from AssertionError
+
+    try:
+        assert all(desi_catalog['COADD_EXPTIME'] > 0.0)
+    except AssertionError:
+        raise ValueError('Joined FastSpecFit + QSO-Maker catalog contains objects '
+                         'with zero coadd exposure time') from AssertionError
+
+    # Join the FastSpecFit+QSO-Maker catalog with the redshift catalog
+    desi_catalog = join(desi_catalog, redshift_catalog, keys=keys_for_join, join_type='left')
+
+    # Test for consistency
+    try:
+        assert all(desi_catalog['OBJTYPE'] == 'TGT')
+    except AssertionError:
+        raise ValueError('Joined FastSpecFit + QSO-Maker + Redshift catalog contains '
+                         'non "TGT" object types') from AssertionError
+
+    return desi_catalog
 
 # Begin AGN/Galaxy classifications
