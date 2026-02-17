@@ -24,9 +24,9 @@ from numpy.typing import NDArray
 
 def broad_line(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None, vel_thresh: float = 1200.) -> (
         NDArray[bool]):
-    r"""Assigns ``BROAD_LINE`` bitmask to object.
+    r"""Provides mask indicating that a galaxy has at least one broad emission line.
 
-    This function will assign the ``BROAD_LINE`` bitmask to any object that has a FWHM of at least the value defined by
+    This function will produce a boolean mask to any object that has a FWHM of at least the value defined by
     ``vel_thresh`` in km/s for *any* of the following lines: :math:`H\alpha`, :math:`H\beta`, Mg II], C IV.
 
     Notes:
@@ -270,7 +270,7 @@ def sii_bpt(input_table: Table, snr: int | float = 3, kewley01: bool = False, ma
         # Mask for flux availability - included as fastspecfit columns are MaskedColumn data
         zero_flux_sii |= mask
 
-        # If ivar=0 set it to NaN to avoid infinites when computing the error:
+    # If ivar=0 set it to NaN to avoid infinities when computing the error:
     input_table['HALPHA_FLUX_IVAR'] = np.where(input_table['HALPHA_FLUX_IVAR'] == 0,
                                                np.nan, input_table['HALPHA_FLUX_IVAR'])
     input_table['HBETA_FLUX_IVAR'] = np.where(input_table['HBETA_FLUX_IVAR'] == 0,
@@ -492,7 +492,7 @@ def whan(input_table: Table, snr: int | float = 3, snr_ew: int | float = 1, mask
     whan_sagn = whan_flux_cut & (log_nii_ha >= -0.4) & (ew_ha_6562 >= 6)
     whan_wagn = whan_flux_cut & (log_nii_ha >= -0.4) & (ew_ha_6562 < 6) & (ew_ha_6562 >= 3)
     whan_retired = whan_ew_cut & (ew_ha_6562 < 3) & (ew_ha_6562 >= 0.5)
-    whan_passive = whan_ew_cut & ew_ha_6562 < 0.5
+    whan_passive = whan_ew_cut & (ew_ha_6562 < 0.5)
 
     return whan_avail, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive
 

@@ -420,8 +420,8 @@ def wise_assef18_r(input_table: Table, snr: int | float = 3, reliability: Litera
         raise ValueError('Reliability parameter must be either 75 or 90.')
 
     # Apply reliability-optimized selection criteria (Equation 4 of Assef+18)
-    agn_assef18 = ((((w1w2_vega > alpha * np.exp(beta * (w2_vega - gamma) ** 2)) & (w2_vega > gamma)) |
-                    ((w1w2_vega > alpha) & w2_vega <= gamma)) &
+    agn_assef18 = (((w1w2_vega > alpha * np.exp(beta * (w2_vega - gamma) ** 2)) & (w2_vega > gamma)) |
+                    ((w1w2_vega > alpha) & (w2_vega <= gamma)) &
                    w1w2_avail)
 
     # Define non-AGN as the inverse selection
@@ -432,11 +432,11 @@ def wise_assef18_r(input_table: Table, snr: int | float = 3, reliability: Litera
 
 def wise_assef18_c(input_table: Table, snr: int | float = 3, completeness: Literal[75, 90] = 75,
                    mask: MaskedColumn = None) -> (tuple[NDArray[bool], NDArray[bool], NDArray[bool]]):
-    """Reliability-Optimized WISE color-color selection originally by [Assef18]_.
+    r"""Completeness-optimized WISE color-color selection originally by [Assef18]_.
 
-    Specifically, this selection implements the reliability-optimized criteria found in [Assef18]_ Equation 4.
-    The completeness-optimized selection criteria (Equation 5 of [Assef18]_) is implemented by
-    :func:`wise_assef18_c`.
+    Specifically, this selection implements the completeness-optimized criteria found in [Assef18]_ Equation 5.
+    The reliability-optimized selection criteria (Equation 4 of [Assef18]_) is implemented by
+    :func:`wise_assef18_r`.
     This selection improves upon the earlier selection in [Assef13]_.
 
     The selection criterion is given by Equation 5 of [Assef18]_.
@@ -620,7 +620,19 @@ def wise_yao20(input_table: Table, snr: int | float = 3, weak_agn: bool = False,
 
 def wise_hviding22(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None) -> (
         tuple[NDArray[bool], NDArray[bool], NDArray[bool]]):
-    """WISE color-color selection originally by [Hviding22]_.
+    r"""WISE color-color selection originally by [Hviding22]_.
+
+    This selection defines a selection in W1-W2-W3 color-color space defined in flux ratios in Equations 2a-c of
+    [Hviding22]_. This selection is defined solely be the distribution of Type I and Type II optical spectroscopy AGN in
+    WISE color space.
+
+    .. math::
+        \begin{align*}
+        0.911 < \frac{f_{\mathrm{W3}}}{f_{\mathrm{W2}}} < 6.795 \\
+        \frac{f_{\mathrm{W2}}}{f_{\mathrm{W1}}} > 0.848 \left(\frac{f_{\mathrm{W3}}}{f_{\mathrm{W2}}}\right)^{0.0771} \\
+        \frac{f_{\mathrm{W2}}}{f_{\mathrm{W1}}} > 0.678 \left(\frac{f_{\mathrm{W3}}}{f_{\mathrm{W2}}}\right)^{0.261}
+        \end{align*}
+
 
     Notes:
         If using these diagnostic functions, please ref Mar_&_Steph_2025 and add appropriate references given below.
