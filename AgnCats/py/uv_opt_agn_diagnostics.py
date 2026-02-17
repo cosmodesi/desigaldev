@@ -47,14 +47,23 @@ def broad_line(input_table: Table, snr: int | float = 3, mask: MaskedColumn = No
     """
 
     # Mask for zero fluxes when NONE of the lines are available
-    zero_flux = ((input_table['HALPHA_BROAD_FLUX'] == 0) &
-                 (input_table['HBETA_BROAD_FLUX'] == 0) &
-                 (input_table['MGII_2796_FLUX'] == 0) &
-                 (input_table['MGII_2803_FLUX'] == 0) &
-                 (input_table['CIV_1549_FLUX'] == 0))
+#    zero_flux = ((input_table['HALPHA_BROAD_FLUX'] == 0) &
+#                 (input_table['HBETA_BROAD_FLUX'] == 0) &
+#                 (input_table['MGII_2796_FLUX'] == 0) &
+#                 (input_table['MGII_2803_FLUX'] == 0) &
+#                 (input_table['CIV_1549_FLUX'] == 0))
+    # Mask for zero fluxes for each line separately
+    zero_flux_ha = (input_table['HALPHA_BROAD_FLUX'] == 0)
+    zero_flux_hb = (input_table['HBETA_BROAD_FLUX'] == 0)
+    zero_flux_mgii = (input_table['MGII_2796_FLUX'] == 0)|(input_table['MGII_2803_FLUX'] == 0)
+    zero_flux_civ = (input_table['CIV_1549_FLUX'] == 0)
+    
     if mask is not None:
         # Mask for flux availability - included as fastspecfit columns are MaskedColumn data
-        zero_flux |= mask
+        zero_flux_ha |= mask
+        zero_flux_hb |= mask
+        zero_flux_mgii |= mask
+        zero_flux_civ |= mask
 
     # If ivar = 0 set it to NaN to avoid infinities when computing the error:
     input_table['HALPHA_BROAD_FLUX_IVAR'] = np.where(input_table['HALPHA_BROAD_FLUX_IVAR'] == 0,
@@ -90,15 +99,15 @@ def broad_line(input_table: Table, snr: int | float = 3, mask: MaskedColumn = No
     broad_fwhm_civ = input_table['CIV_1549_SIGMA'] * sig2fwhm
 
     # Check for each line separately first
-    is_broad_ha = (snr_ha >= snr) & (broad_fwhm_ha >= vel_thresh) & (~zero_flux)
-    is_broad_hb = (snr_hb >= snr) & (broad_fwhm_hb >= vel_thresh) & (~zero_flux)
-    is_broad_mgii = (snr_mgii >= snr) & (broad_fwhm_mgii_2796 >= vel_thresh) & (~zero_flux)
-    is_broad_civ = (snr_civ >= snr) & (broad_fwhm_civ >= vel_thresh) & (~zero_flux)
+    is_broad_ha = (snr_ha >= snr) & (broad_fwhm_ha >= vel_thresh) & (~zero_flux_ha)
+    is_broad_hb = (snr_hb >= snr) & (broad_fwhm_hb >= vel_thresh) & (~zero_flux_hb)
+    is_broad_mgii = (snr_mgii >= snr) & (broad_fwhm_mgii_2796 >= vel_thresh) & (~zero_flux_mgii)
+    is_broad_civ = (snr_civ >= snr) & (broad_fwhm_civ >= vel_thresh) & (~zero_flux_civ)
 
     # Decision: flag a BL if any of the 4 lines meet the criteria
     is_broad = is_broad_ha | is_broad_hb | is_broad_mgii | is_broad_civ
 
-    return is_broad
+    return is_broad, is_broad_ha, is_broad_hb, is_broad_mgii, is_broad_civ
 
 
 def nii_bpt(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None) -> (
