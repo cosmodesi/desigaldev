@@ -2,7 +2,7 @@
 set_agn_masksDESI.py
 
 Applies the BitMask values for variety of AGN/Galaxy classifications according to the diagnostics defined in
-``AGNdiagnosticsFunctionsDESI.py``.
+``uv_opt_agn_diagnostics.py`` and ``ir_agn_diagnostics.py``.
 
 Original Author:
 Raga Pucha, 2021
@@ -14,12 +14,14 @@ Stephanie Juneau (NOIRlab), Nov 2024, Feb 2025
 Revised by:
 Benjamin Floyd (University of Portsmouth)
 """
+from typing import Literal
 
 import yaml
 from astropy.table import Table, MaskedColumn
 from desiutil.bitmask import BitMask
 
-import AGNdiagnosticsFunctionsDESI as agndiag
+import uv_opt_agn_diagnostics as uv_opt_agn
+import ir_agn_diagnostics as ir_agn
 
 
 ## Original notes:
@@ -99,9 +101,9 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
     agn_bits |= qsom_qn_var_wise * agn_maskbits.QN_VAR_WISE
 
     # BPT classifications from individual diagnostics
-    *_, agn_nii, liner_nii, composite_nii = agndiag.nii_bpt(input_table, snr=snr, mask=mask)
-    *_, agn_sii, liner_sii = agndiag.sii_bpt(input_table, snr=snr, kewley01=kewley01, mask=mask)
-    *_, agn_oi, liner_oi = agndiag.oi_bpt(input_table, snr=snr, snr_oi=snr_oi, kewley01=kewley01, mask=mask)
+    *_, agn_nii, liner_nii, composite_nii = uv_opt_agn.nii_bpt(input_table, snr=snr, mask=mask)
+    *_, agn_sii, liner_sii = uv_opt_agn.sii_bpt(input_table, snr=snr, kewley01=kewley01, mask=mask)
+    *_, agn_oi, liner_oi = uv_opt_agn.oi_bpt(input_table, snr=snr, snr_oi=snr_oi, kewley01=kewley01, mask=mask)
 
     # Combined BPT classification
     bpt_any_sy = agn_nii | agn_sii | agn_oi
@@ -110,23 +112,29 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
     agn_bits |= bpt_any_agn * agn_maskbits.BPT_ANY_AGN
 
     # Whether there is a broad line (FWHM>= 1200 km/s)
-    bl = agndiag.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
+    bl = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
     agn_bits |= bl * agn_maskbits.BROAD_LINE
 
     # Other (non-BPT) optical diagnostics: WHAN, MEx, KEx, Blue
-    _, _, whan_sagn, *_ = agndiag.whan(input_table, snr=snr, mask=mask)
-    _, mex_agn, *_ = agndiag.mex(input_table, snr=snr, mask=mask)
-    _, agn_blue, *_ = agndiag.blue(input_table, snr=snr, snr_oii=snr_oii,
-                                   mask=mask)
-    kex, kex_agn, kex_sf, kex_interm = agndiag.kex(input_table, snr=snr, mask=mask)
+    _, _, whan_sagn, *_ = uv_opt_agn.whan(input_table, snr=snr, mask=mask)
+    _, mex_agn, *_ = uv_opt_agn.mex(input_table, snr=snr, mask=mask)
+    _, agn_blue, *_ = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii,
+                                      mask=mask)
+    kex, kex_agn, kex_sf, kex_interm = uv_opt_agn.kex(input_table, snr=snr, mask=mask)
 
     # Combine them for the OPT_OTHER_AGN (keeping mostly more confident ones and 
     # excluding possible weak AGN / blended classes)
     opt_other_agn = whan_sagn | mex_agn | agn_blue | kex_agn
     agn_bits |= opt_other_agn * agn_maskbits.OPT_OTHER_AGN
 
-    # Overall WISE classification (combining all diagnostics
-    _, agn_wise, _ = agndiag.WISE_colors(input_table, snr=snr_wise, mask=mask)
+    # Overall WISE classification (combining all diagnostics)
+    _, jarret11_agn, _ = ir_agn.wise_jarrett11(input_table, snr=snr_wise, mask=mask)
+    _, stern12_agn, _ = ir_agn.wise_stern12(input_table, snr=snr_wise, mask=mask)
+    _, mateos12_agn, _ = ir_agn.wise_mateos12(input_table, snr=snr_wise, mask=mask)
+    _, assef18_r_agn, _ = ir_agn.wise_assef18_r(input_table, snr=snr_wise, reliability=90, mask=mask)
+    _, yao20_strong_agn, _ = ir_agn.wise_yao20(input_table, snr=snr_wise, weak_agn=False, mask=mask)
+    _, hviding22_agn, _ = ir_agn.wise_hviding22(input_table, snr=snr_wise, mask=mask)
+    agn_wise = jarret11_agn | stern12_agn | mateos12_agn | assef18_r_agn | yao20_strong_agn | hviding22_agn
     agn_bits |= agn_wise * agn_maskbits.WISE_ANY_AGN
 
     # uv, xray, radio =
@@ -161,7 +169,7 @@ def update_agntype_nii_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | 
         Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for [N II] BPT selections for all rows.
     """
 
-    nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii = agndiag.nii_bpt(input_table, snr=snr, mask=mask)
+    nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii = uv_opt_agn.nii_bpt(input_table, snr=snr, mask=mask)
 
     # If any of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)
     bpt_mask = nii_bpt * opt_uv_type.NII_BPT  ## All the emission lines have S/N >= 3
@@ -193,7 +201,7 @@ def update_agntype_sii_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | 
         Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for [S II] BPT selections for all rows.
     """
 
-    sii_bpt, sf_sii, agn_sii, liner_sii = agndiag.sii_bpt(input_table, snr=snr, kewley01=kewley01, mask=mask)
+    sii_bpt, sf_sii, agn_sii, liner_sii = uv_opt_agn.sii_bpt(input_table, snr=snr, kewley01=kewley01, mask=mask)
 
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     bpt_mask = sii_bpt * opt_uv_type.SII_BPT  ## All the emission lines have S/N >= 3
@@ -225,7 +233,7 @@ def update_agntype_oi_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | f
         Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for [OI] BPT selections for all rows.
     """
 
-    oi_bpt, sf_oi, agn_oi, liner_oi = agndiag.oi_bpt(input_table, snr=snr, snr_oi=snr_oi, kewley01=kewley01, mask=mask)
+    oi_bpt, sf_oi, agn_oi, liner_oi = uv_opt_agn.oi_bpt(input_table, snr=snr, snr_oi=snr_oi, kewley01=kewley01, mask=mask)
 
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     bpt_mask = oi_bpt * opt_uv_type.OI_BPT  ## Except [OI] - other em lines have S/N >= 3
@@ -255,7 +263,7 @@ def update_agntype_whan(input_table: Table, opt_uv_type: BitMask, snr: int | flo
        Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for WHAN selections for all rows.
     """
 
-    whan, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive = agndiag.whan(input_table, snr=snr, mask=mask)
+    whan, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive = uv_opt_agn.whan(input_table, snr=snr, mask=mask)
 
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     agn_mask = whan * opt_uv_type.WHAN  ## WHAN is available (Halpha and [NII])
@@ -288,7 +296,7 @@ def update_agntype_blue(input_table: Table, opt_uv_type: BitMask, snr: int | flo
        Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for Blue selections for all rows.
     """
 
-    blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = agndiag.blue(input_table, snr=snr, snr_oii=snr_oii, mask=mask)
+    blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii, mask=mask)
 
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     agn_mask = blue * opt_uv_type.BLUE
@@ -320,7 +328,7 @@ def update_agntype_mex(input_table: Table, opt_uv_type: BitMask, snr: int | floa
         Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for MEx selections for all rows.
     """
 
-    mex, mex_agn, mex_sf, mex_interm = agndiag.mex(input_table, snr=snr, mask=mask)
+    mex, mex_agn, mex_sf, mex_interm = uv_opt_agn.mex(input_table, snr=snr, mask=mask)
 
     agn_mask = mex * opt_uv_type.MEX
     agn_mask |= mex_agn * opt_uv_type.MEX_AGN
@@ -349,7 +357,7 @@ def update_agntype_kex(input_table: Table, opt_uv_type: BitMask, snr: int | floa
         Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for KEx selections for all rows.
     """
 
-    kex, kex_agn, kex_sf, kex_interm = agndiag.kex(input_table, snr=snr, mask=mask)
+    kex, kex_agn, kex_sf, kex_interm = uv_opt_agn.kex(input_table, snr=snr, mask=mask)
 
     agn_mask = kex * opt_uv_type.KEX
     agn_mask |= kex_agn * opt_uv_type.KEX_AGN
@@ -378,7 +386,7 @@ def update_agntype_heii(input_table: Table, opt_uv_type: BitMask, snr: int | flo
         Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for HeII selections for all rows.
     """
 
-    heii_bpt, agn_heii, sf_heii = agndiag.heii_bpt(input_table, snr=snr, mask=mask)
+    heii_bpt, agn_heii, sf_heii = uv_opt_agn.heii_bpt(input_table, snr=snr, mask=mask)
 
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     agn_mask = heii_bpt * opt_uv_type.HEII_BPT
@@ -407,7 +415,7 @@ def update_agntype_nev(input_table: Table, opt_uv_type: BitMask, snr: int | floa
         Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for [NeV] selections for all rows.
     """
 
-    nev, agn_nev, sf_nev = agndiag.nev(input_table, snr=snr, mask=mask)
+    nev, agn_nev, sf_nev = uv_opt_agn.nev(input_table, snr=snr, mask=mask)
 
     # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
     agn_mask = nev * opt_uv_type.NEV
@@ -422,9 +430,9 @@ def update_agntype_nev(input_table: Table, opt_uv_type: BitMask, snr: int | floa
     return input_table
 
 
-def update_agntype_wise_colors(input_table: Table, ir_type: BitMask, snr: int | float = 3,
-                               mask: MaskedColumn = None) -> Table:
-    """Applies all WISE color selection masks and sets the bitmasks for ``IR_TYPE``.
+def update_agntype_wise_jarrett11(input_table: Table, ir_type: BitMask, snr: int | float = 3,
+                                mask: MaskedColumn = None) -> Table:
+    """Applies the Jarrett+11 WISE AGN selection masks and sets the bitmasks for ``IR_TYPE``.
 
     Args:
         input_table: Table joined with FastSpecFit columns.
@@ -433,45 +441,183 @@ def update_agntype_wise_colors(input_table: Table, ir_type: BitMask, snr: int | 
         mask: Optional mask (e.g., from masked column array). Default is ``None``.
 
     Returns:
-        Input table with new or updated column with ``IR_TYPE`` bit masks for all WISE color selections for all rows.
+        Input table with new or updated column with ``IR_TYPE`` bit masks for Jarrett+11 WISE color-color selection for
+        all rows.
     """
 
-    # 'Jarrett11'
-    ## using this example to save the wise_w123 info (where W1, W2, W3 are all above S/N cut)
-    wise_w123, agn_ir, sf_ir = agndiag.WISE_colors(input_table, snr=snr, mask=mask, diag='Jarrett11')
-    agn_mask = agn_ir * ir_type.WISE_AGN_J11
-    agn_mask |= sf_ir * ir_type.WISE_SF_J11
+    wise_w123, agn_ir, non_agn_ir = ir_agn.wise_jarrett11(input_table, snr=snr, mask=mask)
 
-    # 'Stern12'
-    ## using this example to save the wise_w12 info (where W1, W2 are both above S/N cut)
-    wise_w12, agn_ir, sf_ir = agndiag.WISE_colors(input_table, snr=snr, mask=mask, diag='Stern12')
+    # For the WISE selections, all galaxies will have flags for at least whether there was photometry available.
+    # If W1, W2, W3 fluxes are above threshold snr (required for Jarrett+, Mateos+, Yao+, Hviding+)
+    agn_mask = wise_w123 * ir_type.WISE_W123
+
+    # Further, apply masks for if the galaxy is classified as an AGN or non-AGN (called "SF" in bitmask definitions.)
+    agn_mask |= agn_ir * ir_type.WISE_AGN_J11
+    agn_mask |= non_agn_ir * ir_type.WISE_SF_J11
+
+    try:
+        input_table['IR_TYPE'] |= agn_mask
+    except KeyError:
+        input_table['IR_TYPE'] = agn_mask
+
+    return input_table
+
+def update_agntype_wise_stern12(input_table: Table, ir_type: BitMask, snr: int | float = 3,
+                                mask: MaskedColumn = None) -> Table:
+    """Applies the Stern+12 WISE AGN selection masks and sets the bitmasks for ``IR_TYPE``.
+
+    Args:
+        input_table: Table joined with FastSpecFit columns.
+        ir_type: DESI BitMask object containing the definitions of the ``IR_TYPE`` values.
+        snr: Signal-to-noise cut applied to all flux axes. Default is ``3``.
+        mask: Optional mask (e.g., from masked column array). Default is ``None``.
+
+    Returns:
+        Input table with new or updated column with ``IR_TYPE`` bit masks for Stern+12 WISE color selection for all
+        rows.
+    """
+
+    wise_w12, agn_ir, non_agn_ir = ir_agn.wise_stern12(input_table, snr=snr, mask=mask)
+
+    # For the WISE selections, all galaxies will have flags for at least whether there was photometry available.
+    # If W1, W2 fluxes are above threshold snr (required for Stern+ and Assef+)
+    agn_mask = wise_w12 * ir_type.WISE_W12
+
+    # Further, apply masks for if the galaxy is classified as an AGN or non-AGN (called "SF" in bitmask definitions.)
     agn_mask |= agn_ir * ir_type.WISE_AGN_S12
-    agn_mask |= sf_ir * ir_type.WISE_SF_S12
+    agn_mask |= non_agn_ir * ir_type.WISE_SF_S12
 
-    # 'Mateos12'
-    _, agn_ir, sf_ir = agndiag.WISE_colors(input_table, snr=snr, mask=mask, diag='Mateos12')
+    try:
+        input_table['IR_TYPE'] |= agn_mask
+    except KeyError:
+        input_table['IR_TYPE'] = agn_mask
+
+    return input_table
+
+def update_agntype_wise_mateos12(input_table: Table, ir_type: BitMask, snr: int | float = 3,
+                                 mask: MaskedColumn = None) -> Table:
+    """Applies the Mateos+12 WISE AGN selection masks and sets the bitmasks for ``IR_TYPE``.
+
+    Args:
+        input_table: Table joined with FastSpecFit columns.
+        ir_type: DESI BitMask object containing the definitions of the ``IR_TYPE`` values.
+        snr: Signal-to-noise cut applied to all flux axes. Default is ``3``.
+        mask: Optional mask (e.g., from masked column array). Default is ``None``.
+
+    Returns:
+        Input table with new or updated column with ``IR_TYPE`` bit masks for Mateos+12 WISE color-color selection for
+        all rows.
+    """
+
+    wise_w123, agn_ir, non_agn_ir = ir_agn.wise_mateos12(input_table, snr=snr, mask=mask)
+
+    # For the WISE selections, all galaxies will have flags for at least whether there was photometry available.
+    # If W1, W2, W3 fluxes are above threshold snr (required for Jarrett+, Mateos+, Yao+, Hviding+)
+    agn_mask = wise_w123 * ir_type.WISE_W123
+
+    # Further, apply masks for if the galaxy is classified as an AGN or non-AGN (called "SF" in bitmask definitions.)
     agn_mask |= agn_ir * ir_type.WISE_AGN_M12
-    agn_mask |= sf_ir * ir_type.WISE_SF_M12
+    agn_mask |= non_agn_ir * ir_type.WISE_SF_M12
 
-    # 'Assef18'
-    _, agn_ir, sf_ir = agndiag.WISE_colors(input_table, snr=snr, mask=mask, diag='Assef18')
+    try:
+        input_table['IR_TYPE'] |= agn_mask
+    except KeyError:
+        input_table['IR_TYPE'] = agn_mask
+
+    return input_table
+
+def update_agntype_wise_assef18_r(input_table: Table, ir_type: BitMask, snr: int | float = 3,
+                                 reliability: Literal[75, 90] = 90, mask: MaskedColumn = None) -> Table:
+    """Applies the reliability-optimized Assef+18 WISE AGN selection masks and sets the bitmasks for ``IR_TYPE``.
+
+    Args:
+        input_table: Table joined with FastSpecFit columns.
+        ir_type: DESI BitMask object containing the definitions of the ``IR_TYPE`` values.
+        snr: Signal-to-noise cut applied to all flux axes. Default is ``3``.
+        reliability: The reliability percent threshold to use for the selection. Must be either ``75`` or ``90``, the
+            default is ``90``.
+        mask: Optional mask (e.g., from masked column array). Default is ``None``.
+
+    Returns:
+        Input table with new or updated column with ``IR_TYPE`` bit masks for the reliability-optimized Assef+18 WISE
+        color-color selection for all rows.
+    """
+
+    wise_w12, agn_ir, non_agn_ir = ir_agn.wise_assef18_r(input_table, snr=snr, reliability=reliability, mask=mask)
+
+    # For the WISE selections, all galaxies will have flags for at least whether there was photometry available.
+    # If W1, W2 fluxes are above threshold snr (required for Stern+ and Assef+)
+    agn_mask = wise_w12 * ir_type.WISE_W12
+
+    # Further, apply masks for if the galaxy is classified as an AGN or non-AGN (called "SF" in bitmask definitions.)
     agn_mask |= agn_ir * ir_type.WISE_AGN_A18
-    agn_mask |= sf_ir * ir_type.WISE_SF_A18
+    agn_mask |= non_agn_ir * ir_type.WISE_SF_A18
 
-    # 'Yao20'
-    _, agn_ir, sf_ir = agndiag.WISE_colors(input_table, snr=snr, mask=mask, diag='Yao20')
+    try:
+        input_table['IR_TYPE'] |= agn_mask
+    except KeyError:
+        input_table['IR_TYPE'] = agn_mask
+
+    return input_table
+
+def update_agntype_wise_yao20(input_table: Table, ir_type: BitMask, snr: int | float = 3,
+                              mask: MaskedColumn = None) -> Table:
+    """Applies the Yao+20 WISE AGN selection masks and sets the bitmasks for ``IR_TYPE``.
+
+    Args:
+        input_table: Table joined with FastSpecFit columns.
+        ir_type: DESI BitMask object containing the definitions of the ``IR_TYPE`` values.
+        snr: Signal-to-noise cut applied to all flux axes. Default is ``3``.
+        mask: Optional mask (e.g., from masked column array). Default is ``None``.
+
+    Returns:
+        Input table with new or updated column with ``IR_TYPE`` bit masks for the reliability-optimized Yao+20 WISE
+        color-color selection for all rows.
+    """
+
+    # We will not implement the "weak AGN" selection here to preserve compatability with existing bitmasks
+    wise_w123, agn_ir, non_agn_ir = ir_agn.wise_yao20(input_table, snr=snr, weak_agn=False, mask=mask)
+
+    # For WISE selections, all galaxies will have flags for at least whether there was photometry available.
+    # If W1, W2, W3 fluxes are above threshold snr (required for Jarrett+, Mateos+, Yao+, Hviding+)
+    agn_mask = wise_w123 * ir_type.WISE_W123
+
+    # Further, apply masks for if the galaxy is classified as an AGN or non-AGN (called "SF" in bitmask definitions.)
     agn_mask |= agn_ir * ir_type.WISE_AGN_Y20
-    agn_mask |= sf_ir * ir_type.WISE_SF_Y20
+    agn_mask |= non_agn_ir * ir_type.WISE_SF_Y20
 
-    # 'Hviding22'
-    _, agn_ir, sf_ir = agndiag.WISE_colors(input_table, snr=snr, mask=mask, diag='Hviding22')
+    try:
+        input_table['IR_TYPE'] |= agn_mask
+    except KeyError:
+        input_table['IR_TYPE'] = agn_mask
+
+    return input_table
+
+
+def update_agntype_wise_hviding22(input_table: Table, ir_type: BitMask, snr: int | float = 3,
+                                  mask: MaskedColumn = None) -> Table:
+    """Applies the Hviding+22 WISE AGN selection masks and sets the bitmasks for ``IR_TYPE``.
+
+    Args:
+        input_table: Table joined with FastSpecFit columns.
+        ir_type: DESI BitMask object containing the definitions of the ``IR_TYPE`` values.
+        snr: Signal-to-noise cut applied to all flux axes. Default is ``3``.
+        mask: Optional mask (e.g., from masked column array). Default is ``None``.
+
+    Returns:
+        Input table with new or updated column with ``IR_TYPE`` bit masks for Hviding+22 WISE color-color selection for
+        all rows.
+    """
+
+    wise_w123, agn_ir, sf_ir = ir_agn.wise_hviding22(input_table, snr=snr, mask=mask)
+
+    # For WISE selections, all galaxies will have flags for at least whether there was photometry available.
+    # If W1, W2, W3 fluxes are above threshold snr (required for Jarrett+, Mateos+, Yao+, Hviding+)
+    agn_mask = wise_w123 * ir_type.WISE_W123
+
+    # Further, apply masks for if the galaxy is classified as an AGN or non-AGN (called "SF" in bitmask definitions.)
     agn_mask |= agn_ir * ir_type.WISE_AGN_H22
     agn_mask |= sf_ir * ir_type.WISE_SF_H22
-
-    # If W1, W2 fluxes are above threshold snr (required for Stern+ and Assef+)
-    agn_mask |= wise_w12 * ir_type.WISE_W12
-    # If W1, W2, W3 fluxes are above threshold snr (required for Jarrett+, Mateos+, Yao+, Hviding+)
-    agn_mask |= wise_w123 * ir_type.WISE_W123
 
     try:
         input_table['IR_TYPE'] |= agn_mask
