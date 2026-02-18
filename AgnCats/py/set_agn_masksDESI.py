@@ -12,7 +12,7 @@ Becky Canning (University of Portsmouth), 2023
 Stephanie Juneau (NOIRlab), Nov 2024, Feb 2025
 
 Revised by:
-Benjamin Floyd (University of Portsmouth)
+Benjamin Floyd (University of Portsmouth), 2026
 """
 from typing import Literal
 
@@ -111,8 +111,9 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
     agn_bits |= bpt_any_sy * agn_maskbits.BPT_ANY_SY
     agn_bits |= bpt_any_agn * agn_maskbits.BPT_ANY_AGN
 
-    # Whether there is a broad line (FWHM>= 1200 km/s)
-    bl = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
+    # Whether there is a broad line (FWHM>= 1200 km/s); move the vel_thresh to function input?
+#    bl = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
+    bl, _, _, _, _ = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
     agn_bits |= bl * agn_maskbits.BROAD_LINE
 
     # Other (non-BPT) optical diagnostics: WHAN, MEx, KEx, Blue
@@ -151,6 +152,34 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
         input_table['AGN_MASKBITS'] |= agn_bits
     except KeyError:
         input_table['AGN_MASKBITS'] = agn_bits
+
+    return input_table
+
+
+def update_broad_lines(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3,
+                        mask: MaskedColumn = None) -> Table:
+    """Applies the Broad Line cuts and sets the bitmasks for ``OPT_UV_TYPE``.
+
+    Args:
+        input_table: Table joined with FastSpecFit columns.
+        opt_uv_type: DESI BitMask object containing the definitions of the ``OPT_UV_TYPE`` values.
+        snr: Signal-to-noise cut applied to all flux axes. Default is ``3``.
+        mask: Optional mask (e.g., from masked column array). Default is ``None``.
+
+    Returns:
+        Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for Broad Line selections for all rows.
+    """
+
+    bl, bl_ha, bl_hb, bl_mgii, bl_civ = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
+    bl_mask = bl_ha * opt_uv_type.BROAD_HALPHA
+    bl_mask |= bl_hb * opt_uv_type.BROAD_HBETA
+    bl_mask |= bl_mgii * opt_uv_type.BROAD_MGII
+    bl_mask |= bl_civ * opt_uv_type.BROAD_CIV
+    
+    try:
+        input_table['OPT_UV_TYPE'] |= bl_mask
+    except KeyError:
+        input_table['OPT_UV_TYPE'] = bl_mask
 
     return input_table
 
