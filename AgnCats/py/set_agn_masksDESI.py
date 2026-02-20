@@ -14,6 +14,7 @@ Stephanie Juneau (NOIRlab), Nov 2024, Feb 2025
 Revised by:
 Benjamin Floyd (University of Portsmouth)
 """
+from pathlib import Path
 from typing import Literal
 
 import yaml
@@ -36,7 +37,7 @@ import ir_agn_diagnostics as ir_agn
 # Note: QSO_MASKBITS are applied to the first 9 bits of agn_maskbits
 #       OPT_UV_TYPE and IR_TYPE include definitions for detailed classification
 
-def get_agn_maskbits(file: str) -> tuple[BitMask, BitMask, BitMask]:
+def get_agn_maskbits(file: Path | str) -> tuple[BitMask, BitMask, BitMask]:
     """Parses the AGN bitmask definition YAML file into DESI BitMask objects.
 
     Args:

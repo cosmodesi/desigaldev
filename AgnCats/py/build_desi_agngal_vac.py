@@ -11,6 +11,8 @@ from pathlib import Path
 import fitsio
 from astropy.table import Table, hstack, join
 
+from AgnCats.py import set_agn_masksDESI as agn_masks
+
 # First we want to build a dispatch pattern to handle the various file selections between data releases
 desi_specprod = {
     # EDR
@@ -25,7 +27,7 @@ desi_specprod = {
         # Redshift catalog
         'zcat': Path('/global/cfs/cdirs/desi/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits'),
         'zcat_cols': ['TARGETID','SURVEY','PROGRAM','HEALPIX','TSNR2_LRG','SV_NSPEC','SV_PRIMARY',
-                 'ZCAT_NSPEC','ZCAT_PRIMARY','MIN_MJD','MEAN_MJD','MAX_MJD', 'OBJTYPE']
+                      'ZCAT_NSPEC','ZCAT_PRIMARY','MIN_MJD','MEAN_MJD','MAX_MJD', 'OBJTYPE']
     },
     # DR1
     'iron': {
@@ -39,7 +41,7 @@ desi_specprod = {
         # Redshift catalog
         'zcat': Path('/global/cfs/cdirs/desi/spectro/redux/iron/zcatalog/v1/zall-pix-iron.fits'),
         'zcat_cols': ['TARGETID','SURVEY','PROGRAM','HEALPIX','TSNR2_LRG','ZCAT_NSPEC','ZCAT_PRIMARY',
-                 'SV_NSPEC','SV_PRIMARY','MAIN_PRIMARY','MAIN_NSPEC','MIN_MJD','MEAN_MJD','MAX_MJD','OBJTYPE']
+                      'SV_NSPEC','SV_PRIMARY','MAIN_PRIMARY','MAIN_NSPEC','MIN_MJD','MEAN_MJD','MAX_MJD','OBJTYPE']
     },
     # DR2
     'loa': {
@@ -57,7 +59,7 @@ qso_maker_cols = ['TARGETID', 'Z', 'ZERR', 'ZWARN', 'SPECTYPE', 'COADD_FIBERSTAT
 
 
 zcat_cols = ['DESI_TARGET','BGS_TARGET','SCND_TARGET','CMX_TARGET','SV1_DESI_TARGET','SV1_BGS_TARGET','SV1_SCND_TARGET',
-               'SV2_DESI_TARGET','SV2_BGS_TARGET','SV2_SCND_TARGET','SV3_DESI_TARGET','SV3_BGS_TARGET','SV3_SCND_TARGET']
+             'SV2_DESI_TARGET','SV2_BGS_TARGET','SV2_SCND_TARGET','SV3_DESI_TARGET','SV3_BGS_TARGET','SV3_SCND_TARGET']
 
 
 
@@ -179,3 +181,45 @@ def read_input_catalogs(specprod_info: dict[str, Path | list[str]], fastspec_dat
     return desi_catalog
 
 # Begin AGN/Galaxy classifications
+def apply_agngal_class(input_table: Table, agnmask_defs: Path) -> Table:
+    """Applies the AGN/Galaxy classification definitions and adds bitmasks to the input table.
+
+    Args:
+        input_table:
+            Table containing spectroscopic and photometric fluxes and inverse variances.
+        agnmask_defs:
+            Path to YAML file containing AGN/Galaxy classification definitions.
+
+    Returns:
+        Input table with AGN/Galaxy classification bitmask columns added.
+    """
+
+    # Read in the bit mask definitions
+    agn_maskbits, uv_opt_type, ir_type = agn_masks.get_agn_maskbits(agnmask_defs)
+
+    # Apply the AGN_MASKBITS to the catalog
+    desi_catalog = agn_masks.update_agn_maskbits(input_table, agn_maskbits, snr=3, snr_oi=1, snr_wise=3, kewley01=False)
+
+    # Apply the BPT UV_OPT_TYPE maskbits
+    desi_catalog = agn_masks.update_agntype_nii_bpt(desi_catalog, uv_opt_type, snr=3)
+    desi_catalog = agn_masks.update_agntype_sii_bpt(desi_catalog, uv_opt_type, snr=3, kewley01=False)
+    desi_catalog = agn_masks.update_agntype_oi_bpt(desi_catalog, uv_opt_type, snr=3, snr_oi=1, kewley01=False)
+
+    # Apply the non-BPT optical maskbits
+    desi_catalog = agn_masks.update_agntype_whan(desi_catalog, uv_opt_type, snr=3)
+    desi_catalog = agn_masks.update_agntype_blue(desi_catalog, uv_opt_type, snr=3, snr_oii=1)
+    desi_catalog = agn_masks.update_agntype_mex(desi_catalog, uv_opt_type, snr=3)
+    desi_catalog = agn_masks.update_agntype_kex(desi_catalog, uv_opt_type, snr=3)
+    desi_catalog = agn_masks.update_agntype_heii(desi_catalog, uv_opt_type, snr=3)
+    desi_catalog = agn_masks.update_agntype_nev(desi_catalog, uv_opt_type, snr=3)
+
+    # Apply the WISE IR-selection maskbits
+    desi_catalog = agn_masks.update_agntype_wise_stern12(desi_catalog, ir_type, snr=3)
+    desi_catalog = agn_masks.update_agntype_wise_mateos12(desi_catalog, ir_type, snr=3)
+    desi_catalog = agn_masks.update_agntype_wise_assef18_r(desi_catalog, ir_type, snr=3, reliability=90)
+    desi_catalog = agn_masks.update_agntype_wise_yao20(desi_catalog, ir_type, snr=3)
+    desi_catalog = agn_masks.update_agntype_wise_hviding22(desi_catalog, ir_type, snr=3)
+
+    return desi_catalog
+
+
