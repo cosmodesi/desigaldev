@@ -9,9 +9,11 @@ notebook and provides parallelized computation abilities in constructing the fin
 from pathlib import Path
 
 import fitsio
+from astropy.io import fits
 from astropy.table import Table, hstack, join
 
 from AgnCats.py import set_agn_masksDESI as agn_masks
+from desiutil.annotate import annotate_fits
 
 # First we want to build a dispatch pattern to handle the various file selections between data releases
 desi_specprod = {
@@ -222,4 +224,34 @@ def apply_agngal_class(input_table: Table, agnmask_defs: Path) -> Table:
 
     return desi_catalog
 
+def output_processing(input_table: Table, output_filename: str | Path,
+                      ext1_colnames: list[str], ext2_colnames: list[str],
+                      ext1_units: dict[str, str], ext2_units: dict[str, str]) -> None:
+    """Processes catalog for final write out.
 
+    Args:
+        input_table:
+            Table with AGN/Galaxy classification bit masks present.
+        output_filename:
+            Path to the output FITS file.
+        ext1_colnames:
+            List of column names in ``input_table`` to place in extension 1 of output FITS file.
+        ext2_colnames:
+            List of column names in ``input_table`` to place in extension 2 of output FITS file.
+        ext1_units:
+            Dictionary of units to apply on columns in extension 1 of output FITS file.
+        ext2_units:
+            Dictionary of units to apply on columns in extension 2 of output FITS file.
+
+    """
+
+    # Create the FITS HDU list structure and write out file
+    primary_hdu = fits.PrimaryHDU()
+    agn_gal_table_hdu = fits.BinTableHDU(input_table[ext1_colnames], name='AGNGALCAT')
+    flux_table_hdu = fits.BinTableHDU(input_table[ext2_colnames], name='AUXDATA')
+    hdu_list = fits.HDUList([primary_hdu, agn_gal_table_hdu, flux_table_hdu])
+    hdu_list.writeto(output_filename, overwrite=True, checksum=True)
+
+    # We will use the ``annotate_fits`` function to add units to the extensions.
+    annotate_fits(output_filename, extension=1, output=output_filename, units=ext1_units, overwrite=True)
+    annotate_fits(output_filename, extension=2, output=output_filename, units=ext2_units, overwrite=True)
