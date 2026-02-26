@@ -5,15 +5,16 @@ Author: Benjamin Floyd
 This top-level script builds the DESI AGN/Galaxy Classification VAC. This supersedes the DR1 00_AGNQSO_summary_cat.ipynb
 notebook and provides parallelized computation abilities in constructing the final catalog.
 """
-
+import re
+from itertools import groupby
 from pathlib import Path
 
 import fitsio
 from astropy.io import fits
 from astropy.table import Table, hstack, join
+from desiutil.annotate import annotate_fits
 
 from AgnCats.py import set_agn_masksDESI as agn_masks
-from desiutil.annotate import annotate_fits
 
 # First we want to build a dispatch pattern to handle the various file selections between data releases
 desi_specprod = {
@@ -28,8 +29,20 @@ desi_specprod = {
 
         # Redshift catalog
         'zcat': Path('/global/cfs/cdirs/desi/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits'),
-        'zcat_cols': ['TARGETID','SURVEY','PROGRAM','HEALPIX','TSNR2_LRG','SV_NSPEC','SV_PRIMARY',
-                      'ZCAT_NSPEC','ZCAT_PRIMARY','MIN_MJD','MEAN_MJD','MAX_MJD', 'OBJTYPE']
+        'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'TSNR2_LRG', 'SV_NSPEC', 'SV_PRIMARY',
+                      'ZCAT_NSPEC', 'ZCAT_PRIMARY', 'MIN_MJD', 'MEAN_MJD', 'MAX_MJD', 'OBJTYPE'],
+
+        # Output catalog extension 1 column names
+        'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
+                             'Z', 'ZERR', 'ZWARN', 'SPECTYPE',
+                             'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
+                             'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',
+                             'MIN_MJD', 'MEAN_MJD', 'MAX_MJD', 'COADD_NUMEXP', 'COADD_EXPTIME',
+                             'SV_PRIMARY', 'ZCAT_PRIMARY',
+                             'DESI_TARGET', 'SCND_TARGET', 'BGS_TARGET', 'CMX_TARGET',
+                             'SV1_DESI_TARGET', 'SV2_DESI_TARGET', 'SV3_DESI_TARGET',
+                             'SV1_BGS_TARGET', 'SV2_BGS_TARGET', 'SV3_BGS_TARGET',
+                             'SV1_SCND_TARGET', 'SV2_SCND_TARGET', 'SV3_SCND_TARGET']
     },
     # DR1
     'iron': {
@@ -42,53 +55,180 @@ desi_specprod = {
 
         # Redshift catalog
         'zcat': Path('/global/cfs/cdirs/desi/spectro/redux/iron/zcatalog/v1/zall-pix-iron.fits'),
-        'zcat_cols': ['TARGETID','SURVEY','PROGRAM','HEALPIX','TSNR2_LRG','ZCAT_NSPEC','ZCAT_PRIMARY',
-                      'SV_NSPEC','SV_PRIMARY','MAIN_PRIMARY','MAIN_NSPEC','MIN_MJD','MEAN_MJD','MAX_MJD','OBJTYPE']
+        'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'TSNR2_LRG', 'ZCAT_NSPEC', 'ZCAT_PRIMARY',
+                      'SV_NSPEC', 'SV_PRIMARY', 'MAIN_PRIMARY', 'MAIN_NSPEC', 'MIN_MJD', 'MEAN_MJD', 'MAX_MJD',
+                      'OBJTYPE'],
+
+        # Output catalog extension 1 column names
+        'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
+                             'Z', 'ZERR', 'ZWARN', 'SPECTYPE',
+                             'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
+                             'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',
+                             'MIN_MJD', 'MEAN_MJD', 'MAX_MJD', 'COADD_NUMEXP', 'COADD_EXPTIME',
+                             'SV_PRIMARY', 'MAIN_PRIMARY', 'ZCAT_PRIMARY',
+                             'DESI_TARGET', 'SCND_TARGET', 'BGS_TARGET', 'CMX_TARGET',
+                             'SV1_DESI_TARGET', 'SV2_DESI_TARGET', 'SV3_DESI_TARGET',
+                             'SV1_BGS_TARGET', 'SV2_BGS_TARGET', 'SV3_BGS_TARGET',
+                             'SV1_SCND_TARGET', 'SV2_SCND_TARGET', 'SV3_SCND_TARGET']
     },
     # DR2
     'loa': {
         # QSO-Maker
+        'qso_maker_dir': Path('/global/cfs/cdirs/desi/science/gqp/agncatalog/qsomaker/loa'),
+
         # FastSpecFit Catalog
+        'fast_spec_dir': Path('/global/cfs/cdirs/desi/vac/dr2/fastspecfit/loa/v1.0/catalogs'),
+
         # Redshift Catalog
+        'zcat_dir': Path('/global/cfs/cdirs/desi/science/gqp/agncatalog/zpix_nside1/loa/v1'),
+        'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'TSNR2_LRG', 'ZCAT_NSPEC', 'ZCAT_PRIMARY',
+                      'SV_NSPEC', 'SV_PRIMARY', 'MAIN_PRIMARY', 'MAIN_NSPEC', 'MIN_MJD', 'MEAN_MJD', 'MAX_MJD',
+                      'OBJTYPE'],
+
+        # Output catalog extension 1 column names
+        'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
+                             'Z', 'ZERR', 'ZWARN', 'SPECTYPE',
+                             'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
+                             'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',
+                             'MIN_MJD', 'MEAN_MJD', 'MAX_MJD', 'COADD_NUMEXP', 'COADD_EXPTIME',
+                             'SV_PRIMARY', 'MAIN_PRIMARY', 'ZCAT_PRIMARY',
+                             'DESI_TARGET', 'SCND_TARGET', 'BGS_TARGET', 'CMX_TARGET',
+                             'SV1_DESI_TARGET', 'SV2_DESI_TARGET', 'SV3_DESI_TARGET',
+                             'SV1_BGS_TARGET', 'SV2_BGS_TARGET', 'SV3_BGS_TARGET',
+                             'SV1_SCND_TARGET', 'SV2_SCND_TARGET', 'SV3_SCND_TARGET']
     }
 }
 
+# Universal input catalog column names
 qso_maker_cols = ['TARGETID', 'Z', 'ZERR', 'ZWARN', 'SPECTYPE', 'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC',
                   'MORPHTYPE', 'MASKBITS', 'COADD_NUMEXP', 'COADD_EXPTIME', 'TSNR2_LYA', 'TSNR2_QSO',
                   'Z_RR', 'Z_QN', 'C_LYA', 'C_CIV', 'C_CIII', 'C_MgII', 'C_Hbeta', 'C_Halpha',
                   'QSO_MASKBITS', 'SURVEY', 'PROGRAM']
 
+zcat_cols = ['DESI_TARGET', 'BGS_TARGET', 'SCND_TARGET', 'CMX_TARGET', 'SV1_DESI_TARGET', 'SV1_BGS_TARGET',
+             'SV1_SCND_TARGET',
+             'SV2_DESI_TARGET', 'SV2_BGS_TARGET', 'SV2_SCND_TARGET', 'SV3_DESI_TARGET', 'SV3_BGS_TARGET',
+             'SV3_SCND_TARGET']
+
+fast_spec_data_cols = ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
+                 'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
+                 'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
+                 'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
+                 'OII_3726_FLUX', 'OII_3726_FLUX_IVAR', 'OII_3726_EW', 'OII_3726_EW_IVAR',
+                 'OII_3729_FLUX', 'OII_3729_FLUX_IVAR', 'OII_3729_EW', 'OII_3729_EW_IVAR',
+                 'NEV_3426_FLUX', 'NEV_3426_FLUX_IVAR',
+                 'HEII_4686_FLUX', 'HEII_4686_FLUX_IVAR',
+                 'HBETA_EW', 'HBETA_EW_IVAR', 'HBETA_FLUX', 'HBETA_FLUX_IVAR',
+                 'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA', 'HBETA_BROAD_CHI2',
+                 'OIII_5007_FLUX', 'OIII_5007_FLUX_IVAR', 'OIII_5007_SIGMA',
+                       'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
+                       'HALPHA_EW', 'HALPHA_EW_IVAR', 'HALPHA_FLUX', 'HALPHA_FLUX_IVAR',
+                       'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_VSHIFT', 'HALPHA_BROAD_SIGMA',
+                       'NII_6584_FLUX', 'NII_6584_FLUX_IVAR',
+                       'SII_6716_FLUX', 'SII_6716_FLUX_IVAR',
+                       'SII_6731_FLUX', 'SII_6731_FLUX_IVAR']
+
+fast_spec_meta_cols = ['TARGETID', 'SURVEY', 'PROGRAM', 'PHOTSYS', 'LS_ID',
+                 'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z', 'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R', 'FIBERTOTFLUX_Z',
+                 'FLUX_G', 'FLUX_R', 'FLUX_Z', 'FLUX_W1', 'FLUX_W2', 'FLUX_W3', 'FLUX_W4',
+                 'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z', 'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'FLUX_IVAR_W3',
+                 'FLUX_IVAR_W4',
+                 'EBV', 'MW_TRANSMISSION_G', 'MW_TRANSMISSION_R', 'MW_TRANSMISSION_Z',
+                 'MW_TRANSMISSION_W1', 'MW_TRANSMISSION_W2', 'MW_TRANSMISSION_W3', 'MW_TRANSMISSION_W4']
+
+# Universal output catalog column names
+output_cols_ext2 = ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
+                    'FLUX_W1', 'FLUX_W2', 'FLUX_W3',
+                    'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'FLUX_IVAR_W3',
+                    'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
+                    'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
+                    'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
+                    'OII_3726_FLUX', 'OII_3726_FLUX_IVAR', 'OII_3726_EW', 'OII_3726_EW_IVAR',
+                    'OII_3729_FLUX', 'OII_3729_FLUX_IVAR', 'OII_3729_EW', 'OII_3729_EW_IVAR',
+                    'NEV_3426_FLUX', 'NEV_3426_FLUX_IVAR',
+                    'HEII_4686_FLUX', 'HEII_4686_FLUX_IVAR',
+                    'HBETA_EW', 'HBETA_EW_IVAR', 'HBETA_FLUX', 'HBETA_FLUX_IVAR',
+                    'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA', 'HBETA_BROAD_CHI2',
+                    'OIII_5007_FLUX', 'OIII_5007_FLUX_IVAR', 'OIII_5007_SIGMA',
+                    'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
+                    'HALPHA_EW', 'HALPHA_EW_IVAR', 'HALPHA_FLUX', 'HALPHA_FLUX_IVAR',
+                    'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_VSHIFT', 'HALPHA_BROAD_SIGMA',
+                    'NII_6584_FLUX', 'NII_6584_FLUX_IVAR',
+                    'SII_6716_FLUX', 'SII_6716_FLUX_IVAR',
+                    'SII_6731_FLUX', 'SII_6731_FLUX_IVAR']
 
 
-zcat_cols = ['DESI_TARGET','BGS_TARGET','SCND_TARGET','CMX_TARGET','SV1_DESI_TARGET','SV1_BGS_TARGET','SV1_SCND_TARGET',
-             'SV2_DESI_TARGET','SV2_BGS_TARGET','SV2_SCND_TARGET','SV3_DESI_TARGET','SV3_BGS_TARGET','SV3_SCND_TARGET']
+def generate_loa_dispatchers(specprod_info: dict[str, Path | list[str]]) -> dict[str, dict[str, Path | list[str]]]:
+    """Processes the DR2 suite of catalogs into dispatchers matching the scheme for EDR and DR1.
+
+    Args:
+        specprod_info:
+            Dictionary containing paths to directories to find the relevant catalogs for DR2. Additionally, any
+            associated data-release specific column names that should be included in the final dispatcher.
+
+    Returns:
+        Dispatch patterns matching required path names and column names for catalog input. Each dispatch pattern is
+        identified by the DESI ``<Survey>-<Program>[-nside1-hp<HEALPix>]`` naming scheme e.g.,
+        "main-dark-nside1-hp00" or "sv1-bright".
+    """
+
+    # Define a RegEx pattern for the file grouping names
+    file_pattern = re.compile(r'(cmx|main|special|sv1|sv2|sv3)[-_](backup|bright|dark|other)([-_]nside1[-_]hp[0-9]*)?')
+
+    # Group all the input catalogs by survey-program-healpix into a dictionary of lists of file paths
+    all_catalogs = [*list(specprod_info['fast_spec_dir'].glob('*.fits')),
+                    *list(specprod_info['qso_maker_dir'].glob('*.fits')),
+                    *list(specprod_info['zcat_dir'].glob('*.fits'))]
+    all_catalogs = sorted([file_path for file_path in all_catalogs if file_pattern.search(str(file_path))],
+                          key=lambda f: file_pattern.search(str(f).replace('_', '-')).group(0))
+    all_catalogs_grp = groupby(all_catalogs, key=lambda f: file_pattern.search(str(f).replace('_', '-')).group(0))
+    all_catalogs_dict = {catalog_name: list(file_paths) for catalog_name, file_paths in all_catalogs_grp}
+
+    # Remove the full "main-bright" and "main-dark" entries in our grouped dictionary.
+    # Due to extra files being present in QSO-Maker directory.
+    del all_catalogs_dict['main-bright']
+    del all_catalogs_dict['main-dark']
+
+    # Convert the lists of file paths into dictionaries with the same structure as the dispatch patterns for previous
+    # data releases
+    loa_dispatchers = {survey_program: {**loa_paths(catalog_paths, specprod_info),
+                           'zcat_cols': specprod_info['zcat_cols'],
+                           'output_cols_ext1': specprod_info['output_cols_ext1']}
+                       for survey_program, catalog_paths in all_catalogs_dict.items()}
+
+    return loa_dispatchers
 
 
+def loa_paths(file_paths: list[Path], specprod_info: dict[str, Path]) -> dict[str, Path]:
+    """Parse a list of file paths into a dictionary with keys matching the expected dispatch pattern
 
-fsf_data_cols=['TARGETID','SURVEY','PROGRAM','LOGMSTAR',
-               'CIV_1549_FLUX','CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
-               'MGII_2796_FLUX','MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
-               'MGII_2803_FLUX','MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
-               'OII_3726_FLUX','OII_3726_FLUX_IVAR','OII_3726_EW','OII_3726_EW_IVAR',
-               'OII_3729_FLUX','OII_3729_FLUX_IVAR','OII_3729_EW','OII_3729_EW_IVAR',
-               'NEV_3426_FLUX','NEV_3426_FLUX_IVAR',
-               'HEII_4686_FLUX','HEII_4686_FLUX_IVAR',
-               'HBETA_EW','HBETA_EW_IVAR','HBETA_FLUX','HBETA_FLUX_IVAR',
-               'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA','HBETA_BROAD_CHI2',
-               'OIII_5007_FLUX','OIII_5007_FLUX_IVAR','OIII_5007_SIGMA',
-               'OI_6300_FLUX','OI_6300_FLUX_IVAR',
-               'HALPHA_EW','HALPHA_EW_IVAR', 'HALPHA_FLUX','HALPHA_FLUX_IVAR',
-               'HALPHA_BROAD_FLUX','HALPHA_BROAD_FLUX_IVAR','HALPHA_BROAD_VSHIFT','HALPHA_BROAD_SIGMA',
-               'NII_6584_FLUX','NII_6584_FLUX_IVAR',
-               'SII_6716_FLUX','SII_6716_FLUX_IVAR',
-               'SII_6731_FLUX','SII_6731_FLUX_IVAR']
+    Args:
+        file_paths:
+            A list of file paths describing the path name to the FastSpecFit, QSO-Maker, and Redshift catalogs.
+        specprod_info:
+            A dictionary containing keys indicating the paths to the directories for the associated catalogs. This will
+            be used to filter the paths into the appropriate categories.
 
-fsf_meta_cols=['TARGETID','SURVEY','PROGRAM','PHOTSYS','LS_ID',
-               'FIBERFLUX_G','FIBERFLUX_R','FIBERFLUX_Z','FIBERTOTFLUX_G','FIBERTOTFLUX_R','FIBERTOTFLUX_Z',
-               'FLUX_G','FLUX_R','FLUX_Z','FLUX_W1','FLUX_W2','FLUX_W3','FLUX_W4',
-               'FLUX_IVAR_G','FLUX_IVAR_R','FLUX_IVAR_Z','FLUX_IVAR_W1','FLUX_IVAR_W2','FLUX_IVAR_W3','FLUX_IVAR_W4',
-               'EBV','MW_TRANSMISSION_G','MW_TRANSMISSION_R','MW_TRANSMISSION_Z',
-               'MW_TRANSMISSION_W1','MW_TRANSMISSION_W2','MW_TRANSMISSION_W3','MW_TRANSMISSION_W4']
+    Returns:
+        A dictionary with structure matching the expected dispatch patterns for input catalogs.
+
+    Raises:
+        ValueError: If a path not matching the correct parent directories is found.
+    """
+
+    file_dict = {}
+    for file_path in file_paths:
+        match file_path.parent:
+            case path if path == specprod_info['fast_spec_dir']:
+                file_dict['fast_spec'] = file_path
+            case path if path == specprod_info['qso_maker_dir']:
+                file_dict['qso_maker'] = file_path
+            case path if path == specprod_info['zcat_dir']:
+                file_dict['zcat'] = file_path
+            case _:
+                raise ValueError(f'Unknown path: {file_path}')
+
+    return file_dict
 
 
 def read_fastspecfit(fastspec_path: Path, fastspec_data_colnames: list[str],
@@ -140,6 +280,14 @@ def read_input_catalogs(specprod_info: dict[str, Path | list[str]], fastspec_dat
 
     Returns:
         Joined table of the three input catalogs.
+
+    Raises:
+        ValueError: Under any of the following conditions:
+
+            - If the merged FastSpecFit + QSO-Maker catalog contains objects with redshifts :math:`z < 0.001`.
+            - If the merged FastSpecFit + QSO-Maker catalog contains objects with zero coadd exposure time.
+            - If the merged FastSpecFit + QSO-Maker + Redshift catalog contains non-"TGT" object types.
+
     """
 
     # Read in and merge the FastSpecFit catalog extensions into a combined table
@@ -160,7 +308,7 @@ def read_input_catalogs(specprod_info: dict[str, Path | list[str]], fastspec_dat
 
     # Test for consistency
     try:
-        assert all(desi_catalog['Z'] < 0.001)
+        assert all(desi_catalog['Z'] > 0.001)
     except AssertionError:
         raise ValueError('Joined FastSpecFit + QSO-Maker catalog contains objects z < 0.001') from AssertionError
 
@@ -182,7 +330,7 @@ def read_input_catalogs(specprod_info: dict[str, Path | list[str]], fastspec_dat
 
     return desi_catalog
 
-# Begin AGN/Galaxy classifications
+
 def apply_agngal_class(input_table: Table, agnmask_defs: Path) -> Table:
     """Applies the AGN/Galaxy classification definitions and adds bitmasks to the input table.
 
@@ -224,6 +372,7 @@ def apply_agngal_class(input_table: Table, agnmask_defs: Path) -> Table:
 
     return desi_catalog
 
+
 def output_processing(input_table: Table, output_filename: str | Path,
                       ext1_colnames: list[str], ext2_colnames: list[str],
                       ext1_units: dict[str, str], ext2_units: dict[str, str]) -> None:
@@ -255,3 +404,16 @@ def output_processing(input_table: Table, output_filename: str | Path,
     # We will use the ``annotate_fits`` function to add units to the extensions.
     annotate_fits(output_filename, extension=1, output=output_filename, units=ext1_units, overwrite=True)
     annotate_fits(output_filename, extension=2, output=output_filename, units=ext2_units, overwrite=True)
+
+
+def main() -> None:
+    ...
+    # Need to define specprod
+    # call reading function
+    # call classifying function
+    # read in unit definitions
+    # call output function
+
+
+if __name__ == "__main__":
+    main()
