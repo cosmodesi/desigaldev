@@ -6,6 +6,7 @@ This top-level script builds the DESI AGN/Galaxy Classification VAC. This supers
 notebook and provides parallelized computation abilities in constructing the final catalog.
 """
 import re
+from argparse import ArgumentParser
 from itertools import groupby
 from pathlib import Path
 
@@ -105,22 +106,22 @@ qso_maker_cols = ['TARGETID', 'Z', 'ZERR', 'ZWARN', 'SPECTYPE', 'COADD_FIBERSTAT
                   'Z_RR', 'Z_QN', 'C_LYA', 'C_CIV', 'C_CIII', 'C_MgII', 'C_Hbeta', 'C_Halpha',
                   'QSO_MASKBITS', 'SURVEY', 'PROGRAM']
 
-zcat_cols = ['DESI_TARGET', 'BGS_TARGET', 'SCND_TARGET', 'CMX_TARGET', 'SV1_DESI_TARGET', 'SV1_BGS_TARGET',
-             'SV1_SCND_TARGET',
-             'SV2_DESI_TARGET', 'SV2_BGS_TARGET', 'SV2_SCND_TARGET', 'SV3_DESI_TARGET', 'SV3_BGS_TARGET',
-             'SV3_SCND_TARGET']
+zcat_cols = ['DESI_TARGET', 'BGS_TARGET', 'SCND_TARGET', 'CMX_TARGET',
+             'SV1_DESI_TARGET', 'SV1_BGS_TARGET', 'SV1_SCND_TARGET',
+             'SV2_DESI_TARGET', 'SV2_BGS_TARGET', 'SV2_SCND_TARGET',
+             'SV3_DESI_TARGET', 'SV3_BGS_TARGET', 'SV3_SCND_TARGET']
 
 fast_spec_data_cols = ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
-                 'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
-                 'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
-                 'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
-                 'OII_3726_FLUX', 'OII_3726_FLUX_IVAR', 'OII_3726_EW', 'OII_3726_EW_IVAR',
-                 'OII_3729_FLUX', 'OII_3729_FLUX_IVAR', 'OII_3729_EW', 'OII_3729_EW_IVAR',
-                 'NEV_3426_FLUX', 'NEV_3426_FLUX_IVAR',
-                 'HEII_4686_FLUX', 'HEII_4686_FLUX_IVAR',
-                 'HBETA_EW', 'HBETA_EW_IVAR', 'HBETA_FLUX', 'HBETA_FLUX_IVAR',
-                 'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA', 'HBETA_BROAD_CHI2',
-                 'OIII_5007_FLUX', 'OIII_5007_FLUX_IVAR', 'OIII_5007_SIGMA',
+                       'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
+                       'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
+                       'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
+                       'OII_3726_FLUX', 'OII_3726_FLUX_IVAR', 'OII_3726_EW', 'OII_3726_EW_IVAR',
+                       'OII_3729_FLUX', 'OII_3729_FLUX_IVAR', 'OII_3729_EW', 'OII_3729_EW_IVAR',
+                       'NEV_3426_FLUX', 'NEV_3426_FLUX_IVAR',
+                       'HEII_4686_FLUX', 'HEII_4686_FLUX_IVAR',
+                       'HBETA_EW', 'HBETA_EW_IVAR', 'HBETA_FLUX', 'HBETA_FLUX_IVAR',
+                       'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA', 'HBETA_BROAD_CHI2',
+                       'OIII_5007_FLUX', 'OIII_5007_FLUX_IVAR', 'OIII_5007_SIGMA',
                        'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
                        'HALPHA_EW', 'HALPHA_EW_IVAR', 'HALPHA_FLUX', 'HALPHA_FLUX_IVAR',
                        'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_VSHIFT', 'HALPHA_BROAD_SIGMA',
@@ -129,12 +130,13 @@ fast_spec_data_cols = ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
                        'SII_6731_FLUX', 'SII_6731_FLUX_IVAR']
 
 fast_spec_meta_cols = ['TARGETID', 'SURVEY', 'PROGRAM', 'PHOTSYS', 'LS_ID',
-                 'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z', 'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R', 'FIBERTOTFLUX_Z',
-                 'FLUX_G', 'FLUX_R', 'FLUX_Z', 'FLUX_W1', 'FLUX_W2', 'FLUX_W3', 'FLUX_W4',
-                 'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z', 'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'FLUX_IVAR_W3',
-                 'FLUX_IVAR_W4',
-                 'EBV', 'MW_TRANSMISSION_G', 'MW_TRANSMISSION_R', 'MW_TRANSMISSION_Z',
-                 'MW_TRANSMISSION_W1', 'MW_TRANSMISSION_W2', 'MW_TRANSMISSION_W3', 'MW_TRANSMISSION_W4']
+                       'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z', 'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R',
+                       'FIBERTOTFLUX_Z',
+                       'FLUX_G', 'FLUX_R', 'FLUX_Z', 'FLUX_W1', 'FLUX_W2', 'FLUX_W3', 'FLUX_W4',
+                       'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z', 'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'FLUX_IVAR_W3',
+                       'FLUX_IVAR_W4',
+                       'EBV', 'MW_TRANSMISSION_G', 'MW_TRANSMISSION_R', 'MW_TRANSMISSION_Z',
+                       'MW_TRANSMISSION_W1', 'MW_TRANSMISSION_W2', 'MW_TRANSMISSION_W3', 'MW_TRANSMISSION_W4']
 
 # Universal output catalog column names
 output_cols_ext2 = ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
@@ -192,8 +194,8 @@ def generate_loa_dispatchers(specprod_info: dict[str, Path | list[str]]) -> dict
     # Convert the lists of file paths into dictionaries with the same structure as the dispatch patterns for previous
     # data releases
     loa_dispatchers = {survey_program: {**loa_paths(catalog_paths, specprod_info),
-                           'zcat_cols': specprod_info['zcat_cols'],
-                           'output_cols_ext1': specprod_info['output_cols_ext1']}
+                                        'zcat_cols': specprod_info['zcat_cols'],
+                                        'output_cols_ext1': specprod_info['output_cols_ext1']}
                        for survey_program, catalog_paths in all_catalogs_dict.items()}
 
     return loa_dispatchers
@@ -288,17 +290,28 @@ def read_input_catalogs(specprod_info: dict[str, Path | list[str]], fastspec_dat
             - If the merged FastSpecFit + QSO-Maker catalog contains objects with zero coadd exposure time.
             - If the merged FastSpecFit + QSO-Maker + Redshift catalog contains non-"TGT" object types.
 
+        KeyError: When running the standard dispatcher ``specprod_info`` on DR2 (Loa) entries.
+        OSError: On failure to open an input catalog file.
+
     """
 
-    # Read in and merge the FastSpecFit catalog extensions into a combined table
-    fastspec_catalog = read_fastspecfit(specprod_info['fast_spec'], fastspec_data_colnames, fastspec_meta_colnames)
+    try:
+        # Read in and merge the FastSpecFit catalog extensions into a combined table
+        fastspec_catalog = read_fastspecfit(specprod_info['fast_spec'], fastspec_data_colnames, fastspec_meta_colnames)
 
-    # Read in the QSO-Maker catalog
-    qso_maker_catalog = Table(fitsio.read(str(specprod_info['qso_maker']), ext=1, columns=qsom_colnames))
+        # Read in the QSO-Maker catalog
+        qso_maker_catalog = Table(fitsio.read(str(specprod_info['qso_maker']), ext=1, columns=qsom_colnames))
 
-    # Read in the Redshift catalog (columns used will be the data-release specific columns and global columns)
-    redshift_catalog = Table(fitsio.read(str(specprod_info['zcat']), ext=1,
-                                         columns=redshift_colnames + specprod_info['zcat_cols']))
+        # Read in the Redshift catalog (columns used will be the data-release specific columns and global columns)
+        redshift_catalog = Table(fitsio.read(str(specprod_info['zcat']), ext=1,
+                                             columns=redshift_colnames + specprod_info['zcat_cols']))
+    except KeyError as error:
+        raise KeyError('Error when trying to read in an input catalog. '
+                       'If you are trying to read DR2 (Loa) catalogs, '
+                       'function `generate_loa_dispatchers` must be ran first.') from e
+    except OSError as e:
+        raise  OSError('Error on reading an input catalog.') from e
+
 
     # Main identifiers for Joins
     keys_for_join = ['TARGETID', 'SURVEY', 'PROGRAM']
@@ -309,14 +322,13 @@ def read_input_catalogs(specprod_info: dict[str, Path | list[str]], fastspec_dat
     # Test for consistency
     try:
         assert all(desi_catalog['Z'] > 0.001)
-    except AssertionError:
-        raise ValueError('Joined FastSpecFit + QSO-Maker catalog contains objects z < 0.001') from AssertionError
+    except AssertionError as e:
+        raise ValueError('Joined FastSpecFit + QSO-Maker catalog contains objects z < 0.001') from e
 
     try:
         assert all(desi_catalog['COADD_EXPTIME'] > 0.0)
-    except AssertionError:
-        raise ValueError('Joined FastSpecFit + QSO-Maker catalog contains objects '
-                         'with zero coadd exposure time') from AssertionError
+    except AssertionError as e:
+        raise ValueError('Joined FastSpecFit + QSO-Maker catalog contains objects with zero coadd exposure time') from e
 
     # Join the FastSpecFit+QSO-Maker catalog with the redshift catalog
     desi_catalog = join(desi_catalog, redshift_catalog, keys=keys_for_join, join_type='left')
@@ -324,9 +336,8 @@ def read_input_catalogs(specprod_info: dict[str, Path | list[str]], fastspec_dat
     # Test for consistency
     try:
         assert all(desi_catalog['OBJTYPE'] == 'TGT')
-    except AssertionError:
-        raise ValueError('Joined FastSpecFit + QSO-Maker + Redshift catalog contains '
-                         'non "TGT" object types') from AssertionError
+    except AssertionError as e:
+        raise ValueError('Joined FastSpecFit + QSO-Maker + Redshift catalog contains non-"TGT" object types') from e
 
     return desi_catalog
 
@@ -406,9 +417,24 @@ def output_processing(input_table: Table, output_filename: str | Path,
     annotate_fits(output_filename, extension=2, output=output_filename, units=ext2_units, overwrite=True)
 
 
-def main() -> None:
-    ...
-    # Need to define specprod
+def build_agngal_catalog(data_release: str, output_filename: str | Path) -> None:
+    """Builds the DESI AGN/Galaxy Classification VAC.
+
+    Args:
+        data_release:
+            Identifier of data release to build catalog from. Uses DESI internal names e.g., "loa" for DR2.
+        output_filename:
+            Path to output FITS file.
+
+    """
+
+    # Loa needs to be handled differently from previous data releases
+    if data_release == 'loa':
+        dr_dispatcher = generate_loa_dispatchers(desi_specprod['loa'])
+    else:
+        dr_dispatcher = desi_specprod[data_release]
+
+    # Following steps need to be run with multiprocessing if data_release == 'loa' and single processed if 'fuji' or 'iron'
     # call reading function
     # call classifying function
     # read in unit definitions
@@ -416,4 +442,20 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = ArgumentParser()
+    parser.add_argument("data_release", choices=['edr', 'dr1', 'dr2', 'fuji', 'iron', 'loa'],
+                        help='Data release to build catalog from.')
+    parser.add_argument("-o", "--output", default="desi_agngal.fits", required=True,
+                        help="Path to output FITS file.", type=Path)
+    args = parser.parse_args()
+
+    if args.data_release == 'edr' or args.data_release == 'fuji':
+        spec_prod = 'fuji'
+    elif args.data_release == 'dr1' or args.data_release == 'iron':
+        spec_prod = 'iron'
+    elif args.data_release == 'dr2' or args.data_release == 'loa':
+        spec_prod = 'loa'
+    else:
+        raise ValueError(f"Invalid data release: {args.data_release}")
+
+    build_agngal_catalog(data_release=spec_prod, output_filename=args.output)
