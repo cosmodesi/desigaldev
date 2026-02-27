@@ -1,0 +1,7 @@
+unit:
+  TARGET_RA: 'deg'
+  TARGET_DEC: 'deg'
+  MIN_MJD: 'd'
+  MEAN_MJD: 'd'
+  MAX_MJD: 'd'
+  COADD_EXPTIME: 's'
