@@ -8,12 +8,13 @@ notebook and provides parallelized computation abilities in constructing the fin
 import re
 from argparse import ArgumentParser
 from itertools import groupby
+from multiprocessing import Pool
 from pathlib import Path
 
 import fitsio
 from astropy.io import fits
 from astropy.table import Table, hstack, join
-from desiutil.annotate import annotate_fits
+from desiutil.annotate import annotate_fits, load_yml_units
 
 from AgnCats.py import set_agn_masksDESI as agn_masks
 
@@ -99,6 +100,13 @@ desi_specprod = {
                              'SV1_SCND_TARGET', 'SV2_SCND_TARGET', 'SV3_SCND_TARGET']
     }
 }
+
+# AGN BitMask Definitions file
+agn_bitmask_defs = Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/agnmask.yaml')
+
+# Output file unit definitions files
+output_ext1_unit_defs = Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/ext1_units.yaml')
+output_ext2_unit_defs = Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/ext2_units.yaml')
 
 # Universal input catalog column names
 qso_maker_cols = ['TARGETID', 'Z', 'ZERR', 'ZWARN', 'SPECTYPE', 'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC',
@@ -305,7 +313,7 @@ def read_input_catalogs(specprod_info: dict[str, Path | list[str]], fastspec_dat
         # Read in the Redshift catalog (columns used will be the data-release specific columns and global columns)
         redshift_catalog = Table(fitsio.read(str(specprod_info['zcat']), ext=1,
                                              columns=redshift_colnames + specprod_info['zcat_cols']))
-    except KeyError as error:
+    except KeyError as e:
         raise KeyError('Error when trying to read in an input catalog. '
                        'If you are trying to read DR2 (Loa) catalogs, '
                        'function `generate_loa_dispatchers` must be ran first.') from e
@@ -417,31 +425,38 @@ def output_processing(input_table: Table, output_filename: str | Path,
     annotate_fits(output_filename, extension=2, output=output_filename, units=ext2_units, overwrite=True)
 
 
-def build_agngal_catalog(data_release: str, output_filename: str | Path) -> None:
+def build_agngal_catalog(data_release: dict[str, Path | list[str]], output_filename: str | Path) -> None:
     """Builds the DESI AGN/Galaxy Classification VAC.
 
     Args:
         data_release:
-            Identifier of data release to build catalog from. Uses DESI internal names e.g., "loa" for DR2.
+            Dispatcher including all relevant input files and column names associated with the data release VAC is being
+            built against.
         output_filename:
             Path to output FITS file.
 
     """
 
-    # Loa needs to be handled differently from previous data releases
-    if data_release == 'loa':
-        dr_dispatcher = generate_loa_dispatchers(desi_specprod['loa'])
-    else:
-        dr_dispatcher = desi_specprod[data_release]
+    # Read in unit definitions from file
+    out_ext1_units, _ = load_yml_units(output_ext1_unit_defs)
+    out_ext2_units, _ = load_yml_units(output_ext2_unit_defs)
 
-    # Following steps need to be run with multiprocessing if data_release == 'loa' and single processed if 'fuji' or 'iron'
-    # call reading function
-    # call classifying function
-    # read in unit definitions
-    # call output function
+    # Build the initial input catalog
+    desi_table = read_input_catalogs(specprod_info=data_release, fastspec_data_colnames=fast_spec_data_cols,
+                                     fastspec_meta_colnames=fast_spec_meta_cols, qsom_colnames=qso_maker_cols,
+                                     redshift_colnames=zcat_cols)
+
+    # Apply all AGN/Galaxy classifications and build BitMask columns
+    desi_table = apply_agngal_class(desi_table, agnmask_defs=agn_bitmask_defs)
+
+    # Write out file to disk
+    output_processing(desi_table, output_filename,
+                      ext1_colnames=data_release['output_cols_ext1'], ext2_colnames=output_cols_ext2,
+                      ext1_units=out_ext1_units, ext2_units=out_ext2_units)
 
 
 if __name__ == "__main__":
+    # Provide CLI arguments for easy execution via SLURM scripts.
     parser = ArgumentParser()
     parser.add_argument("data_release", choices=['edr', 'dr1', 'dr2', 'fuji', 'iron', 'loa'],
                         help='Data release to build catalog from.')
@@ -458,4 +473,21 @@ if __name__ == "__main__":
     else:
         raise ValueError(f"Invalid data release: {args.data_release}")
 
-    build_agngal_catalog(data_release=spec_prod, output_filename=args.output)
+    # Due to size and complexity, DR2/Loa needs to be handled by parallel processing compared to previous DRs.
+    if spec_prod == 'loa':
+        # Using the directory paths listed above, build dispatchers for all survey-program-(optionally healpix)
+        # sub-catalogs.
+        dr_dispatcher = generate_loa_dispatchers(desi_specprod['loa'])
+
+        # We need to assign unique output filenames for Loa catalogs based on the input catalog names.
+        output_filenames = [args.output / Path(f'desi_agngal_loa_{survey_program}.fits')
+                            for survey_program in dr_dispatcher.keys()]
+
+        # Run all catalog operations in parallel simultaneously
+        with Pool() as pool:
+            pool.starmap_async(build_agngal_catalog, zip(dr_dispatcher.values(), output_filenames))
+
+    else:
+        # For all previous data releases (EDR/Fuji, DR1/Iron) we will run the operations in serial.
+        dr_dispatcher = desi_specprod[spec_prod]
+        build_agngal_catalog(data_release=dr_dispatcher, output_filename=args.output)
