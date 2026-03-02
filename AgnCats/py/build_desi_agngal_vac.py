@@ -5,6 +5,11 @@ Author: Benjamin Floyd
 This top-level script builds the DESI AGN/Galaxy Classification VAC. This supersedes the DR1 00_AGNQSO_summary_cat.ipynb
 notebook and provides parallelized computation abilities in constructing the final catalog.
 """
+
+import sys
+
+sys.path.append('/global/homes/b/bfloyd/agngal_dr2')
+
 import re
 from argparse import ArgumentParser
 from itertools import groupby
@@ -28,6 +33,34 @@ desi_specprod = {
 
         # FastSpecFit catalog
         'fast_spec': Path('/global/cfs/cdirs/desi/spectro/fastspecfit/fuji/v3.2/catalogs/fastspec-fuji.fits'),
+        'fast_spec_data_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
+                                'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
+                                'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
+                                'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
+                                'OII_3726_FLUX', 'OII_3726_FLUX_IVAR', 'OII_3726_EW', 'OII_3726_EW_IVAR',
+                                'OII_3729_FLUX', 'OII_3729_FLUX_IVAR', 'OII_3729_EW', 'OII_3729_EW_IVAR',
+                                'NEV_3426_FLUX', 'NEV_3426_FLUX_IVAR',
+                                'HEII_4686_FLUX', 'HEII_4686_FLUX_IVAR',
+                                'HBETA_EW', 'HBETA_EW_IVAR', 'HBETA_FLUX', 'HBETA_FLUX_IVAR',
+                                'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA', 'HBETA_BROAD_CHI2',
+                                'OIII_5007_FLUX', 'OIII_5007_FLUX_IVAR', 'OIII_5007_SIGMA',
+                                'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
+                                'HALPHA_EW', 'HALPHA_EW_IVAR', 'HALPHA_FLUX', 'HALPHA_FLUX_IVAR',
+                                'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_VSHIFT',
+                                'HALPHA_BROAD_SIGMA',
+                                'NII_6584_FLUX', 'NII_6584_FLUX_IVAR',
+                                'SII_6716_FLUX', 'SII_6716_FLUX_IVAR',
+                                'SII_6731_FLUX', 'SII_6731_FLUX_IVAR'],
+
+        'fast_spec_meta_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'PHOTSYS', 'LS_ID',
+                                'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z', 'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R',
+                                'FIBERTOTFLUX_Z',
+                                'FLUX_G', 'FLUX_R', 'FLUX_Z', 'FLUX_W1', 'FLUX_W2', 'FLUX_W3', 'FLUX_W4',
+                                'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z', 'FLUX_IVAR_W1', 'FLUX_IVAR_W2',
+                                'FLUX_IVAR_W3',
+                                'FLUX_IVAR_W4',
+                                'EBV', 'MW_TRANSMISSION_G', 'MW_TRANSMISSION_R', 'MW_TRANSMISSION_Z',
+                                'MW_TRANSMISSION_W1', 'MW_TRANSMISSION_W2', 'MW_TRANSMISSION_W3', 'MW_TRANSMISSION_W4'],
 
         # Redshift catalog
         'zcat': Path('/global/cfs/cdirs/desi/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits'),
@@ -54,6 +87,38 @@ desi_specprod = {
 
         # FastSpecFit catalog
         'fast_spec': Path('/global/cfs/cdirs/desi/spectro/fastspecfit/iron/v2.1/catalogs/fastspec-iron.fits'),
+        'fast_spec_data_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
+                                'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
+                                'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
+                                'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
+                                'NEV_3426_FLUX', 'NEV_3426_FLUX_IVAR',
+                                'OII_3726_FLUX', 'OII_3726_FLUX_IVAR', 'OII_3726_EW', 'OII_3726_EW_IVAR',
+                                'OII_3729_FLUX', 'OII_3729_FLUX_IVAR', 'OII_3729_EW', 'OII_3729_EW_IVAR',
+                                'HEII_4686_FLUX', 'HEII_4686_FLUX_IVAR',
+                                'HBETA_EW', 'HBETA_EW_IVAR', 'HBETA_FLUX', 'HBETA_FLUX_IVAR',
+                                'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA', 'HBETA_BROAD_CHI2',
+                                'OIII_5007_FLUX', 'OIII_5007_FLUX_IVAR', 'OIII_5007_SIGMA',
+                                'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
+                                'HALPHA_EW', 'HALPHA_EW_IVAR', 'HALPHA_FLUX', 'HALPHA_FLUX_IVAR',
+                                'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_VSHIFT',
+                                'HALPHA_BROAD_SIGMA',
+                                'NII_6584_FLUX', 'NII_6584_FLUX_IVAR',
+                                'SII_6716_FLUX', 'SII_6716_FLUX_IVAR',
+                                'SII_6731_FLUX', 'SII_6731_FLUX_IVAR'],
+
+        'fast_spec_meta_cols': ['TARGETID', 'LS_ID', 'SURVEY', 'PROGRAM', 'PHOTSYS',
+                                'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z', 'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R',
+                                'FIBERTOTFLUX_Z',
+                                'FLUX_G', 'FLUX_IVAR_G',
+                                'FLUX_R', 'FLUX_IVAR_R',
+                                'FLUX_Z', 'FLUX_IVAR_Z',
+                                'FLUX_W1', 'FLUX_IVAR_W1',
+                                'FLUX_W2', 'FLUX_IVAR_W2',
+                                'FLUX_W3', 'FLUX_IVAR_W3',
+                                'FLUX_W4', 'FLUX_IVAR_W4',
+                                'EBV',
+                                'MW_TRANSMISSION_G', 'MW_TRANSMISSION_R', 'MW_TRANSMISSION_Z',
+                                'MW_TRANSMISSION_W1', 'MW_TRANSMISSION_W2', 'MW_TRANSMISSION_W3', 'MW_TRANSMISSION_W4'],
 
         # Redshift catalog
         'zcat': Path('/global/cfs/cdirs/desi/spectro/redux/iron/zcatalog/v1/zall-pix-iron.fits'),
@@ -80,6 +145,39 @@ desi_specprod = {
 
         # FastSpecFit Catalog
         'fast_spec_dir': Path('/global/cfs/cdirs/desi/vac/dr2/fastspecfit/loa/v1.0/catalogs'),
+        'fast_spec_data_cols': ['TARGETID', 'PROGRAM', 'SURVEY',
+                                'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
+                                'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
+                                'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
+                                'NEV_3426_FLUX', 'NEV_3426_FLUX_IVAR',
+                                'OII_3726_EW', 'OII_3726_EW_IVAR', 'OII_3726_FLUX', 'OII_3726_FLUX_IVAR',
+                                'OII_3729_EW', 'OII_3729_EW_IVAR', 'OII_3729_FLUX', 'OII_3729_FLUX_IVAR',
+                                'HEII_4686_FLUX', 'HEII_4686_FLUX_IVAR',
+                                'HBETA_FLUX', 'HBETA_FLUX_IVAR', 'HBETA_EW', 'HBETA_EW_IVAR',
+                                'HBETA_BROAD_CHI2', 'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA',
+                                'OIII_5007_FLUX', 'OIII_5007_FLUX_IVAR', 'OIII_5007_SIGMA',
+                                'HALPHA_FLUX', 'HALPHA_FLUX_IVAR', 'HALPHA_EW', 'HALPHA_EW_IVAR',
+                                'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_SIGMA',
+                                'HALPHA_BROAD_VSHIFT',
+                                'NII_6584_FLUX', 'NII_6584_FLUX_IVAR', 'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
+                                'SII_6716_FLUX', 'SII_6716_FLUX_IVAR',
+                                'SII_6731_FLUX', 'SII_6731_FLUX_IVAR'],
+
+        'fast_spec_meta_cols': ['TARGETID', 'LS_ID', 'PROGRAM', 'SURVEY', 'PHOTSYS',
+                                'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z',
+                                'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R', 'FIBERTOTFLUX_Z',
+                                'FLUX_G', 'FLUX_IVAR_G',
+                                'FLUX_R', 'FLUX_IVAR_R',
+                                'FLUX_Z', 'FLUX_IVAR_Z',
+                                'FLUX_W1', 'FLUX_IVAR_W1',
+                                'FLUX_W2', 'FLUX_IVAR_W2',
+                                'FLUX_W3', 'FLUX_IVAR_W3',
+                                'FLUX_W4', 'FLUX_IVAR_W4',
+                                'EBV',
+                                'MW_TRANSMISSION_G', 'MW_TRANSMISSION_R', 'MW_TRANSMISSION_Z',
+                                'MW_TRANSMISSION_W1', 'MW_TRANSMISSION_W2', 'MW_TRANSMISSION_W3', 'MW_TRANSMISSION_W4'],
+
+        'fast_spec_specphot_cols': ['TARGETID', 'PROGRAM', 'SURVEY', 'LOGMSTAR'],
 
         # Redshift Catalog
         'zcat_dir': Path('/global/cfs/cdirs/desi/science/gqp/agncatalog/zpix_nside1/loa/v1'),
@@ -118,33 +216,6 @@ zcat_cols = ['DESI_TARGET', 'BGS_TARGET', 'SCND_TARGET', 'CMX_TARGET',
              'SV1_DESI_TARGET', 'SV1_BGS_TARGET', 'SV1_SCND_TARGET',
              'SV2_DESI_TARGET', 'SV2_BGS_TARGET', 'SV2_SCND_TARGET',
              'SV3_DESI_TARGET', 'SV3_BGS_TARGET', 'SV3_SCND_TARGET']
-
-fast_spec_data_cols = ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
-                       'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
-                       'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
-                       'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
-                       'OII_3726_FLUX', 'OII_3726_FLUX_IVAR', 'OII_3726_EW', 'OII_3726_EW_IVAR',
-                       'OII_3729_FLUX', 'OII_3729_FLUX_IVAR', 'OII_3729_EW', 'OII_3729_EW_IVAR',
-                       'NEV_3426_FLUX', 'NEV_3426_FLUX_IVAR',
-                       'HEII_4686_FLUX', 'HEII_4686_FLUX_IVAR',
-                       'HBETA_EW', 'HBETA_EW_IVAR', 'HBETA_FLUX', 'HBETA_FLUX_IVAR',
-                       'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA', 'HBETA_BROAD_CHI2',
-                       'OIII_5007_FLUX', 'OIII_5007_FLUX_IVAR', 'OIII_5007_SIGMA',
-                       'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
-                       'HALPHA_EW', 'HALPHA_EW_IVAR', 'HALPHA_FLUX', 'HALPHA_FLUX_IVAR',
-                       'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_VSHIFT', 'HALPHA_BROAD_SIGMA',
-                       'NII_6584_FLUX', 'NII_6584_FLUX_IVAR',
-                       'SII_6716_FLUX', 'SII_6716_FLUX_IVAR',
-                       'SII_6731_FLUX', 'SII_6731_FLUX_IVAR']
-
-fast_spec_meta_cols = ['TARGETID', 'SURVEY', 'PROGRAM', 'PHOTSYS', 'LS_ID',
-                       'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z', 'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R',
-                       'FIBERTOTFLUX_Z',
-                       'FLUX_G', 'FLUX_R', 'FLUX_Z', 'FLUX_W1', 'FLUX_W2', 'FLUX_W3', 'FLUX_W4',
-                       'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z', 'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'FLUX_IVAR_W3',
-                       'FLUX_IVAR_W4',
-                       'EBV', 'MW_TRANSMISSION_G', 'MW_TRANSMISSION_R', 'MW_TRANSMISSION_Z',
-                       'MW_TRANSMISSION_W1', 'MW_TRANSMISSION_W2', 'MW_TRANSMISSION_W3', 'MW_TRANSMISSION_W4']
 
 # Universal output catalog column names
 output_cols_ext2 = ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
@@ -202,6 +273,9 @@ def generate_loa_dispatchers(specprod_info: dict[str, Path | list[str]]) -> dict
     # Convert the lists of file paths into dictionaries with the same structure as the dispatch patterns for previous
     # data releases
     loa_dispatchers = {survey_program: {**loa_paths(catalog_paths, specprod_info),
+                                        'fast_spec_data_cols': specprod_info['fast_spec_data_cols'],
+                                        'fast_spec_meta_cols': specprod_info['fast_spec_meta_cols'],
+                                        'fast_spec_specphot_cols': specprod_info['fast_spec_specphot_cols'],
                                         'zcat_cols': specprod_info['zcat_cols'],
                                         'output_cols_ext1': specprod_info['output_cols_ext1']}
                        for survey_program, catalog_paths in all_catalogs_dict.items()}
@@ -241,37 +315,51 @@ def loa_paths(file_paths: list[Path], specprod_info: dict[str, Path]) -> dict[st
     return file_dict
 
 
-def read_fastspecfit(fastspec_path: Path, fastspec_data_colnames: list[str],
-                     fastspec_meta_colnames: list[str]) -> Table:
+def read_fastspecfit(specprod_info: dict[str, Path | list[str]]) -> Table:
     """Reads and merges the FastSpecFit catalog extensions into a single table.
 
     Args:
-        fastspec_path:
-            Path to the FastSpecFit catalog.
-        fastspec_data_colnames:
-            Data Extension columns to be read in.
-        fastspec_meta_colnames:
-            Meta Extension columns to be read in.
+        specprod_info:
+            Dictionary with information about the targeted data release. Must include path to FastSpecFit catalog and
+            lists of column names for each extension we wish to read in.
 
     Returns:
         Merged table of the two extensions.
     """
 
     # Read in the two extensions and cast as a table.
-    fastspec_data_catalog = Table(fitsio.read(str(fastspec_path), columns=fastspec_data_colnames, ext=1))
-    fastspec_meta_catalog = Table(fitsio.read(str(fastspec_path), columns=fastspec_meta_colnames, ext=2))
+    fastspec_data_catalog = Table(fitsio.read(str(specprod_info['fast_spec']),
+                                              columns=specprod_info['fast_spec_data_cols'], ext='FASTSPEC'))
+    fastspec_meta_catalog = Table(fitsio.read(str(specprod_info['fast_spec']),
+                                              columns=specprod_info['fast_spec_meta_cols'], ext='METADATA'))
+
+    try:
+        # Only DR2/Loa will have this extension. At present, we only need the LOGMSTAR from it.
+        fastspec_specphot_catalog = Table(fitsio.read(str(specprod_info['fast_spec']),
+                                                      columns=specprod_info['fast_spec_specphot_cols'], ext='SPECPHOT'))
+    except KeyError:
+        # For non-DR2 catalogs, we'll just assign this catalog to an empty Table as it will pass through the hstack
+        # without issue and minimizes special-case handling.
+        fastspec_specphot_catalog = Table(data=None)
 
     # Remove any common columns between the extensions.
-    fastspec_meta_catalog.remove_columns(set(fastspec_data_colnames).intersection(fastspec_meta_colnames))
+    fastspec_meta_catalog.remove_columns(set(specprod_info['fast_spec_data_cols'])
+                                         .intersection(specprod_info['fast_spec_meta_cols']))
 
-    # As the two extensions are already row-aligned we can do a fast hstack operation rather than a full join.
-    fastspec_catalog = hstack([fastspec_data_catalog, fastspec_meta_catalog])
+    try:
+        fastspec_specphot_catalog.remove_columns(set(specprod_info['fast_spec_data_cols'])
+                                                 .intersection(specprod_info['fast_spec_specphot_cols']))
+    except KeyError:
+        # For non-DR2 catalogs, we will just pass this error as it has no effect on the stand-in empty catalog merging.
+        pass
+
+    # As all the extensions are already row-aligned we can do a fast hstack operation rather than a full join.
+    fastspec_catalog = hstack([fastspec_data_catalog, fastspec_meta_catalog, fastspec_specphot_catalog])
 
     return fastspec_catalog
 
 
-def read_input_catalogs(specprod_info: dict[str, Path | list[str]], fastspec_data_colnames: list[str],
-                        fastspec_meta_colnames: list[str], qsom_colnames: list[str],
+def read_input_catalogs(specprod_info: dict[str, Path | list[str]], qsom_colnames: list[str],
                         redshift_colnames: list[str]) -> Table:
     """Reads in the input catalogs and merges them into a single table to be used for AGN/Galaxy classification.
 
@@ -279,14 +367,11 @@ def read_input_catalogs(specprod_info: dict[str, Path | list[str]], fastspec_dat
         specprod_info:
             Dictionary with information about the targeted data release. Must include path names to relevant catalogs
             and associated data-release specific column names.
-        fastspec_data_colnames:
-            List of column names to be read in for the FastSpecFit catalog (data extension).
-        fastspec_meta_colnames:
-            List of column names to be read in for the FastSpecFit catalog (meta extension).
         qsom_colnames:
-            List of column names to be read in for the QSO-Maker catalog.
+            List of universal column names to be read in for the QSO-Maker catalog.
         redshift_colnames:
-            List of column names to be read in for the redshift catalog.
+            List of universal column names to be read in for the redshift catalog. These will be combined with the
+            data-release specific column names.
 
     Returns:
         Joined table of the three input catalogs.
@@ -298,14 +383,15 @@ def read_input_catalogs(specprod_info: dict[str, Path | list[str]], fastspec_dat
             - If the merged FastSpecFit + QSO-Maker catalog contains objects with zero coadd exposure time.
             - If the merged FastSpecFit + QSO-Maker + Redshift catalog contains non-"TGT" object types.
 
-        KeyError: When running the standard dispatcher ``specprod_info`` on DR2 (Loa) entries.
+        KeyError: When running the standard dispatcher ``specprod_info`` on DR2 (Loa) entries without building the
+            DR2-specific dispatcher.
         OSError: On failure to open an input catalog file.
 
     """
 
     try:
         # Read in and merge the FastSpecFit catalog extensions into a combined table
-        fastspec_catalog = read_fastspecfit(specprod_info['fast_spec'], fastspec_data_colnames, fastspec_meta_colnames)
+        fastspec_catalog = read_fastspecfit(specprod_info)
 
         # Read in the QSO-Maker catalog
         qso_maker_catalog = Table(fitsio.read(str(specprod_info['qso_maker']), ext=1, columns=qsom_colnames))
@@ -318,8 +404,7 @@ def read_input_catalogs(specprod_info: dict[str, Path | list[str]], fastspec_dat
                        'If you are trying to read DR2 (Loa) catalogs, '
                        'function `generate_loa_dispatchers` must be ran first.') from e
     except OSError as e:
-        raise  OSError('Error on reading an input catalog.') from e
-
+        raise OSError('Error on reading an input catalog.') from e
 
     # Main identifiers for Joins
     keys_for_join = ['TARGETID', 'SURVEY', 'PROGRAM']
@@ -442,8 +527,7 @@ def build_agngal_catalog(data_release: dict[str, Path | list[str]], output_filen
     out_ext2_units, _ = load_yml_units(output_ext2_unit_defs)
 
     # Build the initial input catalog
-    desi_table = read_input_catalogs(specprod_info=data_release, fastspec_data_colnames=fast_spec_data_cols,
-                                     fastspec_meta_colnames=fast_spec_meta_cols, qsom_colnames=qso_maker_cols,
+    desi_table = read_input_catalogs(specprod_info=data_release, qsom_colnames=qso_maker_cols,
                                      redshift_colnames=zcat_cols)
 
     # Apply all AGN/Galaxy classifications and build BitMask columns
@@ -458,7 +542,7 @@ def build_agngal_catalog(data_release: dict[str, Path | list[str]], output_filen
 if __name__ == "__main__":
     # Provide CLI arguments for easy execution via SLURM scripts.
     parser = ArgumentParser()
-    parser.add_argument("data_release", choices=['edr', 'dr1', 'dr2', 'fuji', 'iron', 'loa'],
+    parser.add_argument("data_release", choices=['edr', 'dr1', 'dr2', 'fuji', 'iron', 'loa', 'testing'],
                         help='Data release to build catalog from.')
     parser.add_argument("-o", "--output", default="desi_agngal.fits", required=True,
                         help="Path to output FITS file.", type=Path)
@@ -470,6 +554,8 @@ if __name__ == "__main__":
         spec_prod = 'iron'
     elif args.data_release == 'dr2' or args.data_release == 'loa':
         spec_prod = 'loa'
+    elif args.data_release == 'testing':
+        spec_prod = 'testing'
     else:
         raise ValueError(f"Invalid data release: {args.data_release}")
 
@@ -486,6 +572,12 @@ if __name__ == "__main__":
         # Run all catalog operations in parallel simultaneously
         with Pool() as pool:
             pool.starmap_async(build_agngal_catalog, zip(dr_dispatcher.values(), output_filenames))
+
+    elif spec_prod == 'testing':
+        dr_dispatcher = generate_loa_dispatchers(desi_specprod['loa'])
+        cmx_other_dispatcher = dr_dispatcher['cmx-other']
+
+        build_agngal_catalog(cmx_other_dispatcher, args.output)
 
     else:
         # For all previous data releases (EDR/Fuji, DR1/Iron) we will run the operations in serial.
