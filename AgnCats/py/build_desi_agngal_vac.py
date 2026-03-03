@@ -28,7 +28,7 @@ desi_specprod = {
     # EDR
     'fuji': {
         # QSO-Maker catalog from Edmonds catalog keeping all columns
-        'qso_maker': Path('/global/cfs/cdirs/desi/users/edmondc/QSO_catalog/fuji/'
+        'qso_maker': Path('/dvs_ro/cfs/cdirs/desi/users/edmondc/QSO_catalog/fuji/'
                           'QSO_cat_fuji_healpix_all_targets_v2.fits'),
 
         # FastSpecFit catalog
@@ -63,7 +63,7 @@ desi_specprod = {
                                 'MW_TRANSMISSION_W1', 'MW_TRANSMISSION_W2', 'MW_TRANSMISSION_W3', 'MW_TRANSMISSION_W4'],
 
         # Redshift catalog
-        'zcat': Path('/global/cfs/cdirs/desi/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits'),
+        'zcat': Path('/dvs_ro/cfs/cdirs/desi/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits'),
         'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'TSNR2_LRG', 'SV_NSPEC', 'SV_PRIMARY',
                       'ZCAT_NSPEC', 'ZCAT_PRIMARY', 'MIN_MJD', 'MEAN_MJD', 'MAX_MJD', 'OBJTYPE'],
 
@@ -82,11 +82,11 @@ desi_specprod = {
     # DR1
     'iron': {
         # QSO-Maker catalog from `merge_QSOmaker.ipynb`. DR1 version from after Edmond ran on all targets/all surveys
-        'qso_maker': Path('/global/cfs/cdirs/desi/science/gqp/agncatalog/qsomaker/iron/'
+        'qso_maker': Path('/dvs_ro/cfs/cdirs/desi/science/gqp/agncatalog/qsomaker/iron/'
                           'QSO_cat_iron_healpix_all_targets_v1.fits'),
 
         # FastSpecFit catalog
-        'fast_spec': Path('/global/cfs/cdirs/desi/spectro/fastspecfit/iron/v2.1/catalogs/fastspec-iron.fits'),
+        'fast_spec': Path('/dvs_ro/cfs/cdirs/desi/spectro/fastspecfit/iron/v2.1/catalogs/fastspec-iron.fits'),
         'fast_spec_data_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
                                 'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
                                 'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
@@ -121,7 +121,7 @@ desi_specprod = {
                                 'MW_TRANSMISSION_W1', 'MW_TRANSMISSION_W2', 'MW_TRANSMISSION_W3', 'MW_TRANSMISSION_W4'],
 
         # Redshift catalog
-        'zcat': Path('/global/cfs/cdirs/desi/spectro/redux/iron/zcatalog/v1/zall-pix-iron.fits'),
+        'zcat': Path('/dvs_ro/cfs/cdirs/desi/spectro/redux/iron/zcatalog/v1/zall-pix-iron.fits'),
         'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'TSNR2_LRG', 'ZCAT_NSPEC', 'ZCAT_PRIMARY',
                       'SV_NSPEC', 'SV_PRIMARY', 'MAIN_PRIMARY', 'MAIN_NSPEC', 'MIN_MJD', 'MEAN_MJD', 'MAX_MJD',
                       'OBJTYPE'],
@@ -141,10 +141,10 @@ desi_specprod = {
     # DR2
     'loa': {
         # QSO-Maker
-        'qso_maker_dir': Path('/global/cfs/cdirs/desi/science/gqp/agncatalog/qsomaker/loa'),
+        'qso_maker_dir': Path('/dvs_ro/cfs/cdirs/desi/science/gqp/agncatalog/qsomaker/loa'),
 
         # FastSpecFit Catalog
-        'fast_spec_dir': Path('/global/cfs/cdirs/desi/vac/dr2/fastspecfit/loa/v1.0/catalogs'),
+        'fast_spec_dir': Path('/dvs_ro/cfs/cdirs/desi/vac/dr2/fastspecfit/loa/v1.0/catalogs'),
         'fast_spec_data_cols': ['TARGETID', 'PROGRAM', 'SURVEY',
                                 'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
                                 'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
@@ -180,7 +180,7 @@ desi_specprod = {
         'fast_spec_specphot_cols': ['TARGETID', 'PROGRAM', 'SURVEY', 'LOGMSTAR'],
 
         # Redshift Catalog
-        'zcat_dir': Path('/global/cfs/cdirs/desi/science/gqp/agncatalog/zpix_nside1/loa/v1'),
+        'zcat_dir': Path('/dvs_ro/cfs/cdirs/desi/science/gqp/agncatalog/zpix_nside1/loa/v1'),
         'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'TSNR2_LRG', 'ZCAT_NSPEC', 'ZCAT_PRIMARY',
                       'SV_NSPEC', 'SV_PRIMARY', 'MAIN_PRIMARY', 'MAIN_NSPEC', 'MIN_MJD', 'MEAN_MJD', 'MAX_MJD',
                       'OBJTYPE'],
@@ -200,11 +200,11 @@ desi_specprod = {
 }
 
 # AGN BitMask Definitions file
-agn_bitmask_defs = Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/agnmask.yaml')
+agn_bitmask_defs = Path('/dvs_ro/u2/b/bfloyd/agngal_dr2/AgnCats/py/agnmask.yaml')
 
 # Output file unit definitions files
-output_ext1_unit_defs = Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/ext1_units.yaml')
-output_ext2_unit_defs = Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/ext2_units.yaml')
+output_ext1_unit_defs = Path('/dvs_ro/u2/b/bfloyd/agngal_dr2/AgnCats/py/ext1_units.yaml')
+output_ext2_unit_defs = Path('/dvs_ro/u2/b/bfloyd/agngal_dr2/AgnCats/py/ext2_units.yaml')
 
 # Universal input catalog column names
 qso_maker_cols = ['TARGETID', 'Z', 'ZERR', 'ZWARN', 'SPECTYPE', 'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC',
@@ -506,8 +506,8 @@ def output_processing(input_table: Table, output_filename: str | Path,
     hdu_list.writeto(output_filename, overwrite=True, checksum=True)
 
     # We will use the ``annotate_fits`` function to add units to the extensions.
-    annotate_fits(output_filename, extension=1, output=output_filename, units=ext1_units, overwrite=True)
-    annotate_fits(output_filename, extension=2, output=output_filename, units=ext2_units, overwrite=True)
+    annotate_fits(output_filename, extension=1, output=output_filename, units=ext1_units, validate=False, overwrite=True)
+    annotate_fits(output_filename, extension=2, output=output_filename, units=ext2_units, validate=False, overwrite=True)
 
 
 def build_agngal_catalog(data_release: dict[str, Path | list[str]], output_filename: str | Path) -> None:
