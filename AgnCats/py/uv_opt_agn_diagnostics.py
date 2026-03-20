@@ -830,6 +830,6 @@ def nev(input_table: Table, snr: int | float = 2.5, mask: MaskedColumn = None) -
 
     ## NeV-AGN, SF
     agn_nev = nev_avail & (snr_nev >= snr)
-    sf_nev = ~agn_nev
+    sf_nev = nev_avail & ~agn_nev
 
     return nev_avail, agn_nev, sf_nev

@@ -153,7 +153,7 @@ def wise_stern12(input_table: Table, snr: float | int = 3, mask: MaskedColumn = 
 
     # Stern et al. (2012) cut is just along W1 - W2 color
     agn_stern12: NDArray[bool] = (w1w2_vega > 0.8) & w1w2_avail
-    sf_stern: NDArray[bool] = (~agn_stern12)
+    sf_stern: NDArray[bool] = (~agn_stern12) & w1w2_avail
 
     return w1w2_avail, agn_stern12, sf_stern
 
