@@ -66,16 +66,10 @@ def broad_line(input_table: Table, snr: int | float = 3, mask: MaskedColumn = No
         zero_flux_civ |= mask
 
     # If ivar = 0 set it to NaN to avoid infinities when computing the error:
-    input_table['HALPHA_BROAD_FLUX_IVAR'] = np.where(input_table['HALPHA_BROAD_FLUX_IVAR'] == 0,
-                                                     np.nan, input_table['HALPHA_BROAD_FLUX_IVAR'])
-    input_table['HBETA_BROAD_FLUX_IVAR'] = np.where(input_table['HBETA_BROAD_FLUX_IVAR'] == 0,
-                                                    np.nan, input_table['HBETA_BROAD_FLUX_IVAR'])
-    input_table['MGII_2796_FLUX_IVAR'] = np.where(input_table['MGII_2796_FLUX_IVAR'] == 0,
-                                                  np.nan, input_table['MGII_2796_FLUX_IVAR'])
-    input_table['MGII_2803_FLUX_IVAR'] = np.where(input_table['MGII_2803_FLUX_IVAR'] == 0,
-                                                  np.nan, input_table['MGII_2803_FLUX_IVAR'])
-    input_table['CIV_1549_FLUX_IVAR'] = np.where(input_table['CIV_1549_FLUX_IVAR'] == 0,
-                                                 np.nan, input_table['CIV_1549_FLUX_IVAR'])
+    MGII_2796_FLUX_IVAR = np.where(input_table['MGII_2796_FLUX_IVAR'] == 0,
+                                   np.nan, input_table['MGII_2796_FLUX_IVAR'])
+    MGII_2803_FLUX_IVAR = np.where(input_table['MGII_2803_FLUX_IVAR'] == 0,
+                                   np.nan, input_table['MGII_2803_FLUX_IVAR'])
 
     # Broad components for Balmer lines
     snr_ha = input_table['HALPHA_BROAD_FLUX'] * np.sqrt(input_table['HALPHA_BROAD_FLUX_IVAR'])
@@ -83,7 +77,7 @@ def broad_line(input_table: Table, snr: int | float = 3, mask: MaskedColumn = No
 
     # For MgII, sum the doublet
     mgii_flux = input_table['MGII_2796_FLUX'] + input_table['MGII_2803_FLUX']
-    mgii_flux_ivar = 1. / (1. / input_table['MGII_2796_FLUX_IVAR'] + 1. / input_table['MGII_2803_FLUX_IVAR'])
+    mgii_flux_ivar = 1. / (1. / MGII_2796_FLUX_IVAR + 1. / MGII_2803_FLUX_IVAR)
     snr_mgii = mgii_flux * np.sqrt(mgii_flux_ivar)
 
     # CIV
@@ -184,16 +178,6 @@ def nii_bpt(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None)
         # Mask for flux availability - included as fastspecfit columns are MaskedColumn data
         zero_flux_nii |= mask
 
-    # If ivar=0 set it to NaN to avoid infinites when computing the error:
-    input_table['HALPHA_FLUX_IVAR'] = np.where(input_table['HALPHA_FLUX_IVAR'] == 0,
-                                               np.nan, input_table['HALPHA_FLUX_IVAR'])
-    input_table['HBETA_FLUX_IVAR'] = np.where(input_table['HBETA_FLUX_IVAR'] == 0,
-                                              np.nan, input_table['HBETA_FLUX_IVAR'])
-    input_table['OIII_5007_FLUX_IVAR'] = np.where(input_table['OIII_5007_FLUX_IVAR'] == 0,
-                                                  np.nan, input_table['OIII_5007_FLUX_IVAR'])
-    input_table['NII_6584_FLUX_IVAR'] = np.where(input_table['NII_6584_FLUX_IVAR'] == 0,
-                                                 np.nan, input_table['NII_6584_FLUX_IVAR'])
-
     # Mask for SNR. Default is NII-BPT is available if all SNR >= 3
     snr_ha = input_table['HALPHA_FLUX'] * np.sqrt(input_table['HALPHA_FLUX_IVAR'])
     snr_hb = input_table['HBETA_FLUX'] * np.sqrt(input_table['HBETA_FLUX_IVAR'])
@@ -280,18 +264,12 @@ def sii_bpt(input_table: Table, snr: int | float = 3, kewley01: bool = False, ma
         zero_flux_sii |= mask
 
     # If ivar=0 set it to NaN to avoid infinities when computing the error:
-    input_table['HALPHA_FLUX_IVAR'] = np.where(input_table['HALPHA_FLUX_IVAR'] == 0,
-                                               np.nan, input_table['HALPHA_FLUX_IVAR'])
-    input_table['HBETA_FLUX_IVAR'] = np.where(input_table['HBETA_FLUX_IVAR'] == 0,
-                                              np.nan, input_table['HBETA_FLUX_IVAR'])
-    input_table['OIII_5007_FLUX_IVAR'] = np.where(input_table['OIII_5007_FLUX_IVAR'] == 0,
-                                                  np.nan, input_table['OIII_5007_FLUX_IVAR'])
-    input_table['SII_6716_FLUX_IVAR'] = np.where(input_table['SII_6716_FLUX_IVAR'] == 0,
-                                                 np.nan, input_table['SII_6716_FLUX_IVAR'])
-    input_table['SII_6731_FLUX_IVAR'] = np.where(input_table['SII_6731_FLUX_IVAR'] == 0,
-                                                 np.nan, input_table['SII_6731_FLUX_IVAR'])
+    SII_6716_FLUX_IVAR = np.where(input_table['SII_6716_FLUX_IVAR'] == 0,
+                                  np.nan, input_table['SII_6716_FLUX_IVAR'])
+    SII_6731_FLUX_IVAR = np.where(input_table['SII_6731_FLUX_IVAR'] == 0,
+                                  np.nan, input_table['SII_6731_FLUX_IVAR'])
     sii_flux = input_table['SII_6716_FLUX'] + input_table['SII_6731_FLUX']
-    sii_flux_ivar = 1 / (1 / input_table['SII_6716_FLUX_IVAR'] + 1 / input_table['SII_6731_FLUX_IVAR'])
+    sii_flux_ivar = 1 / (1 / SII_6716_FLUX_IVAR + 1 / SII_6731_FLUX_IVAR)
 
     # Mask for SNR. Default is SII-BPT is available if all SNR >= 3
     snr_ha = input_table['HALPHA_FLUX'] * np.sqrt(input_table['HALPHA_FLUX_IVAR'])
@@ -382,16 +360,6 @@ def oi_bpt(input_table: Table, snr: int | float = 3, snr_oi: int | float = 1, ke
         # Mask for flux availability - included as fastspecfit columns are MaskedColumn data
         zero_flux_oi |= mask
 
-    # If ivar=0 set it to NaN to avoid infinities when computing the error:
-    input_table['HALPHA_FLUX_IVAR'] = np.where(input_table['HALPHA_FLUX_IVAR'] == 0,
-                                               np.nan, input_table['HALPHA_FLUX_IVAR'])
-    input_table['HBETA_FLUX_IVAR'] = np.where(input_table['HBETA_FLUX_IVAR'] == 0,
-                                              np.nan, input_table['HBETA_FLUX_IVAR'])
-    input_table['OIII_5007_FLUX_IVAR'] = np.where(input_table['OIII_5007_FLUX_IVAR'] == 0,
-                                                  np.nan, input_table['OIII_5007_FLUX_IVAR'])
-    input_table['OI_6300_FLUX_IVAR'] = np.where(input_table['OI_6300_FLUX_IVAR'] == 0,
-                                                np.nan, input_table['OI_6300_FLUX_IVAR'])
-
     # Mask for SNR. Default is OI-BPT is available if Ha, Hb, OIII SNR >= 3 and OI SNR >= 1.
     snr_ha = input_table['HALPHA_FLUX'] * np.sqrt(input_table['HALPHA_FLUX_IVAR'])
     snr_hb = input_table['HBETA_FLUX'] * np.sqrt(input_table['HBETA_FLUX_IVAR'])
@@ -473,12 +441,6 @@ def whan(input_table: Table, snr: int | float = 3, snr_ew: int | float = 1, mask
     if mask is not None:
         # Mask for flux availability - included as fastspecfit columns are MaskedColumn data
         zero_flux_whan |= mask
-
-    # If ivar=0 set it to NaN to avoid infinities when computing the error:
-    input_table['HALPHA_FLUX_IVAR'] = np.where(input_table['HALPHA_FLUX_IVAR'] == 0,
-                                               np.nan, input_table['HALPHA_FLUX_IVAR'])
-    input_table['NII_6584_FLUX_IVAR'] = np.where(input_table['NII_6584_FLUX_IVAR'] == 0,
-                                                 np.nan, input_table['NII_6584_FLUX_IVAR'])
 
     # Mask for SNR. Default is WHAN is available if Ha, NII SNR >= 3.
     snr_ha = input_table['HALPHA_FLUX'] * np.sqrt(input_table['HALPHA_FLUX_IVAR'])
@@ -571,9 +533,15 @@ def blue(input_table: Table, snr: int | float = 3, snr_oii: int | float = 3, mas
     snr_oiii = input_table['OIII_5007_FLUX'] * np.sqrt(input_table['OIII_5007_FLUX_IVAR'])
     snr_hb_ew = input_table['HBETA_EW'] * np.sqrt(input_table['HBETA_EW_IVAR'])
 
+    # If ivar = 0 set it to NaN to avoid infinities when computing the error:
+    OII_3726_EW_IVAR = np.where(input_table['OII_3726_EW_IVAR'] == 0,
+                                   np.nan, input_table['OII_3726_EW_IVAR'])
+    OII_3729_EW_IVAR = np.where(input_table['OII_3729_EW_IVAR'] == 0,
+                                   np.nan, input_table['OII_3729_EW_IVAR'])
+    
     # [OII]3727 is the sum of the doublet [OII]3726,3729
     oii_ew = input_table['OII_3726_EW'] + input_table['OII_3729_EW']
-    oii_ew_ivar = 1. / (1. / input_table['OII_3726_EW_IVAR'] + 1. / input_table['OII_3729_EW_IVAR'])
+    oii_ew_ivar = 1. / (1. / OII_3726_EW_IVAR + 1. / OII_3729_EW_IVAR)
     snr_oii_ew = oii_ew * np.sqrt(oii_ew_ivar)
 
     # Parameters for horizontal and vertical axes
@@ -660,12 +628,6 @@ def mex(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None) -> 
         # Mask for flux availability - included as fastspecfit columns are MaskedColumn data
         zero_flux_mex = (input_table['HBETA_FLUX'] == 0) | (input_table['OIII_5007_FLUX'] == 0) | mask
 
-    # If ivar=0 set it to NaN to avoid infinites when computing the error:
-    input_table['HBETA_FLUX_IVAR'] = np.where(input_table['HBETA_FLUX_IVAR'] == 0,
-                                              np.nan, input_table['HBETA_FLUX_IVAR'])
-    input_table['OIII_5007_FLUX_IVAR'] = np.where(input_table['OIII_5007_FLUX_IVAR'] == 0,
-                                                  np.nan, input_table['OIII_5007_FLUX_IVAR'])
-
     # Mask for SNR. Default is MEx is available if all SNR >= 3
     snr_hb = input_table['HBETA_FLUX'] * np.sqrt(input_table['HBETA_FLUX_IVAR'])
     snr_oiii = input_table['OIII_5007_FLUX'] * np.sqrt(input_table['OIII_5007_FLUX_IVAR'])
@@ -737,12 +699,6 @@ def kex(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None) -> 
     if mask is not None:
         zero_flux_kex |= mask
 
-    # If ivar=0 set it to NaN to avoid infinites when computing the error:
-    input_table['HBETA_FLUX_IVAR'] = np.where(input_table['HBETA_FLUX_IVAR'] == 0,
-                                              np.nan, input_table['HBETA_FLUX_IVAR'])
-    input_table['OIII_5007_FLUX_IVAR'] = np.where(input_table['OIII_5007_FLUX_IVAR'] == 0,
-                                                  np.nan, input_table['OIII_5007_FLUX_IVAR'])
-
     # Mask for SNR. Default is KEx is available if all SNR >= 3
     snr_hb = input_table['HBETA_FLUX'] * np.sqrt(input_table['HBETA_FLUX_IVAR'])
     snr_oiii = input_table['OIII_5007_FLUX'] * np.sqrt(input_table['OIII_5007_FLUX_IVAR'])
@@ -810,16 +766,6 @@ def heii_bpt(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None
         # Mask for flux availability - included as fastspecfit columns are MaskedColumn data
         zero_flux_heii |= mask
 
-    # If ivar=0 set it to NaN to avoid infinities when computing the error:
-    input_table['HALPHA_FLUX_IVAR'] = np.where(input_table['HALPHA_FLUX_IVAR'] == 0,
-                                               np.nan, input_table['HALPHA_FLUX_IVAR'])
-    input_table['HBETA_FLUX_IVAR'] = np.where(input_table['HBETA_FLUX_IVAR'] == 0,
-                                              np.nan, input_table['HBETA_FLUX_IVAR'])
-    input_table['HEII_4686_FLUX_IVAR'] = np.where(input_table['HEII_4686_FLUX_IVAR'] == 0,
-                                                  np.nan, input_table['HEII_4686_FLUX_IVAR'])
-    input_table['NII_6584_FLUX_IVAR'] = np.where(input_table['NII_6584_FLUX_IVAR'] == 0,
-                                                 np.nan, input_table['NII_6584_FLUX_IVAR'])
-
     # Mask for SNR. Default is HeII-BPT is available if Ha, Hb, NII, HeII SNR >= 3
     snr_ha = input_table['HALPHA_FLUX'] * np.sqrt(input_table['HALPHA_FLUX_IVAR'])
     snr_hb = input_table['HBETA_FLUX'] * np.sqrt(input_table['HBETA_FLUX_IVAR'])
@@ -876,10 +822,6 @@ def nev(input_table: Table, snr: int | float = 2.5, mask: MaskedColumn = None) -
         # Mask for flux availability - included as fastspecfit columns are MaskedColumn data
         zero_flux_nev |= mask
 
-    # If ivar=0 set it to NaN to avoid infinities when computing the error:
-    input_table['NEV_3426_FLUX_IVAR'] = np.where(input_table['NEV_3426_FLUX_IVAR'] == 0,
-                                                 np.nan, input_table['NEV_3426_FLUX_IVAR'])
-
     # Mask for SNR.
     snr_nev = input_table['NEV_3426_FLUX'] * np.sqrt(input_table['NEV_3426_FLUX_IVAR'])
 
@@ -888,6 +830,6 @@ def nev(input_table: Table, snr: int | float = 2.5, mask: MaskedColumn = None) -
 
     ## NeV-AGN, SF
     agn_nev = nev_avail & (snr_nev >= snr)
-    sf_nev = ~agn_nev
+    sf_nev = nev_avail & ~agn_nev
 
     return nev_avail, agn_nev, sf_nev

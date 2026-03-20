@@ -116,7 +116,8 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
     bl, _, _, _, _ = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
     agn_bits |= bl * agn_maskbits.BROAD_LINE
 
-    # Other (non-BPT) optical diagnostics: WHAN, MEx, KEx, Blue
+    # Other (non-BPT) optical diagnostics: WHAN, MEx, KEx, Blue 
+    # *** add [NeV] ***
     _, _, whan_sagn, *_ = uv_opt_agn.whan(input_table, snr=snr, mask=mask)
     _, mex_agn, *_ = uv_opt_agn.mex(input_table, snr=snr, mask=mask)
     _, agn_blue, *_ = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii,
@@ -125,6 +126,7 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
 
     # Combine them for the OPT_OTHER_AGN (keeping mostly more confident ones and 
     # excluding possible weak AGN / blended classes)
+    # *** NOT CURRENTLY INCLUDING [NeV] ***
     opt_other_agn = whan_sagn | mex_agn | agn_blue | kex_agn
     agn_bits |= opt_other_agn * agn_maskbits.OPT_OTHER_AGN
 
