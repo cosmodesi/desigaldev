@@ -436,12 +436,18 @@ def whan(input_table: Table, snr: int | float = 3, snr_ew: int | float = 1, mask
     .. [CidFer11] 2011MNRAS.413.1687C
     """
 
-    # Mask for zero fluxes
-    zero_flux_whan = (input_table['HALPHA_FLUX'] == 0) | (input_table['NII_6584_FLUX'] == 0)
+    # Mask for zero fluxes (separated for Ha and [NII])
+    zero_flux_ha = (input_table['HALPHA_FLUX'] == 0)
+    zero_flux_nii = (input_table['NII_6584_FLUX'] == 0)
+    
     if mask is not None:
         # Mask for flux availability - included as fastspecfit columns are MaskedColumn data
-        zero_flux_whan |= mask
+        zero_flux_ha |= mask
+        zero_flux_nii |= mask
 
+    # Combined mask for the flux-ratio diagnostics that require both lines
+    zero_flux_whan = zero_flux_ha | zero_flux_nii
+    
     # Mask for SNR. Default is WHAN is available if Ha, NII SNR >= 3.
     snr_ha = input_table['HALPHA_FLUX'] * np.sqrt(input_table['HALPHA_FLUX_IVAR'])
     snr_nii = input_table['NII_6584_FLUX'] * np.sqrt(input_table['NII_6584_FLUX_IVAR'])
@@ -454,9 +460,8 @@ def whan(input_table: Table, snr: int | float = 3, snr_ew: int | float = 1, mask
     ## WHAN is available: 
     # - NII and Halpha line flux SNR >= snr (=3 by default) when using the [NII]/Ha ratio
     # - Halpha EW measured at > snr_ew (=1 by default) sigma significance when cutting just on EW
-    whan_ew_cut = (snr_ha_ew >= snr_ew) & (~zero_flux_whan)
+    whan_ew_cut = (snr_ha_ew >= snr_ew) & (~zero_flux_ha)  # depends on Halpha only
     whan_flux_cut = (snr_ha >= snr) & (snr_nii >= snr) & (~zero_flux_whan)
-    whan_avail = whan_ew_cut | whan_flux_cut
 
     ## WHAN-SF, strong AGN, weak AGN, retired, passive
     whan_sf = whan_flux_cut & (log_nii_ha < -0.4) & (ew_ha_6562 >= 3)
@@ -465,6 +470,9 @@ def whan(input_table: Table, snr: int | float = 3, snr_ew: int | float = 1, mask
     whan_retired = whan_ew_cut & (ew_ha_6562 < 3) & (ew_ha_6562 >= 0.5)
     whan_passive = whan_ew_cut & (ew_ha_6562 < 0.5)
 
+    ## Re-define WHAN is available to strictly mean one of the classes was met
+    whan_avail = whan_sf | whan_sagn | whan_wagn | whan_retired | whan_passive
+    
     return whan_avail, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive
 
 
@@ -517,16 +525,15 @@ def blue(input_table: Table, snr: int | float = 3, snr_oii: int | float = 3, mas
     .. [Lam10] 2010A&A...509A..53L
     """
 
-    # Mask for zero fluxes
+    # Mask for zero fluxes (Now checks both components of the [O II] doublet)
     zero_flux_blue = ((input_table['HBETA_FLUX'] == 0) |
                       (input_table['OIII_5007_FLUX'] == 0) |
-                      (input_table['OII_3726_FLUX'] == 0))
+                      (input_table['OII_3726_FLUX'] == 0) |
+                      (input_table['OII_3729_FLUX'] == 0))
+                      
     if mask is not None:
         # Mask for flux availability - included as fastspecfit columns are MaskedColumn data
-        mask = mask
-        zero_flux_blue = ((input_table['HBETA_FLUX'] == 0) |
-                          (input_table['OIII_5007_FLUX'] == 0) |
-                          (input_table['OII_3726_FLUX'] == 0) | mask)
+        zero_flux_blue |= mask
 
     # Mask for SNR. Default is BLUE is available if Hb, OIII SNR >= 3 and OII SNR >= 1.
     snr_hb = input_table['HBETA_FLUX'] * np.sqrt(input_table['HBETA_FLUX_IVAR'])
@@ -641,8 +648,8 @@ def mex(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None) -> 
 
     # upper MEx
     a0, a1, a2, a3 = 410.24, -109.333, 9.71731, -0.288244
-    mex_agn = (((y > 0.375 / (x - 10.5) + 1.14) & (x <= 10)) |
-               ((y > a0 + a1 * x + a2 * x ** 2 + a3 * x ** 3) & (x > 10)))
+    mex_agn = (((y >= 0.375 / (x - 10.5) + 1.14) & (x <= 10)) |
+               ((y >= a0 + a1 * x + a2 * x ** 2 + a3 * x ** 3) & (x > 10)))
 
     # lower MEx
     a0, a1, a2, a3 = 352.066, -93.8249, 8.32651, -0.246416

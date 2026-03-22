@@ -56,8 +56,8 @@ def get_agn_maskbits(file: str) -> tuple[BitMask, BitMask, BitMask]:
 
 
 def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | float = 3, snr_oi: int | float = 1,
-                        snr_oii: int | float = 1, snr_wise: int | float = 3, kewley01: bool = False,
-                        mask: MaskedColumn = None) -> Table:
+                        snr_oii: int | float = 1, snr_nev: int | float = 2.5, snr_wise: int | float = 3, 
+                        kewley01: bool = False, mask: MaskedColumn = None) -> Table:
     """Sets the ``AGN_MASKBITS`` values in the input catalog.
 
     ``AGN_MASKBITS`` are initialized from the ``QSO_MASKBITS`` column from QSO MAKER. They are then further modified by
@@ -117,17 +117,18 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
     agn_bits |= bl * agn_maskbits.BROAD_LINE
 
     # Other (non-BPT) optical diagnostics: WHAN, MEx, KEx, Blue 
-    # *** add [NeV] ***
     _, _, whan_sagn, *_ = uv_opt_agn.whan(input_table, snr=snr, mask=mask)
     _, mex_agn, *_ = uv_opt_agn.mex(input_table, snr=snr, mask=mask)
     _, agn_blue, *_ = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii,
                                       mask=mask)
     kex, kex_agn, kex_sf, kex_interm = uv_opt_agn.kex(input_table, snr=snr, mask=mask)
 
+    # Calculate [Ne V] to include in the optical AGN compilation
+    _, agn_nev, _ = uv_opt_agn.nev(input_table, snr=snr_nev, mask=mask)
+
     # Combine them for the OPT_OTHER_AGN (keeping mostly more confident ones and 
-    # excluding possible weak AGN / blended classes)
-    # *** NOT CURRENTLY INCLUDING [NeV] ***
-    opt_other_agn = whan_sagn | mex_agn | agn_blue | kex_agn
+    # excluding possible weak AGN / blended classes; explicitly including [Ne V])
+    opt_other_agn = whan_sagn | mex_agn | agn_blue | kex_agn | agn_nev
     agn_bits |= opt_other_agn * agn_maskbits.OPT_OTHER_AGN
 
     # Overall WISE classification (combining all diagnostics)
@@ -329,7 +330,7 @@ def update_agntype_blue(input_table: Table, opt_uv_type: BitMask, snr: int | flo
 
     blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii, mask=mask)
 
-    # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
+    # If anyone of the emission line fluxes is zero, then there is no agn_mask (agn_mask = 0)  
     agn_mask = blue * opt_uv_type.BLUE
     agn_mask |= agn_blue * opt_uv_type.BLUE_AGN
     agn_mask |= sflin_blue * opt_uv_type.BLUE_SLC
