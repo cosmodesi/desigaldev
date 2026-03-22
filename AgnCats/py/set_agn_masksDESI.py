@@ -329,7 +329,7 @@ def update_agntype_blue(input_table: Table, opt_uv_type: BitMask, snr: int | flo
 
     blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii, mask=mask)
 
-    # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
+    # If anyone of the emission line fluxes is zero, then there is no agn_mask (agn_mask = 0)  
     agn_mask = blue * opt_uv_type.BLUE
     agn_mask |= agn_blue * opt_uv_type.BLUE_AGN
     agn_mask |= sflin_blue * opt_uv_type.BLUE_SLC
