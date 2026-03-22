@@ -6,7 +6,7 @@ Library containing all infrared AGN/galaxy diagnostic functions.
 
 Original version of code written by:
 Becky Canning (University of Portsmouth)
-Stephanie Juneau (NOIRlab)
+Stephanie Juneau (NSF NOIRlab)
 Mar Mezcula (Institut de Ciencies de l'Espai)
 """
 
@@ -398,8 +398,7 @@ def wise_assef18_r(input_table: Table, snr: int | float = 3, reliability: Litera
 
     # Apply reliability-optimized selection criteria (Equation 4 of Assef+18)
     agn_assef18 = (((w1w2_vega > alpha * np.exp(beta * (w2_vega - gamma) ** 2)) & (w2_vega > gamma)) |
-                    ((w1w2_vega > alpha) & (w2_vega <= gamma)) &
-                   w1w2_avail)
+                    ((w1w2_vega > alpha) & (w2_vega <= gamma))) & w1w2_avail
 
     # Define non-AGN as the inverse selection
     non_agn_assef18 = w1w2_avail & (~agn_assef18)
