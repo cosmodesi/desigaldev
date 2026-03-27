@@ -300,7 +300,7 @@ def sii_bpt(input_table: Table, snr: int | float = 3, kewley01: bool = False, ma
     return sii_bpt_avail, sf_sii, agn_sii, liner_sii
 
 
-def oi_bpt(input_table: Table, snr: int | float = 3, snr_oi: int | float = 1, kewley01: bool = False,
+def oi_bpt(input_table: Table, snr: int | float = 3, snr_oi: int | float = 3, kewley01: bool = False,
            mask: MaskedColumn = None) -> tuple[NDArray[bool], NDArray[bool], NDArray[bool], NDArray[bool]]:
     r"""[OI] diagnostic originally from [VO87]_.
 
@@ -336,7 +336,7 @@ def oi_bpt(input_table: Table, snr: int | float = 3, snr_oi: int | float = 1, ke
     Args:
         input_table: Table including [O I], H⍺, [OIII], Hβ fluxes and inverse variances.
         snr: SNR cut applied to H⍺, Hβ, and [OIII]. Default is ``3``.
-        snr_oi: SNR cut applied to the [OI]λ6300 emission line. Default is ``1``.
+        snr_oi: SNR cut applied to the [OI]λ6300 emission line. Default is ``3``.
         kewley01: Optional flag to use Kewley+01 lines for SF/AGN classification instead of Law+21 lines.
             Default is ``False``.
         mask: Optional mask (e.g., from masked column array). Default is ``None``.
@@ -797,7 +797,7 @@ def heii_bpt(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None
     return heii_bpt_avail, agn_heii, sf_heii
 
 
-def nev(input_table: Table, snr: int | float = 2.5, mask: MaskedColumn = None) -> (
+def nev(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None) -> (
         tuple[NDArray[bool], NDArray[bool], NDArray[bool]]):
     r"""[NeV] diagnostic based on high ionization potential.
 
@@ -813,7 +813,7 @@ def nev(input_table: Table, snr: int | float = 2.5, mask: MaskedColumn = None) -
 
     Args:
         input_table: Table including [NeV] flux and inverse variance.
-        snr: SNR cut applied to [NeV]. Default is ``2.5``.
+        snr: SNR cut applied to [NeV]. Default is ``3``.
         mask: Optional mask (e.g., from masked column array). Default is ``None``.
 
     Returns:
