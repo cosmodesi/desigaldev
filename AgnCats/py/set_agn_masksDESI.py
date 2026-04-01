@@ -12,7 +12,7 @@ Becky Canning (University of Portsmouth), 2023
 Stephanie Juneau (NOIRlab), Nov 2024, Feb 2025
 
 Revised by:
-Benjamin Floyd (University of Portsmouth)
+Benjamin Floyd (University of Portsmouth), 2026
 """
 from pathlib import Path
 from typing import Literal
@@ -57,8 +57,8 @@ def get_agn_maskbits(file: Path | str) -> tuple[BitMask, BitMask, BitMask]:
 
 
 def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | float = 3, snr_oi: int | float = 1,
-                        snr_oii: int | float = 1, snr_wise: int | float = 3, kewley01: bool = False,
-                        mask: MaskedColumn = None) -> Table:
+                        snr_oii: int | float = 1, snr_nev: int | float = 2.5, snr_wise: int | float = 3, 
+                        kewley01: bool = False, mask: MaskedColumn = None) -> Table:
     """Sets the ``AGN_MASKBITS`` values in the input catalog.
 
     ``AGN_MASKBITS`` are initialized from the ``QSO_MASKBITS`` column from QSO MAKER. They are then further modified by
@@ -112,20 +112,24 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
     agn_bits |= bpt_any_sy * agn_maskbits.BPT_ANY_SY
     agn_bits |= bpt_any_agn * agn_maskbits.BPT_ANY_AGN
 
-    # Whether there is a broad line (FWHM>= 1200 km/s)
-    bl = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
+    # Whether there is a broad line (FWHM>= 1200 km/s); move the vel_thresh to function input?
+#    bl = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
+    bl, _, _, _, _ = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
     agn_bits |= bl * agn_maskbits.BROAD_LINE
 
-    # Other (non-BPT) optical diagnostics: WHAN, MEx, KEx, Blue
+    # Other (non-BPT) optical diagnostics: WHAN, MEx, KEx, Blue 
     _, _, whan_sagn, *_ = uv_opt_agn.whan(input_table, snr=snr, mask=mask)
     _, mex_agn, *_ = uv_opt_agn.mex(input_table, snr=snr, mask=mask)
     _, agn_blue, *_ = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii,
                                       mask=mask)
     kex, kex_agn, kex_sf, kex_interm = uv_opt_agn.kex(input_table, snr=snr, mask=mask)
 
+    # Calculate [Ne V] to include in the optical AGN compilation
+    _, agn_nev, _ = uv_opt_agn.nev(input_table, snr=snr_nev, mask=mask)
+
     # Combine them for the OPT_OTHER_AGN (keeping mostly more confident ones and 
-    # excluding possible weak AGN / blended classes)
-    opt_other_agn = whan_sagn | mex_agn | agn_blue | kex_agn
+    # excluding possible weak AGN / blended classes; explicitly including [Ne V])
+    opt_other_agn = whan_sagn | mex_agn | agn_blue | kex_agn | agn_nev
     agn_bits |= opt_other_agn * agn_maskbits.OPT_OTHER_AGN
 
     # Overall WISE classification (combining all diagnostics)
@@ -152,6 +156,34 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
         input_table['AGN_MASKBITS'] |= agn_bits
     except KeyError:
         input_table['AGN_MASKBITS'] = agn_bits
+
+    return input_table
+
+
+def update_broad_lines(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3,
+                        mask: MaskedColumn = None) -> Table:
+    """Applies the Broad Line cuts and sets the bitmasks for ``OPT_UV_TYPE``.
+
+    Args:
+        input_table: Table joined with FastSpecFit columns.
+        opt_uv_type: DESI BitMask object containing the definitions of the ``OPT_UV_TYPE`` values.
+        snr: Signal-to-noise cut applied to all flux axes. Default is ``3``.
+        mask: Optional mask (e.g., from masked column array). Default is ``None``.
+
+    Returns:
+        Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for Broad Line selections for all rows.
+    """
+
+    bl, bl_ha, bl_hb, bl_mgii, bl_civ = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
+    bl_mask = bl_ha * opt_uv_type.BROAD_HALPHA
+    bl_mask |= bl_hb * opt_uv_type.BROAD_HBETA
+    bl_mask |= bl_mgii * opt_uv_type.BROAD_MGII
+    bl_mask |= bl_civ * opt_uv_type.BROAD_CIV
+    
+    try:
+        input_table['OPT_UV_TYPE'] |= bl_mask
+    except KeyError:
+        input_table['OPT_UV_TYPE'] = bl_mask
 
     return input_table
 
@@ -299,7 +331,7 @@ def update_agntype_blue(input_table: Table, opt_uv_type: BitMask, snr: int | flo
 
     blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii, mask=mask)
 
-    # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
+    # If anyone of the emission line fluxes is zero, then there is no agn_mask (agn_mask = 0)  
     agn_mask = blue * opt_uv_type.BLUE
     agn_mask |= agn_blue * opt_uv_type.BLUE_AGN
     agn_mask |= sflin_blue * opt_uv_type.BLUE_SLC

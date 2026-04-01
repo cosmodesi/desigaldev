@@ -6,7 +6,7 @@ Library containing all infrared AGN/galaxy diagnostic functions.
 
 Original version of code written by:
 Becky Canning (University of Portsmouth)
-Stephanie Juneau (NOIRlab)
+Stephanie Juneau (NSF NOIRlab)
 Mar Mezcula (Institut de Ciencies de l'Espai)
 """
 
@@ -62,11 +62,6 @@ def wise_jarrett11(input_table: Table, snr: int | float = 3, mask: MaskedColumn 
         # Mask for flux availability - included if input_table photometry is missing/masked
         zero_flux_wise |= mask
         zero_flux_w3 |= mask
-
-    # If ivar=0 set it to NaN to avoid infinities when computing the error:
-    input_table['FLUX_IVAR_W1'] = np.where(input_table['FLUX_IVAR_W1'] == 0, np.nan, input_table['FLUX_IVAR_W1'])
-    input_table['FLUX_IVAR_W2'] = np.where(input_table['FLUX_IVAR_W2'] == 0, np.nan, input_table['FLUX_IVAR_W2'])
-    input_table['FLUX_IVAR_W3'] = np.where(input_table['FLUX_IVAR_W3'] == 0, np.nan, input_table['FLUX_IVAR_W3'])
 
     # Mask for SNR.
     snr_w1 = input_table['FLUX_W1'] * np.sqrt(input_table['FLUX_IVAR_W1'])
@@ -139,10 +134,6 @@ def wise_stern12(input_table: Table, snr: float | int = 3, mask: MaskedColumn = 
     if mask is not None:
         zero_flux_w1w2 |= mask
 
-    # If ivar=0, set it to NaN to avoid infinities when computing the error
-    input_table['FLUX_IVAR_W1'] = np.where(input_table['FLUX_IVAR_W1'] == 0, np.nan, input_table['FLUX_IVAR_W1'])
-    input_table['FLUX_IVAR_W2'] = np.where(input_table['FLUX_IVAR_W2'] == 0, np.nan, input_table['FLUX_IVAR_W2'])
-
     # Mask for SNR
     snr_w1 = input_table['FLUX_W1'] * np.sqrt(input_table['FLUX_IVAR_W1'])
     snr_w2 = input_table['FLUX_W2'] * np.sqrt(input_table['FLUX_IVAR_W2'])
@@ -162,7 +153,7 @@ def wise_stern12(input_table: Table, snr: float | int = 3, mask: MaskedColumn = 
 
     # Stern et al. (2012) cut is just along W1 - W2 color
     agn_stern12: NDArray[bool] = (w1w2_vega > 0.8) & w1w2_avail
-    sf_stern: NDArray[bool] = (~agn_stern12)
+    sf_stern: NDArray[bool] = (~agn_stern12) & w1w2_avail
 
     return w1w2_avail, agn_stern12, sf_stern
 
@@ -212,11 +203,6 @@ def wise_mateos12(input_table: Table, snr: int | float = 3, mask: MaskedColumn =
         # Mask for flux availability - included if input_table photometry is missing/masked
         zero_flux_wise |= mask
         zero_flux_w3 |= mask
-
-    # If ivar=0 set it to NaN to avoid infinities when computing the error:
-    input_table['FLUX_IVAR_W1'] = np.where(input_table['FLUX_IVAR_W1'] == 0, np.nan, input_table['FLUX_IVAR_W1'])
-    input_table['FLUX_IVAR_W2'] = np.where(input_table['FLUX_IVAR_W2'] == 0, np.nan, input_table['FLUX_IVAR_W2'])
-    input_table['FLUX_IVAR_W3'] = np.where(input_table['FLUX_IVAR_W3'] == 0, np.nan, input_table['FLUX_IVAR_W3'])
 
     # Mask for SNR.
     snr_w1 = input_table['FLUX_W1'] * np.sqrt(input_table['FLUX_IVAR_W1'])
@@ -295,11 +281,6 @@ def wise_weston17(input_table: Table, snr: int | float = 3, mask: MaskedColumn =
         # Mask for flux availability - included if input_table photometry is missing/masked
         zero_flux_wise |= mask
         zero_flux_w3 |= mask
-
-    # If ivar=0 set it to NaN to avoid infinities when computing the error:
-    input_table['FLUX_IVAR_W1'] = np.where(input_table['FLUX_IVAR_W1'] == 0, np.nan, input_table['FLUX_IVAR_W1'])
-    input_table['FLUX_IVAR_W2'] = np.where(input_table['FLUX_IVAR_W2'] == 0, np.nan, input_table['FLUX_IVAR_W2'])
-    input_table['FLUX_IVAR_W3'] = np.where(input_table['FLUX_IVAR_W3'] == 0, np.nan, input_table['FLUX_IVAR_W3'])
 
     # Mask for SNR.
     snr_w1 = input_table['FLUX_W1'] * np.sqrt(input_table['FLUX_IVAR_W1'])
@@ -390,10 +371,6 @@ def wise_assef18_r(input_table: Table, snr: int | float = 3, reliability: Litera
         # Mask for flux availability - included if input_table photometry is missing/masked
         zero_flux_wise |= mask
 
-    # If ivar=0 set it to NaN to avoid infinities when computing the error:
-    input_table['FLUX_IVAR_W1'] = np.where(input_table['FLUX_IVAR_W1'] == 0, np.nan, input_table['FLUX_IVAR_W1'])
-    input_table['FLUX_IVAR_W2'] = np.where(input_table['FLUX_IVAR_W2'] == 0, np.nan, input_table['FLUX_IVAR_W2'])
-
     # Mask for SNR.
     snr_w1 = input_table['FLUX_W1'] * np.sqrt(input_table['FLUX_IVAR_W1'])
     snr_w2 = input_table['FLUX_W2'] * np.sqrt(input_table['FLUX_IVAR_W2'])
@@ -421,8 +398,7 @@ def wise_assef18_r(input_table: Table, snr: int | float = 3, reliability: Litera
 
     # Apply reliability-optimized selection criteria (Equation 4 of Assef+18)
     agn_assef18 = (((w1w2_vega > alpha * np.exp(beta * (w2_vega - gamma) ** 2)) & (w2_vega > gamma)) |
-                    ((w1w2_vega > alpha) & (w2_vega <= gamma)) &
-                   w1w2_avail)
+                    ((w1w2_vega > alpha) & (w2_vega <= gamma))) & w1w2_avail
 
     # Define non-AGN as the inverse selection
     non_agn_assef18 = w1w2_avail & (~agn_assef18)
@@ -480,10 +456,6 @@ def wise_assef18_c(input_table: Table, snr: int | float = 3, completeness: Liter
     if mask is not None:
         # Mask for flux availability - included if input_table photometry is missing/masked
         zero_flux_wise |= mask
-
-    # If ivar=0 set it to NaN to avoid infinities when computing the error:
-    input_table['FLUX_IVAR_W1'] = np.where(input_table['FLUX_IVAR_W1'] == 0, np.nan, input_table['FLUX_IVAR_W1'])
-    input_table['FLUX_IVAR_W2'] = np.where(input_table['FLUX_IVAR_W2'] == 0, np.nan, input_table['FLUX_IVAR_W2'])
 
     # Mask for SNR.
     snr_w1 = input_table['FLUX_W1'] * np.sqrt(input_table['FLUX_IVAR_W1'])
@@ -568,11 +540,6 @@ def wise_yao20(input_table: Table, snr: int | float = 3, weak_agn: bool = False,
         # Mask for flux availability - included if input_table photometry is missing/masked
         zero_flux_wise |= mask
         zero_flux_w3 |= mask
-
-    # If ivar=0 set it to NaN to avoid infinities when computing the error:
-    input_table['FLUX_IVAR_W1'] = np.where(input_table['FLUX_IVAR_W1'] == 0, np.nan, input_table['FLUX_IVAR_W1'])
-    input_table['FLUX_IVAR_W2'] = np.where(input_table['FLUX_IVAR_W2'] == 0, np.nan, input_table['FLUX_IVAR_W2'])
-    input_table['FLUX_IVAR_W3'] = np.where(input_table['FLUX_IVAR_W3'] == 0, np.nan, input_table['FLUX_IVAR_W3'])
 
     # Mask for SNR.
     snr_w1 = input_table['FLUX_W1'] * np.sqrt(input_table['FLUX_IVAR_W1'])
@@ -662,11 +629,6 @@ def wise_hviding22(input_table: Table, snr: int | float = 3, mask: MaskedColumn 
         # Mask for flux availability - included if input_table photometry is missing/masked
         zero_flux_wise |= mask
         zero_flux_w3 |= mask
-
-    # If ivar=0 set it to NaN to avoid infinities when computing the error:
-    input_table['FLUX_IVAR_W1'] = np.where(input_table['FLUX_IVAR_W1'] == 0, np.nan, input_table['FLUX_IVAR_W1'])
-    input_table['FLUX_IVAR_W2'] = np.where(input_table['FLUX_IVAR_W2'] == 0, np.nan, input_table['FLUX_IVAR_W2'])
-    input_table['FLUX_IVAR_W3'] = np.where(input_table['FLUX_IVAR_W3'] == 0, np.nan, input_table['FLUX_IVAR_W3'])
 
     # Mask for SNR.
     snr_w1 = input_table['FLUX_W1'] * np.sqrt(input_table['FLUX_IVAR_W1'])

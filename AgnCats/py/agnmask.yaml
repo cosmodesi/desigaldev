@@ -18,7 +18,7 @@ AGN_MASKBITS:
     - [BPT_ANY_AGN,   11, "At least one BPT diagnostic indicates SEYFERT, LINER or COMPOSITE"]
     - [BROAD_LINE,    12, "Lines with FWHM >=1200 km/s in Halpha, Hbeta, MgII and/or CIV line"]
     - [OPT_OTHER_AGN, 13, "Rest frame optical emission lines diagnostic not BPT (4000-10000 ang) indicate AGN"]
-    - [UV,            14, "Rest frame UV emission lines indicate AGN"]
+    - [UV,            14, "Rest frame UV emission lines indicate AGN (not yet implemented)"]
     #- from ancillary multiwavelength data 
     - [WISE_ANY_AGN,  15, "At least one infrared (WISE) colour diagnostic indicates AGN"]
     - [XRAY,          16, "X-rays indicate AGN (not yet implemented)"]
@@ -66,6 +66,11 @@ OPT_UV_TYPE:
     - [NEV,         36, "Ne V is available"]
     - [NEV_AGN,     37, "Ne V AGN"]
     - [NEV_SF,      38, "Ne V Star-forming"]
+    - [BROAD_HALPHA,39, "Halpha line with FWHM >=1200 km/s"]
+    - [BROAD_HBETA, 40, "Hbeta line with FWHM >=1200 km/s"]
+    - [BROAD_MGII,  41, "MgII doublet with FWHM >=1200 km/s"]
+    - [BROAD_CIV,   42, "CIV line with FWHM >=1200 km/s"]
+    
     #-future optical& UV types and diagnostics here: e.g., DEW, others 
 
 IR_TYPE:
