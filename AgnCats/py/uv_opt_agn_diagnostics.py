@@ -23,7 +23,7 @@ from numpy.typing import NDArray
 # Find/replace: FastSpecFit_ref with correct reference
 
 def broad_line(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None, vel_thresh: float = 1200.) -> (
-        NDArray[bool]):
+        tuple[NDArray[bool], NDArray[bool], NDArray[bool], NDArray[bool], NDArray[bool]]):
     r"""Provides mask indicating that a galaxy has at least one broad emission line.
 
     This function will produce a boolean mask to any object that has a FWHM of at least the value defined by
@@ -55,7 +55,7 @@ def broad_line(input_table: Table, snr: int | float = 3, mask: MaskedColumn = No
     # Mask for zero fluxes for each line separately
     zero_flux_ha = (input_table['HALPHA_BROAD_FLUX'] == 0)
     zero_flux_hb = (input_table['HBETA_BROAD_FLUX'] == 0)
-    zero_flux_mgii = (input_table['MGII_2796_FLUX'] == 0)|(input_table['MGII_2803_FLUX'] == 0)
+    zero_flux_mgii = (input_table['MGII_2796_FLUX'] == 0) | (input_table['MGII_2803_FLUX'] == 0)
     zero_flux_civ = (input_table['CIV_1549_FLUX'] == 0)
     
     if mask is not None:
@@ -66,9 +66,9 @@ def broad_line(input_table: Table, snr: int | float = 3, mask: MaskedColumn = No
         zero_flux_civ |= mask
 
     # If ivar = 0 set it to NaN to avoid infinities when computing the error:
-    MGII_2796_FLUX_IVAR = np.where(input_table['MGII_2796_FLUX_IVAR'] == 0,
+    mgii_2796_flux_ivar = np.where(input_table['MGII_2796_FLUX_IVAR'] == 0,
                                    np.nan, input_table['MGII_2796_FLUX_IVAR'])
-    MGII_2803_FLUX_IVAR = np.where(input_table['MGII_2803_FLUX_IVAR'] == 0,
+    mgii_2803_flux_ivar = np.where(input_table['MGII_2803_FLUX_IVAR'] == 0,
                                    np.nan, input_table['MGII_2803_FLUX_IVAR'])
 
     # Broad components for Balmer lines
@@ -77,7 +77,7 @@ def broad_line(input_table: Table, snr: int | float = 3, mask: MaskedColumn = No
 
     # For MgII, sum the doublet
     mgii_flux = input_table['MGII_2796_FLUX'] + input_table['MGII_2803_FLUX']
-    mgii_flux_ivar = 1. / (1. / MGII_2796_FLUX_IVAR + 1. / MGII_2803_FLUX_IVAR)
+    mgii_flux_ivar = 1. / (1. / mgii_2796_flux_ivar + 1. / mgii_2803_flux_ivar)
     snr_mgii = mgii_flux * np.sqrt(mgii_flux_ivar)
 
     # CIV
@@ -93,15 +93,15 @@ def broad_line(input_table: Table, snr: int | float = 3, mask: MaskedColumn = No
     broad_fwhm_civ = input_table['CIV_1549_SIGMA'] * sig2fwhm
 
     # Check for each line separately first
-    is_broad_ha = (snr_ha >= snr) & (broad_fwhm_ha >= vel_thresh) & (~zero_flux_ha)
-    is_broad_hb = (snr_hb >= snr) & (broad_fwhm_hb >= vel_thresh) & (~zero_flux_hb)
+    is_broad_halpha = (snr_ha >= snr) & (broad_fwhm_ha >= vel_thresh) & (~zero_flux_ha)
+    is_broad_hbeta = (snr_hb >= snr) & (broad_fwhm_hb >= vel_thresh) & (~zero_flux_hb)
     is_broad_mgii = (snr_mgii >= snr) & (broad_fwhm_mgii_2796 >= vel_thresh) & (~zero_flux_mgii)
     is_broad_civ = (snr_civ >= snr) & (broad_fwhm_civ >= vel_thresh) & (~zero_flux_civ)
 
     # Decision: flag a BL if any of the 4 lines meet the criteria
-    is_broad = is_broad_ha | is_broad_hb | is_broad_mgii | is_broad_civ
+    is_broad = is_broad_halpha | is_broad_hbeta | is_broad_mgii | is_broad_civ
 
-    return is_broad, is_broad_ha, is_broad_hb, is_broad_mgii, is_broad_civ
+    return is_broad, is_broad_halpha, is_broad_hbeta, is_broad_mgii, is_broad_civ
 
 
 def nii_bpt(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None) -> (
@@ -154,7 +154,7 @@ def nii_bpt(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None)
 
     Args:
         input_table: Table including [NII], H⍺, [OIII], Hβ fluxes and associated inverse variances.
-        snr: Signal-to-noise cut applied to all axes. Default is 3.
+        snr: Signal-to-noise cut applied to all axes. Default is ``3``.
         mask: Optional mask (e.g., from masked column array). Default is ``None``.
 
     Returns:
@@ -673,7 +673,6 @@ def kex(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None) -> 
     r"""KEx diagnostic originally by [Zha18]_.
 
     KEx diagnostic regions defined as:
-
         Main division between SF/AGN (Eq. 1 of [Zha18]_):
             ``kex_agn``:
             :math:`log_10(flux_{[OIII]_\lambda5006}/flux_{H\beta}) = -2*\sigma_{[OIII]} + 4.2`

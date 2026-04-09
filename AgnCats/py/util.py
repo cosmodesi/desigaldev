@@ -62,13 +62,19 @@ def plot_nii_bpt_lines(x_axes: NDArray[float]) -> tuple[NDArray[float], NDArray[
 
 
 def decode_bitmask(maskbit_num: int) -> NDArray[int]:
-    """Simple utility function that when given a maskbit number, will decode
+    """Simple utility function that when given a maskbit number, will decode the combined binary mask to the individual
+    factors.
+
+    Note:
+        This function's utility is limited and users should just use the ``desiutil.bitmask.BitMask`` method ``names()``
+        which provides a list of bit labels corresponding to the component bits contained in the input bit value.
 
     Args:
         maskbit_num:
+            The combined binary number that encodes many mask bits.
 
     Returns:
-
+        An array of the component bit values found in the total bit.
     """
     powers = []
     i = 1

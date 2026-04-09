@@ -56,8 +56,8 @@ def get_agn_maskbits(file: Path | str) -> tuple[BitMask, BitMask, BitMask]:
     return agn_maskbits, opt_uv_type, ir_type
 
 
-def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | float = 3, snr_oi: int | float = 1,
-                        snr_oii: int | float = 1, snr_nev: int | float = 2.5, snr_wise: int | float = 3, 
+def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | float = 3, snr_oi: int | float = 3,
+                        snr_oii: int | float = 3, snr_nev: int | float = 3, snr_wise: int | float = 3,
                         kewley01: bool = False, mask: MaskedColumn = None) -> Table:
     """Sets the ``AGN_MASKBITS`` values in the input catalog.
 
@@ -72,6 +72,7 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
         snr: Signal-to-noise cut applied to all axes passed to diagnostics. Default is ``3``.
         snr_oi: Signal-to-noise cut applied to the [OI]λ6300 emission line. Used for the [OI] BPT diagnostic.
             Default is ``1``.
+        snr_nev: Signal-to-noise cut applied to the [NeV]λ3426 emission line. Used for the [NeV] diagnostic. Default is ``3``.
         snr_wise: Signal-to-noise cut applied to the WISE fluxes. Default is ``3``.
         snr_oii: Signal-to-noise cut applied to the [OII]λ3727 flux. Used for the Blue diagnostic. Default is ``3``.
         kewley01: Optional flag to use Kewley+01 lines for SF/AGN classification instead of Law+21 lines. Used for the
@@ -113,23 +114,21 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
     agn_bits |= bpt_any_agn * agn_maskbits.BPT_ANY_AGN
 
     # Whether there is a broad line (FWHM>= 1200 km/s); move the vel_thresh to function input?
-#    bl = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
-    bl, _, _, _, _ = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
+    bl, *_ = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
     agn_bits |= bl * agn_maskbits.BROAD_LINE
 
-    # Other (non-BPT) optical diagnostics: WHAN, MEx, KEx, Blue 
+    # Other (non-BPT) optical diagnostics: WHAN, MEx, KEx, Blue
     _, _, whan_sagn, *_ = uv_opt_agn.whan(input_table, snr=snr, mask=mask)
     _, mex_agn, *_ = uv_opt_agn.mex(input_table, snr=snr, mask=mask)
-    _, agn_blue, *_ = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii,
-                                      mask=mask)
-    kex, kex_agn, kex_sf, kex_interm = uv_opt_agn.kex(input_table, snr=snr, mask=mask)
+    _, blue_agn, *_ = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii, mask=mask)
+    _, kex_agn, *_ = uv_opt_agn.kex(input_table, snr=snr, mask=mask)
 
     # Calculate [Ne V] to include in the optical AGN compilation
-    _, agn_nev, _ = uv_opt_agn.nev(input_table, snr=snr_nev, mask=mask)
+    _, nev_agn, _ = uv_opt_agn.nev(input_table, snr=snr_nev, mask=mask)
 
-    # Combine them for the OPT_OTHER_AGN (keeping mostly more confident ones and 
+    # Combine them for the OPT_OTHER_AGN (keeping mostly more confident ones and
     # excluding possible weak AGN / blended classes; explicitly including [Ne V])
-    opt_other_agn = whan_sagn | mex_agn | agn_blue | kex_agn | agn_nev
+    opt_other_agn = whan_sagn | mex_agn | blue_agn | kex_agn | nev_agn
     agn_bits |= opt_other_agn * agn_maskbits.OPT_OTHER_AGN
 
     # Overall WISE classification (combining all diagnostics)
@@ -161,7 +160,7 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
 
 
 def update_broad_lines(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3,
-                        mask: MaskedColumn = None) -> Table:
+                       mask: MaskedColumn = None) -> Table:
     """Applies the Broad Line cuts and sets the bitmasks for ``OPT_UV_TYPE``.
 
     Args:
@@ -174,12 +173,13 @@ def update_broad_lines(input_table: Table, opt_uv_type: BitMask, snr: int | floa
         Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for Broad Line selections for all rows.
     """
 
-    bl, bl_ha, bl_hb, bl_mgii, bl_civ = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
-    bl_mask = bl_ha * opt_uv_type.BROAD_HALPHA
-    bl_mask |= bl_hb * opt_uv_type.BROAD_HBETA
+    # The `is_broad` mask is used in ``AGN_MASKBITS`` and is not reused here.
+    _, bl_halpha, bl_hbeta, bl_mgii, bl_civ = uv_opt_agn.broad_line(input_table, snr=snr, mask=mask, vel_thresh=1200.)
+    bl_mask = bl_halpha * opt_uv_type.BROAD_HALPHA
+    bl_mask |= bl_hbeta * opt_uv_type.BROAD_HBETA
     bl_mask |= bl_mgii * opt_uv_type.BROAD_MGII
     bl_mask |= bl_civ * opt_uv_type.BROAD_CIV
-    
+
     try:
         input_table['OPT_UV_TYPE'] |= bl_mask
     except KeyError:
@@ -204,17 +204,17 @@ def update_agntype_nii_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | 
 
     nii_bpt, sf_nii, agn_nii, liner_nii, composite_nii = uv_opt_agn.nii_bpt(input_table, snr=snr, mask=mask)
 
-    # If any of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)
-    bpt_mask = nii_bpt * opt_uv_type.NII_BPT  ## All the emission lines have S/N >= 3
-    bpt_mask |= sf_nii * opt_uv_type.NII_SF  ## [NII] - Star Forming
-    bpt_mask |= agn_nii * opt_uv_type.NII_SY  ## [NII] - Seyfert
-    bpt_mask |= liner_nii * opt_uv_type.NII_LINER  ## [NII] - LINER
-    bpt_mask |= composite_nii * opt_uv_type.NII_COMP  ## [NII] - Composite
+    # If any of the emission line fluxes are unavailable, then there is no agn_mask (agn_mask = 0)
+    agn_mask = nii_bpt * opt_uv_type.NII_BPT  ## All the emission lines have S/N >= 3
+    agn_mask |= sf_nii * opt_uv_type.NII_SF  ## [NII] - Star Forming
+    agn_mask |= agn_nii * opt_uv_type.NII_SY  ## [NII] - Seyfert
+    agn_mask |= liner_nii * opt_uv_type.NII_LINER  ## [NII] - LINER
+    agn_mask |= composite_nii * opt_uv_type.NII_COMP  ## [NII] - Composite
 
     try:
-        input_table['OPT_UV_TYPE'] |= bpt_mask
+        input_table['OPT_UV_TYPE'] |= agn_mask
     except KeyError:
-        input_table['OPT_UV_TYPE'] = bpt_mask
+        input_table['OPT_UV_TYPE'] = agn_mask
 
     return input_table
 
@@ -236,21 +236,21 @@ def update_agntype_sii_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | 
 
     sii_bpt, sf_sii, agn_sii, liner_sii = uv_opt_agn.sii_bpt(input_table, snr=snr, kewley01=kewley01, mask=mask)
 
-    # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
-    bpt_mask = sii_bpt * opt_uv_type.SII_BPT  ## All the emission lines have S/N >= 3
-    bpt_mask |= sf_sii * opt_uv_type.SII_SF  ## [SII] - Star Forming
-    bpt_mask |= agn_sii * opt_uv_type.SII_SY  ## [SII] - Seyfert
-    bpt_mask |= liner_sii * opt_uv_type.SII_LINER  ## [SII] - LINER
+    # If anyone of the emission line fluxes are unavailable, then there is no agn_mask (agn_mask = 0)
+    agn_mask = sii_bpt * opt_uv_type.SII_BPT  ## All the emission lines have S/N >= 3
+    agn_mask |= sf_sii * opt_uv_type.SII_SF  ## [SII] - Star Forming
+    agn_mask |= agn_sii * opt_uv_type.SII_SY  ## [SII] - Seyfert
+    agn_mask |= liner_sii * opt_uv_type.SII_LINER  ## [SII] - LINER
 
     try:
-        input_table['OPT_UV_TYPE'] |= bpt_mask
+        input_table['OPT_UV_TYPE'] |= agn_mask
     except KeyError:
-        input_table['OPT_UV_TYPE'] = bpt_mask
+        input_table['OPT_UV_TYPE'] = agn_mask
 
     return input_table
 
 
-def update_agntype_oi_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3, snr_oi: int | float = 1,
+def update_agntype_oi_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3, snr_oi: int | float = 3,
                           kewley01: bool = False, mask: MaskedColumn = None) -> Table:
     """Applies the [OI] BPT masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
@@ -268,21 +268,21 @@ def update_agntype_oi_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | f
 
     oi_bpt, sf_oi, agn_oi, liner_oi = uv_opt_agn.oi_bpt(input_table, snr=snr, snr_oi=snr_oi, kewley01=kewley01, mask=mask)
 
-    # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
-    bpt_mask = oi_bpt * opt_uv_type.OI_BPT  ## Except [OI] - other em lines have S/N >= 3
-    bpt_mask |= sf_oi * opt_uv_type.OI_SF  ## [OI] - Star Forming
-    bpt_mask |= agn_oi * opt_uv_type.OI_SY  ## [OI] - Seyfert
-    bpt_mask |= liner_oi * opt_uv_type.OI_LINER  ## [OI] - LINER
+    # If anyone of the emission line fluxes are unavailable, then there is no agn_mask (agn_mask = 0)
+    agn_mask = oi_bpt * opt_uv_type.OI_BPT  ## Except [OI] - other em lines have S/N >= 3
+    agn_mask |= sf_oi * opt_uv_type.OI_SF  ## [OI] - Star Forming
+    agn_mask |= agn_oi * opt_uv_type.OI_SY  ## [OI] - Seyfert
+    agn_mask |= liner_oi * opt_uv_type.OI_LINER  ## [OI] - LINER
 
     try:
-        input_table['OPT_UV_TYPE'] |= bpt_mask
+        input_table['OPT_UV_TYPE'] |= agn_mask
     except KeyError:
-        input_table['OPT_UV_TYPE'] = bpt_mask
+        input_table['OPT_UV_TYPE'] = agn_mask
 
     return input_table
 
 
-def update_agntype_whan(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3,
+def update_agntype_whan(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3, snr_ew: int | float = 1,
                         mask: MaskedColumn = None) -> Table:
     """Applies the WHAN masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
@@ -290,15 +290,17 @@ def update_agntype_whan(input_table: Table, opt_uv_type: BitMask, snr: int | flo
         input_table: Table joined with FastSpecFit columns.
         opt_uv_type: DESI BitMask object containing the definitions of the ``OPT_UV_TYPE`` values.
         snr: Signal-to-noise cut applied to all flux axes. Default is ``3``.
+        snr_ew: Signal-to-noise cut applied to the H⍺ equivalent width.
         mask: Optional mask (e.g., from masked column array). Default is ``None``.
 
     Returns:
        Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for WHAN selections for all rows.
     """
 
-    whan, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive = uv_opt_agn.whan(input_table, snr=snr, mask=mask)
+    whan, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive = uv_opt_agn.whan(input_table, snr=snr,
+                                                                                      snr_ew=snr_ew, mask=mask)
 
-    # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
+    # If anyone of the emission line fluxes are unavailable, then there is no agn_mask (agn_mask = 0)
     agn_mask = whan * opt_uv_type.WHAN  ## WHAN is available (Halpha and [NII])
     agn_mask |= whan_sf * opt_uv_type.WHAN_SF  ## WHAN Star-forming
     agn_mask |= whan_sagn * opt_uv_type.WHAN_SAGN  ## WHAN Strong AGN
@@ -314,7 +316,7 @@ def update_agntype_whan(input_table: Table, opt_uv_type: BitMask, snr: int | flo
     return input_table
 
 
-def update_agntype_blue(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3, snr_oii: int | float = 1,
+def update_agntype_blue(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3, snr_oii: int | float = 3,
                         mask: MaskedColumn = None) -> Table:
     """Applies the Blue masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
@@ -329,9 +331,11 @@ def update_agntype_blue(input_table: Table, opt_uv_type: BitMask, snr: int | flo
        Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for Blue selections for all rows.
     """
 
-    blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii, mask=mask)
+    blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii,
+                                                                                  mask=mask)
 
-    # If anyone of the emission line fluxes is zero, then there is no agn_mask (agn_mask = 0)  
+    # If anyone of the emission line fluxes or the equivalent widths are unavailable,
+    # then there is no agn_mask (agn_mask = 0)
     agn_mask = blue * opt_uv_type.BLUE
     agn_mask |= agn_blue * opt_uv_type.BLUE_AGN
     agn_mask |= sflin_blue * opt_uv_type.BLUE_SLC
@@ -363,6 +367,7 @@ def update_agntype_mex(input_table: Table, opt_uv_type: BitMask, snr: int | floa
 
     mex, mex_agn, mex_sf, mex_interm = uv_opt_agn.mex(input_table, snr=snr, mask=mask)
 
+    # If any of the emission line fluxes or the stellar masses are unavailable then there is no agn_mask (agn_mask = 0)
     agn_mask = mex * opt_uv_type.MEX
     agn_mask |= mex_agn * opt_uv_type.MEX_AGN
     agn_mask |= mex_sf * opt_uv_type.MEX_SF
@@ -392,6 +397,7 @@ def update_agntype_kex(input_table: Table, opt_uv_type: BitMask, snr: int | floa
 
     kex, kex_agn, kex_sf, kex_interm = uv_opt_agn.kex(input_table, snr=snr, mask=mask)
 
+    # If any of the emission line fluxes or the velocity dispersions are unavailable there is no agn_mask (agn_mask = 0)
     agn_mask = kex * opt_uv_type.KEX
     agn_mask |= kex_agn * opt_uv_type.KEX_AGN
     agn_mask |= kex_sf * opt_uv_type.KEX_SF
@@ -421,7 +427,7 @@ def update_agntype_heii(input_table: Table, opt_uv_type: BitMask, snr: int | flo
 
     heii_bpt, agn_heii, sf_heii = uv_opt_agn.heii_bpt(input_table, snr=snr, mask=mask)
 
-    # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
+    # If anyone of the emission line fluxes are unavailable, then there is no agn_mask (agn_mask = 0)
     agn_mask = heii_bpt * opt_uv_type.HEII_BPT
     agn_mask |= agn_heii * opt_uv_type.HEII_AGN
     agn_mask |= sf_heii * opt_uv_type.HEII_SF
@@ -434,7 +440,7 @@ def update_agntype_heii(input_table: Table, opt_uv_type: BitMask, snr: int | flo
     return input_table
 
 
-def update_agntype_nev(input_table: Table, opt_uv_type: BitMask, snr: int | float = 2.5,
+def update_agntype_nev(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3,
                        mask: MaskedColumn = None) -> Table:
     """Applies the [NeV] masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
@@ -450,7 +456,7 @@ def update_agntype_nev(input_table: Table, opt_uv_type: BitMask, snr: int | floa
 
     nev, agn_nev, sf_nev = uv_opt_agn.nev(input_table, snr=snr, mask=mask)
 
-    # If anyone of the emission line fluxes is zero, then there is no bpt_mask (bpt_mask = 0)  
+    # If anyone of the emission line fluxes are unavailable, then there is no agn_mask (agn_mask = 0)
     agn_mask = nev * opt_uv_type.NEV
     agn_mask |= agn_nev * opt_uv_type.NEV_AGN
     agn_mask |= sf_nev * opt_uv_type.NEV_SF
