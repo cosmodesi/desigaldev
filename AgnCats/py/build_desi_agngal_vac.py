@@ -8,12 +8,13 @@ notebook and provides parallelized computation abilities in constructing the fin
 
 import sys
 
+import numpy as np
 import yaml
 
 sys.path.append('/global/homes/b/bfloyd/agngal_dr2')
 
 import argparse
-from multiprocessing import Pool
+import multiprocessing as mp
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -143,6 +144,16 @@ def read_input_catalogs(specprod_info: SpecProdInfo) -> Table:
     except OSError as e:
         raise OSError('Error on reading an input catalog.') from e
 
+    # Add QN_C_LINE_BEST to QSO-Maker catalog if not processing Iron (pre-computed)
+    if 'QN_C_LINE_BEST' not in specprod_info.qso_maker_cols:
+        qn_c_lines = ['C_LYA', 'C_CIV', 'C_CIII', 'C_MgII', 'C_Hbeta', 'C_Halpha']
+        all_c_lines = np.vstack([qso_maker_catalog[c_line_col] for c_line_col in qn_c_lines]).T
+        qso_maker_catalog['QN_C_LINE_BEST'] = np.nanmax(all_c_lines, axis=1)
+
+    # We want to preserve the redshift columns from QSO-Maker separately from FastSpecFit's columns
+    qso_maker_catalog.rename_columns(['Z', 'ZERR', 'SPECTYPE', 'MORPHTYPE'],
+                                     ['Z_QSOM', 'ZERR_QSOM', 'SPECTYPE_QSOM', 'MORPHTYPE_QSOM'])
+
     # Main identifiers for Joins
     keys_for_join = ['TARGETID', 'SURVEY', 'PROGRAM']
 
@@ -266,14 +277,19 @@ def build_agngal_catalog(specprod_info: SpecProdInfo, output_filename: str) -> N
 
 
 if __name__ == "__main__":
+    # Set multiprocessing spawn method per NERSC recommendation.
+    mp.set_start_method('spawn')
+
     # Provide CLI arguments for easy execution via SLURM scripts.
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', required=True, help='Path to configuration file.', type=Path)
     parser.add_argument("-o", "--output", default="desi_agngal.fits", required=True,
                         help="Path to output FITS file.", type=Path)
     parser.add_argument('--testing', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--testing-pp', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
 
+    # Read in the configuration file
     spec_prod_info = read_config(args.config)
 
     if 'fuji' in spec_prod_info.keys():
@@ -290,14 +306,32 @@ if __name__ == "__main__":
         cmx_other_info = spec_prod_info['loa']['cmx-other']
         build_agngal_catalog(cmx_other_info, args.output)
 
+    elif args.testing_pp:
+        # To test parallel processing we will regenerate a Loa version of EDR.
+        edr_catalog_set = ['cmx-other',
+                           'special-backup', 'special-bright', 'special-dark',
+                           'sv1-backup', 'sv1-bright', 'sv1-dark', 'sv1-other',
+                           'sv2-backup', 'sv2-bright', 'sv2-dark',
+                           'sv3-backup', 'sv3-bright', 'sv3-dark']
+        testing_info_set = {'loa': {survey_program: config_info
+                                    for survey_program, config_info in spec_prod_info['loa'].items()
+                                    if survey_program in edr_catalog_set}}
+        output_filenames = [str(args.output / Path(f'desi_agngal_loa_{survey_program}.fits'))
+                            for survey_program in testing_info_set['loa'].keys()]
+
+        with mp.Pool() as pool:
+            result = pool.starmap_async(build_agngal_catalog, zip(spec_prod_info.values(), output_filenames))
+            result.get()
+
     elif spec_prod == 'loa':
         # We need to assign unique output filenames for Loa catalogs based on the input catalog names.
         output_filenames = [str(args.output / Path(f'desi_agngal_loa_{survey_program}.fits'))
                             for survey_program in spec_prod_info['loa'].keys()]
 
         # Run all catalog operations in parallel simultaneously
-        with Pool() as pool:
-            pool.starmap_async(build_agngal_catalog, zip(spec_prod_info.values(), output_filenames))
+        with mp.Pool() as pool:
+            result = pool.starmap_async(build_agngal_catalog, zip(spec_prod_info.values(), output_filenames))
+            result.get()
 
     else:
         # For all previous data releases (EDR/Fuji, DR1/Iron) we will run the operations in serial.
