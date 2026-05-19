@@ -97,20 +97,18 @@ def generate_loa_config(specprod_info: dict[str, Path | list[str]], universal_in
 
     # Convert the lists of file paths into dictionaries with the same structure as the dispatch patterns for previous
     # data releases
-    loa_info = {survey_program: {**loa_paths(catalog_paths, specprod_info),
-                                 'fast_spec_data_cols': specprod_info['fast_spec_data_cols'],
-                                 'fast_spec_meta_cols': specprod_info['fast_spec_meta_cols'],
-                                 'fast_spec_specphot_cols': specprod_info['fast_spec_specphot_cols'],
-                                 'zcat_cols': specprod_info['zcat_cols'],
-                                 'output_cols_ext1': specprod_info['output_cols_ext1']}
+    loa_info = {survey_program: loa_paths(catalog_paths, specprod_info)
                 for survey_program, catalog_paths in all_catalogs_dict.items()}
 
+    # Extract all data for all the column data common to all survey-program(-healpix) subcatalog of Loa
+    all_loa_info = {label: info for label, info in specprod_info.items() if 'cols' in label}
+
     # Merge the column lists between the data release-specific and universal lists.
-    merged_column_lists = {list_name: [*specprod_info[list_name], *universal_info[list_name]]
-                           for list_name in set(specprod_info.keys()).intersection(universal_info.keys())}
+    merged_column_lists = {list_name: [*all_loa_info[list_name], *universal_info[list_name]]
+                           for list_name in set(all_loa_info.keys()).intersection(universal_info.keys())}
 
     # To each survey-program(-healpix) subcatalog of Loa, union the universal info dictionary.
-    loa_info = {f'{specprod_name}': {survey_program: survey_program_info | universal_info | merged_column_lists
+    loa_info = {f'{specprod_name}': {survey_program: survey_program_info | all_loa_info | universal_info | merged_column_lists
                  for survey_program, survey_program_info in loa_info.items()}}
 
     # Write the configuration to file
@@ -158,34 +156,7 @@ fuji_info = {
 
     # FastSpecFit catalog
     'fast_spec': f'{DESI_ROOT_RO}/spectro/fastspecfit/fuji/v3.2/catalogs/fastspec-fuji.fits',
-    'fast_spec_data_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
-                            'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
-                            'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
-                            'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
-                            'OII_3726_FLUX', 'OII_3726_FLUX_IVAR', 'OII_3726_EW', 'OII_3726_EW_IVAR',
-                            'OII_3729_FLUX', 'OII_3729_FLUX_IVAR', 'OII_3729_EW', 'OII_3729_EW_IVAR',
-                            'NEV_3426_FLUX', 'NEV_3426_FLUX_IVAR',
-                            'HEII_4686_FLUX', 'HEII_4686_FLUX_IVAR',
-                            'HBETA_EW', 'HBETA_EW_IVAR', 'HBETA_FLUX', 'HBETA_FLUX_IVAR',
-                            'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA', 'HBETA_BROAD_CHI2',
-                            'OIII_5007_FLUX', 'OIII_5007_FLUX_IVAR', 'OIII_5007_SIGMA',
-                            'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
-                            'HALPHA_EW', 'HALPHA_EW_IVAR', 'HALPHA_FLUX', 'HALPHA_FLUX_IVAR',
-                            'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_VSHIFT',
-                            'HALPHA_BROAD_SIGMA',
-                            'NII_6584_FLUX', 'NII_6584_FLUX_IVAR',
-                            'SII_6716_FLUX', 'SII_6716_FLUX_IVAR',
-                            'SII_6731_FLUX', 'SII_6731_FLUX_IVAR'],
-
-    'fast_spec_meta_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'PHOTSYS', 'LS_ID',
-                            'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z', 'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R',
-                            'FIBERTOTFLUX_Z',
-                            'FLUX_G', 'FLUX_R', 'FLUX_Z', 'FLUX_W1', 'FLUX_W2', 'FLUX_W3', 'FLUX_W4',
-                            'FLUX_IVAR_G', 'FLUX_IVAR_R', 'FLUX_IVAR_Z', 'FLUX_IVAR_W1', 'FLUX_IVAR_W2',
-                            'FLUX_IVAR_W3',
-                            'FLUX_IVAR_W4',
-                            'EBV', 'MW_TRANSMISSION_G', 'MW_TRANSMISSION_R', 'MW_TRANSMISSION_Z',
-                            'MW_TRANSMISSION_W1', 'MW_TRANSMISSION_W2', 'MW_TRANSMISSION_W3', 'MW_TRANSMISSION_W4'],
+    'fast_spec_data_cols': ['LOGMSTAR'],
 
     # Redshift catalog
     'zcat': f'{DESI_ROOT_RO}/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits',
@@ -194,7 +165,8 @@ fuji_info = {
 
     # Output catalog extension 1 column names
     'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
-                         'Z', 'ZERR', 'ZWARN', 'SPECTYPE',
+                         'Z', 'ZERR', 'ZWARN', 'Z_RR', 'Z_QN', 'QN_C_LINE_BEST',
+                         'SPECTYPE',
                          'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
                          'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',
                          'MIN_MJD', 'MEAN_MJD', 'MAX_MJD', 'COADD_NUMEXP', 'COADD_EXPTIME',
@@ -209,41 +181,11 @@ fuji_info = {
 iron_info = {
     # QSO-Maker catalog from `merge_QSOmaker.ipynb`. DR1 version from after Edmond ran on all targets/all surveys
     'qso_maker': f'{DESI_ROOT_RO}/science/gqp/agncatalog/qsomaker/iron/QSO_cat_iron_healpix_all_targets_v1.fits',
+    'qso_maker_cols': ['QN_C_LINE_BEST'],
 
     # FastSpecFit catalog
     'fast_spec': f'{DESI_ROOT_RO}/spectro/fastspecfit/iron/v2.1/catalogs/fastspec-iron.fits',
-    'fast_spec_data_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
-                            'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
-                            'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
-                            'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
-                            'NEV_3426_FLUX', 'NEV_3426_FLUX_IVAR',
-                            'OII_3726_FLUX', 'OII_3726_FLUX_IVAR', 'OII_3726_EW', 'OII_3726_EW_IVAR',
-                            'OII_3729_FLUX', 'OII_3729_FLUX_IVAR', 'OII_3729_EW', 'OII_3729_EW_IVAR',
-                            'HEII_4686_FLUX', 'HEII_4686_FLUX_IVAR',
-                            'HBETA_EW', 'HBETA_EW_IVAR', 'HBETA_FLUX', 'HBETA_FLUX_IVAR',
-                            'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA', 'HBETA_BROAD_CHI2',
-                            'OIII_5007_FLUX', 'OIII_5007_FLUX_IVAR', 'OIII_5007_SIGMA',
-                            'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
-                            'HALPHA_EW', 'HALPHA_EW_IVAR', 'HALPHA_FLUX', 'HALPHA_FLUX_IVAR',
-                            'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_VSHIFT',
-                            'HALPHA_BROAD_SIGMA',
-                            'NII_6584_FLUX', 'NII_6584_FLUX_IVAR',
-                            'SII_6716_FLUX', 'SII_6716_FLUX_IVAR',
-                            'SII_6731_FLUX', 'SII_6731_FLUX_IVAR'],
-
-    'fast_spec_meta_cols': ['TARGETID', 'LS_ID', 'SURVEY', 'PROGRAM', 'PHOTSYS',
-                            'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z', 'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R',
-                            'FIBERTOTFLUX_Z',
-                            'FLUX_G', 'FLUX_IVAR_G',
-                            'FLUX_R', 'FLUX_IVAR_R',
-                            'FLUX_Z', 'FLUX_IVAR_Z',
-                            'FLUX_W1', 'FLUX_IVAR_W1',
-                            'FLUX_W2', 'FLUX_IVAR_W2',
-                            'FLUX_W3', 'FLUX_IVAR_W3',
-                            'FLUX_W4', 'FLUX_IVAR_W4',
-                            'EBV',
-                            'MW_TRANSMISSION_G', 'MW_TRANSMISSION_R', 'MW_TRANSMISSION_Z',
-                            'MW_TRANSMISSION_W1', 'MW_TRANSMISSION_W2', 'MW_TRANSMISSION_W3', 'MW_TRANSMISSION_W4'],
+    'fast_spec_data_cols': ['LOGMSTAR'],
 
     # Redshift catalog
     'zcat': f'{DESI_ROOT_RO}/spectro/redux/iron/zcatalog/v1/zall-pix-iron.fits',
@@ -253,7 +195,8 @@ iron_info = {
 
     # Output catalog extension 1 column names
     'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
-                         'Z', 'ZERR', 'ZWARN', 'SPECTYPE',
+                         'Z', 'ZERR', 'ZWARN', 'Z_RR', 'Z_QN', 'QN_C_LINE_BEST',
+                         'SPECTYPE',
                          'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
                          'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',
                          'MIN_MJD', 'MEAN_MJD', 'MAX_MJD', 'COADD_NUMEXP', 'COADD_EXPTIME',
@@ -271,37 +214,6 @@ loa_base_info = {
 
     # FastSpecFit Catalog
     'fast_spec_dir': Path(f'{DESI_ROOT_RO}/vac/dr2/fastspecfit/loa/v1.0/catalogs'),
-    'fast_spec_data_cols': ['TARGETID', 'PROGRAM', 'SURVEY',
-                            'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
-                            'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
-                            'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
-                            'NEV_3426_FLUX', 'NEV_3426_FLUX_IVAR',
-                            'OII_3726_EW', 'OII_3726_EW_IVAR', 'OII_3726_FLUX', 'OII_3726_FLUX_IVAR',
-                            'OII_3729_EW', 'OII_3729_EW_IVAR', 'OII_3729_FLUX', 'OII_3729_FLUX_IVAR',
-                            'HEII_4686_FLUX', 'HEII_4686_FLUX_IVAR',
-                            'HBETA_FLUX', 'HBETA_FLUX_IVAR', 'HBETA_EW', 'HBETA_EW_IVAR',
-                            'HBETA_BROAD_CHI2', 'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA',
-                            'OIII_5007_FLUX', 'OIII_5007_FLUX_IVAR', 'OIII_5007_SIGMA',
-                            'HALPHA_FLUX', 'HALPHA_FLUX_IVAR', 'HALPHA_EW', 'HALPHA_EW_IVAR',
-                            'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_SIGMA',
-                            'HALPHA_BROAD_VSHIFT',
-                            'NII_6584_FLUX', 'NII_6584_FLUX_IVAR', 'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
-                            'SII_6716_FLUX', 'SII_6716_FLUX_IVAR',
-                            'SII_6731_FLUX', 'SII_6731_FLUX_IVAR'],
-
-    'fast_spec_meta_cols': ['TARGETID', 'LS_ID', 'PROGRAM', 'SURVEY', 'PHOTSYS',
-                            'FIBERFLUX_G', 'FIBERFLUX_R', 'FIBERFLUX_Z',
-                            'FIBERTOTFLUX_G', 'FIBERTOTFLUX_R', 'FIBERTOTFLUX_Z',
-                            'FLUX_G', 'FLUX_IVAR_G',
-                            'FLUX_R', 'FLUX_IVAR_R',
-                            'FLUX_Z', 'FLUX_IVAR_Z',
-                            'FLUX_W1', 'FLUX_IVAR_W1',
-                            'FLUX_W2', 'FLUX_IVAR_W2',
-                            'FLUX_W3', 'FLUX_IVAR_W3',
-                            'FLUX_W4', 'FLUX_IVAR_W4',
-                            'EBV',
-                            'MW_TRANSMISSION_G', 'MW_TRANSMISSION_R', 'MW_TRANSMISSION_Z',
-                            'MW_TRANSMISSION_W1', 'MW_TRANSMISSION_W2', 'MW_TRANSMISSION_W3', 'MW_TRANSMISSION_W4'],
 
     'fast_spec_specphot_cols': ['TARGETID', 'PROGRAM', 'SURVEY', 'LOGMSTAR'],
 
@@ -313,7 +225,8 @@ loa_base_info = {
 
     # Output catalog extension 1 column names
     'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
-                         'Z', 'ZERR', 'ZWARN', 'SPECTYPE',
+                         'Z', 'ZERR', 'ZWARN', 'Z_RR', 'Z_QN', 'QN_C_LINE_BEST',
+                         'SPECTYPE',
                          'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
                          'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',
                          'MIN_MJD', 'MEAN_MJD', 'MAX_MJD', 'COADD_NUMEXP', 'COADD_EXPTIME',
@@ -333,9 +246,35 @@ all_data_release_info = {
     'output_ext2_unit_defs': '/dvs_ro/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/ext2_units.yaml',
 
     # Universal input catalog column names
-    'qso_maker_cols': ['TARGETID', 'Z', 'ZERR', 'ZWARN', 'SPECTYPE', 'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC',
+    'fast_spec_data_cols': ['TARGETID', 'PROGRAM', 'SURVEY',
+                            'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
+                            'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
+                            'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
+                            'NEV_3426_FLUX', 'NEV_3426_FLUX_IVAR',
+                            'OII_3726_EW', 'OII_3726_EW_IVAR', 'OII_3726_FLUX', 'OII_3726_FLUX_IVAR',
+                            'OII_3729_EW', 'OII_3729_EW_IVAR', 'OII_3729_FLUX', 'OII_3729_FLUX_IVAR',
+                            'HEII_4686_FLUX', 'HEII_4686_FLUX_IVAR',
+                            'HBETA_FLUX', 'HBETA_FLUX_IVAR', 'HBETA_EW', 'HBETA_EW_IVAR',
+                            'HBETA_BROAD_CHI2', 'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA',
+                            'OIII_5007_FLUX', 'OIII_5007_FLUX_IVAR', 'OIII_5007_SIGMA',
+                            'HALPHA_FLUX', 'HALPHA_FLUX_IVAR', 'HALPHA_EW', 'HALPHA_EW_IVAR',
+                            'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_SIGMA',
+                            'HALPHA_BROAD_VSHIFT',
+                            'NII_6584_FLUX', 'NII_6584_FLUX_IVAR', 'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
+                            'SII_6716_FLUX', 'SII_6716_FLUX_IVAR',
+                            'SII_6731_FLUX', 'SII_6731_FLUX_IVAR'],
+
+    'fast_spec_meta_cols': ['TARGETID', 'PROGRAM', 'SURVEY', 'LS_ID',
+                            'PHOTSYS', 'SPECTYPE', 'DELTACHI2',
+                            'Z', 'ZWARN', 'Z_RR',
+                            'FLUX_W1', 'FLUX_W2', 'FLUX_W3',
+                            'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'FLUX_IVAR_W3',
+                            'EBV',
+                            'MW_TRANSMISSION_W1', 'MW_TRANSMISSION_W2', 'MW_TRANSMISSION_W3'],
+
+    'qso_maker_cols': ['TARGETID', 'Z', 'ZERR', 'SPECTYPE', 'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC',
                        'MORPHTYPE', 'MASKBITS', 'COADD_NUMEXP', 'COADD_EXPTIME', 'TSNR2_LYA', 'TSNR2_QSO',
-                       'Z_RR', 'Z_QN', 'C_LYA', 'C_CIV', 'C_CIII', 'C_MgII', 'C_Hbeta', 'C_Halpha',
+                       'Z_QN', 'C_LYA', 'C_CIV', 'C_CIII', 'C_MgII', 'C_Hbeta', 'C_Halpha',
                        'QSO_MASKBITS', 'SURVEY', 'PROGRAM'],
 
     'zcat_cols': ['DESI_TARGET', 'BGS_TARGET', 'SCND_TARGET', 'CMX_TARGET',
@@ -373,4 +312,5 @@ if __name__ == '__main__':
                               config_file_name=Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/iron_config.yaml'),
                               specprod_name='iron')
     generate_loa_config(specprod_info=loa_base_info, universal_info=all_data_release_info,
-                        config_file_name=Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/loa_config.yaml'), specprod_name='loa')
+                        config_file_name=Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/loa_config.yaml'),
+                        specprod_name='loa')
