@@ -22,8 +22,11 @@ import fitsio
 from astropy.io import fits
 from astropy.table import Table, hstack, join
 from desiutil.annotate import annotate_fits, load_yml_units
+from desiutil.log import get_logger
 
 from AgnCats.py import set_agn_masksDESI as agn_masks
+
+logger = get_logger()
 
 @dataclass(kw_only=True)
 class SpecProdInfo:
@@ -320,7 +323,7 @@ if __name__ == "__main__":
                             for survey_program in testing_info_set['loa'].keys()]
 
         with mp.Pool() as pool:
-            result = pool.starmap_async(build_agngal_catalog, zip(spec_prod_info.values(), output_filenames))
+            result = pool.starmap_async(build_agngal_catalog, zip(spec_prod_info['loa'].values(), output_filenames))
             result.get()
 
     elif spec_prod == 'loa':
