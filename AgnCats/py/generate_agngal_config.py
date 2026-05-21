@@ -160,7 +160,7 @@ fuji_info = {
 
     # Redshift catalog
     'zcat': f'{DESI_ROOT_RO}/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits',
-    'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'TSNR2_LRG', 'SV_NSPEC', 'SV_PRIMARY',
+    'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'ZERR', 'MORPHTYPE', 'TSNR2_LRG', 'SV_NSPEC', 'SV_PRIMARY',
                   'ZCAT_NSPEC', 'ZCAT_PRIMARY', 'MIN_MJD', 'MEAN_MJD', 'MAX_MJD', 'OBJTYPE'],
 
     # Output catalog extension 1 column names
@@ -189,9 +189,9 @@ iron_info = {
 
     # Redshift catalog
     'zcat': f'{DESI_ROOT_RO}/spectro/redux/iron/zcatalog/v1/zall-pix-iron.fits',
-    'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'TSNR2_LRG', 'ZCAT_NSPEC', 'ZCAT_PRIMARY',
-                  'SV_NSPEC', 'SV_PRIMARY', 'MAIN_PRIMARY', 'MAIN_NSPEC', 'MIN_MJD', 'MEAN_MJD', 'MAX_MJD',
-                  'OBJTYPE'],
+    'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'ZERR', 'MORPHTYPE', 'TSNR2_LRG', 'ZCAT_NSPEC',
+                  'ZCAT_PRIMARY', 'SV_NSPEC', 'SV_PRIMARY', 'MAIN_PRIMARY', 'MAIN_NSPEC', 'MIN_MJD', 'MEAN_MJD',
+                  'MAX_MJD', 'OBJTYPE'],
 
     # Output catalog extension 1 column names
     'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
@@ -219,9 +219,9 @@ loa_base_info = {
 
     # Redshift Catalog
     'zcat_dir': Path(f'{DESI_ROOT_RO}/science/gqp/agncatalog/zpix_nside1/loa/v1'),
-    'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'TSNR2_LRG', 'ZCAT_NSPEC', 'ZCAT_PRIMARY',
-                  'SV_NSPEC', 'SV_PRIMARY', 'MAIN_PRIMARY', 'MAIN_NSPEC', 'MIN_MJD', 'MEAN_MJD', 'MAX_MJD',
-                  'OBJTYPE'],
+    'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'ZERR', 'TSNR2_LRG', 'ZCAT_NSPEC',
+                  'ZCAT_PRIMARY', 'SV_NSPEC', 'SV_PRIMARY', 'MAIN_PRIMARY', 'MAIN_NSPEC', 'MIN_MJD', 'MEAN_MJD',
+                  'MAX_MJD', 'OBJTYPE'],
 
     # Output catalog extension 1 column names
     'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
