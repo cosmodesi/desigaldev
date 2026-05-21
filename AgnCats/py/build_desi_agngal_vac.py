@@ -28,6 +28,7 @@ from AgnCats.py import set_agn_masksDESI as agn_masks
 
 logger = get_logger()
 
+
 @dataclass(kw_only=True)
 class SpecProdInfo:
     """Data class for DESI specprod configuration information."""
@@ -258,8 +259,10 @@ def output_processing(input_table: Table, output_filename: str, specprod_info: S
     out_ext2_units, _ = load_yml_units(specprod_info.output_ext2_unit_defs)
 
     # We will use the ``annotate_fits`` function to add units to the extensions.
-    annotate_fits(output_filename, extension=1, output=output_filename, units=out_ext1_units, validate=False, overwrite=True)
-    annotate_fits(output_filename, extension=2, output=output_filename, units=out_ext2_units, validate=False, overwrite=True)
+    annotate_fits(output_filename, extension=1, output=output_filename, units=out_ext1_units, validate=False,
+                  overwrite=True)
+    annotate_fits(output_filename, extension=2, output=output_filename, units=out_ext2_units, validate=False,
+                  overwrite=True)
 
 
 def build_agngal_catalog(specprod_info: SpecProdInfo, output_filename: str) -> None:

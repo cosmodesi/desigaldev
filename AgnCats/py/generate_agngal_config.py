@@ -14,7 +14,6 @@ from pathlib import Path
 
 import yaml
 
-
 DESI_ROOT_RO = os.getenv('DESI_ROOT_READONLY', None)
 
 
