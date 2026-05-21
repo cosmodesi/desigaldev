@@ -160,12 +160,12 @@ fuji_info = {
 
     # Redshift catalog
     'zcat': f'{DESI_ROOT_RO}/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits',
-    'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'ZERR', 'MORPHTYPE', 'TSNR2_LRG', 'SV_NSPEC', 'SV_PRIMARY',
+    'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'ZERR', 'TSNR2_LRG', 'SV_NSPEC', 'SV_PRIMARY',
                   'ZCAT_NSPEC', 'ZCAT_PRIMARY', 'MIN_MJD', 'MEAN_MJD', 'MAX_MJD', 'OBJTYPE'],
 
     # Output catalog extension 1 column names
     'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
-                         'Z', 'ZERR', 'ZWARN', 'Z_RR', 'Z_QN', 'QN_C_LINE_BEST',
+                         'Z', 'ZWARN', 'Z_RR', 'ZERR_RR', 'Z_QSOM', 'ZERR_QSOM', 'Z_QN', 'QN_C_LINE_BEST',
                          'SPECTYPE',
                          'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
                          'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',
@@ -189,13 +189,13 @@ iron_info = {
 
     # Redshift catalog
     'zcat': f'{DESI_ROOT_RO}/spectro/redux/iron/zcatalog/v1/zall-pix-iron.fits',
-    'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'ZERR', 'MORPHTYPE', 'TSNR2_LRG', 'ZCAT_NSPEC',
+    'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'ZERR', 'TSNR2_LRG', 'ZCAT_NSPEC',
                   'ZCAT_PRIMARY', 'SV_NSPEC', 'SV_PRIMARY', 'MAIN_PRIMARY', 'MAIN_NSPEC', 'MIN_MJD', 'MEAN_MJD',
                   'MAX_MJD', 'OBJTYPE'],
 
     # Output catalog extension 1 column names
     'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
-                         'Z', 'ZERR', 'ZWARN', 'Z_RR', 'Z_QN', 'QN_C_LINE_BEST',
+                         'Z', 'ZWARN', 'Z_RR', 'ZERR_RR', 'Z_QSOM', 'ZERR_QSOM', 'Z_QN', 'QN_C_LINE_BEST',
                          'SPECTYPE',
                          'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
                          'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',
@@ -225,7 +225,7 @@ loa_base_info = {
 
     # Output catalog extension 1 column names
     'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
-                         'Z', 'ZERR', 'ZWARN', 'Z_RR', 'Z_QN', 'QN_C_LINE_BEST',
+                         'Z', 'ZWARN', 'Z_RR', 'ZERR_RR', 'Z_QSOM', 'ZERR_QSOM', 'Z_QN', 'QN_C_LINE_BEST',
                          'SPECTYPE',
                          'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
                          'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',

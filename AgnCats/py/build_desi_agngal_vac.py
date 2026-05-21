@@ -144,6 +144,7 @@ def read_input_catalogs(specprod_info: SpecProdInfo) -> Table:
 
         # Read in the Redshift catalog (columns used will be the data-release specific columns and global columns)
         redshift_catalog = Table(fitsio.read(specprod_info.zcat, ext=1, columns=specprod_info.zcat_cols))
+
     except OSError as e:
         raise OSError('Error on reading an input catalog.') from e
 
@@ -154,8 +155,11 @@ def read_input_catalogs(specprod_info: SpecProdInfo) -> Table:
         qso_maker_catalog['QN_C_LINE_BEST'] = np.nanmax(all_c_lines, axis=1)
 
     # We want to preserve the redshift columns from QSO-Maker separately from FastSpecFit's columns
-    qso_maker_catalog.rename_columns(['Z', 'ZERR', 'SPECTYPE', 'MORPHTYPE'],
-                                     ['Z_QSOM', 'ZERR_QSOM', 'SPECTYPE_QSOM', 'MORPHTYPE_QSOM'])
+    qso_maker_catalog.rename_columns(['Z', 'ZERR', 'SPECTYPE'],
+                                     ['Z_QSOM', 'ZERR_QSOM', 'SPECTYPE_QSOM'])
+
+    # Rename the redshift error column from the Redshift catalog to reflect that it's from Redrock
+    redshift_catalog.rename_columns(['ZERR'], ['ZERR_RR'])
 
     # Main identifiers for Joins
     keys_for_join = ['TARGETID', 'SURVEY', 'PROGRAM']
