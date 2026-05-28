@@ -352,7 +352,7 @@ if __name__ == "__main__":
 
         # Run all catalog operations in parallel simultaneously
         with mp.Pool() as pool:
-            result = pool.starmap_async(build_agngal_catalog, zip(spec_prod_info.values(), output_filenames))
+            result = pool.starmap_async(build_agngal_catalog, zip(spec_prod_info['loa'].values(), output_filenames))
             result.get()
 
     else:
