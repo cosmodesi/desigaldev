@@ -26,7 +26,9 @@ from desiutil.log import get_logger
 
 from AgnCats.py import set_agn_masksDESI as agn_masks
 
-logger = get_logger()
+logger = get_logger(level='DEBUG')
+import warnings
+warnings.filterwarnings('ignore')
 
 
 @dataclass(kw_only=True)
@@ -167,6 +169,7 @@ def read_input_catalogs(specprod_info: SpecProdInfo) -> Table:
 
     # Join FastSpecFit with QSO-Maker
     desi_catalog = join(fastspec_catalog, qso_maker_catalog, keys=keys_for_join, join_type='left')
+    logger.debug(f'After FSF + QSOM: {np.unique(desi_catalog["SURVEY"])}')
 
     # Test for consistency
     try:
@@ -181,6 +184,7 @@ def read_input_catalogs(specprod_info: SpecProdInfo) -> Table:
 
     # Join the FastSpecFit+QSO-Maker catalog with the redshift catalog
     desi_catalog = join(desi_catalog, redshift_catalog, keys=keys_for_join, join_type='left')
+    logger.debug(f'After (FSF + QSOM) + Zcatalog : {np.unique(desi_catalog["SURVEY"])}')
 
     # Test for consistency
     try:
@@ -208,16 +212,16 @@ def apply_agngal_class(input_table: Table, agnmask_defs: Path | str) -> Table:
     agn_maskbits, uv_opt_type, ir_type = agn_masks.get_agn_maskbits(agnmask_defs)
 
     # Apply the AGN_MASKBITS to the catalog
-    desi_catalog = agn_masks.update_agn_maskbits(input_table, agn_maskbits, snr=3, snr_oi=1, snr_wise=3, kewley01=False)
+    desi_catalog = agn_masks.update_agn_maskbits(input_table, agn_maskbits, snr=3, snr_oi=3, snr_wise=3, kewley01=False)
 
     # Apply the BPT UV_OPT_TYPE maskbits
     desi_catalog = agn_masks.update_agntype_nii_bpt(desi_catalog, uv_opt_type, snr=3)
     desi_catalog = agn_masks.update_agntype_sii_bpt(desi_catalog, uv_opt_type, snr=3, kewley01=False)
-    desi_catalog = agn_masks.update_agntype_oi_bpt(desi_catalog, uv_opt_type, snr=3, snr_oi=1, kewley01=False)
+    desi_catalog = agn_masks.update_agntype_oi_bpt(desi_catalog, uv_opt_type, snr=3, snr_oi=3, kewley01=False)
 
     # Apply the non-BPT optical maskbits
     desi_catalog = agn_masks.update_agntype_whan(desi_catalog, uv_opt_type, snr=3)
-    desi_catalog = agn_masks.update_agntype_blue(desi_catalog, uv_opt_type, snr=3, snr_oii=1)
+    desi_catalog = agn_masks.update_agntype_blue(desi_catalog, uv_opt_type, snr=3, snr_oii=3)
     desi_catalog = agn_masks.update_agntype_mex(desi_catalog, uv_opt_type, snr=3)
     desi_catalog = agn_masks.update_agntype_kex(desi_catalog, uv_opt_type, snr=3)
     desi_catalog = agn_masks.update_agntype_heii(desi_catalog, uv_opt_type, snr=3)
@@ -281,6 +285,7 @@ def build_agngal_catalog(specprod_info: SpecProdInfo, output_filename: str) -> N
 
     # Apply all AGN/Galaxy classifications and build BitMask columns
     desi_table = apply_agngal_class(input_table=desi_table, agnmask_defs=specprod_info.agn_bitmask_defs)
+    logger.debug(f'Before write out: {np.unique(desi_table['SURVEY'])}')
 
     # Write out file to disk
     output_processing(input_table=desi_table, output_filename=output_filename, specprod_info=specprod_info)
@@ -313,7 +318,7 @@ if __name__ == "__main__":
 
     # Due to size and complexity, DR2/Loa needs to be handled by parallel processing compared to previous DRs.
     if args.testing:
-        cmx_other_info = spec_prod_info['loa']['cmx-other']
+        cmx_other_info = spec_prod_info['loa']['sv1-bright']
         build_agngal_catalog(cmx_other_info, args.output)
 
     elif args.testing_pp:
@@ -330,7 +335,7 @@ if __name__ == "__main__":
                             for survey_program in testing_info_set['loa'].keys()]
 
         with mp.Pool() as pool:
-            result = pool.starmap_async(build_agngal_catalog, zip(spec_prod_info['loa'].values(), output_filenames))
+            result = pool.starmap_async(build_agngal_catalog, zip(testing_info_set['loa'].values(), output_filenames))
             result.get()
 
     elif spec_prod == 'loa':
