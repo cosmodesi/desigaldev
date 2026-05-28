@@ -26,7 +26,7 @@ from desiutil.log import get_logger
 
 from AgnCats.py import set_agn_masksDESI as agn_masks
 
-logger = get_logger(level='DEBUG')
+logger = get_logger(level='INFO')
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -147,7 +147,6 @@ def read_input_catalogs(specprod_info: SpecProdInfo) -> Table:
 
         # Read in the Redshift catalog (columns used will be the data-release specific columns and global columns)
         redshift_catalog = Table(fitsio.read(specprod_info.zcat, ext=1, columns=specprod_info.zcat_cols))
-
     except OSError as e:
         raise OSError('Error on reading an input catalog.') from e
 
@@ -208,31 +207,39 @@ def apply_agngal_class(input_table: Table, agnmask_defs: Path | str) -> Table:
         Input table with AGN/Galaxy classification bitmask columns added.
     """
 
+    # Define target minimum SNR thresholds
+    emission_line_snr = 3
+    whan_ew_snr = 1
+    wise_snr = 3
+
     # Read in the bit mask definitions
     agn_maskbits, uv_opt_type, ir_type = agn_masks.get_agn_maskbits(agnmask_defs)
 
     # Apply the AGN_MASKBITS to the catalog
-    desi_catalog = agn_masks.update_agn_maskbits(input_table, agn_maskbits, snr=3, snr_oi=3, snr_wise=3, kewley01=False)
+    desi_catalog = agn_masks.update_agn_maskbits(input_table, agn_maskbits, snr=emission_line_snr,
+                                                 snr_oi=emission_line_snr, snr_wise=wise_snr, kewley01=False)
 
     # Apply the BPT UV_OPT_TYPE maskbits
-    desi_catalog = agn_masks.update_agntype_nii_bpt(desi_catalog, uv_opt_type, snr=3)
-    desi_catalog = agn_masks.update_agntype_sii_bpt(desi_catalog, uv_opt_type, snr=3, kewley01=False)
-    desi_catalog = agn_masks.update_agntype_oi_bpt(desi_catalog, uv_opt_type, snr=3, snr_oi=3, kewley01=False)
+    desi_catalog = agn_masks.update_agntype_nii_bpt(desi_catalog, uv_opt_type, snr=emission_line_snr)
+    desi_catalog = agn_masks.update_agntype_sii_bpt(desi_catalog, uv_opt_type, snr=emission_line_snr, kewley01=False)
+    desi_catalog = agn_masks.update_agntype_oi_bpt(desi_catalog, uv_opt_type, snr=emission_line_snr,
+                                                   snr_oi=emission_line_snr, kewley01=False)
 
     # Apply the non-BPT optical maskbits
-    desi_catalog = agn_masks.update_agntype_whan(desi_catalog, uv_opt_type, snr=3)
-    desi_catalog = agn_masks.update_agntype_blue(desi_catalog, uv_opt_type, snr=3, snr_oii=3)
-    desi_catalog = agn_masks.update_agntype_mex(desi_catalog, uv_opt_type, snr=3)
-    desi_catalog = agn_masks.update_agntype_kex(desi_catalog, uv_opt_type, snr=3)
-    desi_catalog = agn_masks.update_agntype_heii(desi_catalog, uv_opt_type, snr=3)
-    desi_catalog = agn_masks.update_agntype_nev(desi_catalog, uv_opt_type, snr=3)
+    desi_catalog = agn_masks.update_agntype_whan(desi_catalog, uv_opt_type, snr=emission_line_snr, snr_ew=whan_ew_snr)
+    desi_catalog = agn_masks.update_agntype_blue(desi_catalog, uv_opt_type, snr=emission_line_snr,
+                                                 snr_oii=emission_line_snr)
+    desi_catalog = agn_masks.update_agntype_mex(desi_catalog, uv_opt_type, snr=emission_line_snr)
+    desi_catalog = agn_masks.update_agntype_kex(desi_catalog, uv_opt_type, snr=emission_line_snr)
+    desi_catalog = agn_masks.update_agntype_heii(desi_catalog, uv_opt_type, snr=emission_line_snr)
+    desi_catalog = agn_masks.update_agntype_nev(desi_catalog, uv_opt_type, snr=emission_line_snr)
 
     # Apply the WISE IR-selection maskbits
-    desi_catalog = agn_masks.update_agntype_wise_stern12(desi_catalog, ir_type, snr=3)
-    desi_catalog = agn_masks.update_agntype_wise_mateos12(desi_catalog, ir_type, snr=3)
-    desi_catalog = agn_masks.update_agntype_wise_assef18_r(desi_catalog, ir_type, snr=3, reliability=90)
-    desi_catalog = agn_masks.update_agntype_wise_yao20(desi_catalog, ir_type, snr=3)
-    desi_catalog = agn_masks.update_agntype_wise_hviding22(desi_catalog, ir_type, snr=3)
+    desi_catalog = agn_masks.update_agntype_wise_stern12(desi_catalog, ir_type, snr=wise_snr)
+    desi_catalog = agn_masks.update_agntype_wise_mateos12(desi_catalog, ir_type, snr=wise_snr)
+    desi_catalog = agn_masks.update_agntype_wise_assef18_r(desi_catalog, ir_type, snr=wise_snr, reliability=90)
+    desi_catalog = agn_masks.update_agntype_wise_yao20(desi_catalog, ir_type, snr=wise_snr)
+    desi_catalog = agn_masks.update_agntype_wise_hviding22(desi_catalog, ir_type, snr=wise_snr)
 
     return desi_catalog
 
@@ -318,8 +325,8 @@ if __name__ == "__main__":
 
     # Due to size and complexity, DR2/Loa needs to be handled by parallel processing compared to previous DRs.
     if args.testing:
-        cmx_other_info = spec_prod_info['loa']['sv1-bright']
-        build_agngal_catalog(cmx_other_info, args.output)
+        single_test_info = spec_prod_info['loa']['sv1-bright']
+        build_agngal_catalog(single_test_info, args.output)
 
     elif args.testing_pp:
         # To test parallel processing we will regenerate a Loa version of EDR.
