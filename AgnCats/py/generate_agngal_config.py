@@ -256,10 +256,11 @@ all_data_release_info = {
                             'HBETA_FLUX', 'HBETA_FLUX_IVAR', 'HBETA_EW', 'HBETA_EW_IVAR',
                             'HBETA_BROAD_CHI2', 'HBETA_BROAD_FLUX', 'HBETA_BROAD_FLUX_IVAR', 'HBETA_BROAD_SIGMA',
                             'OIII_5007_FLUX', 'OIII_5007_FLUX_IVAR', 'OIII_5007_SIGMA', 'OIII_5007_EW', 'OIII_5007_EW_IVAR',
+                            'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
                             'HALPHA_FLUX', 'HALPHA_FLUX_IVAR', 'HALPHA_EW', 'HALPHA_EW_IVAR',
                             'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_SIGMA',
                             'HALPHA_BROAD_VSHIFT',
-                            'NII_6584_FLUX', 'NII_6584_FLUX_IVAR', 'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
+                            'NII_6584_FLUX', 'NII_6584_FLUX_IVAR', 'NII_6584_EW', 'NII_6584_EW_IVAR',
                             'SII_6716_FLUX', 'SII_6716_FLUX_IVAR',
                             'SII_6731_FLUX', 'SII_6731_FLUX_IVAR'],
 
@@ -298,7 +299,7 @@ all_data_release_info = {
                          'OI_6300_FLUX', 'OI_6300_FLUX_IVAR',
                          'HALPHA_EW', 'HALPHA_EW_IVAR', 'HALPHA_FLUX', 'HALPHA_FLUX_IVAR',
                          'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_VSHIFT', 'HALPHA_BROAD_SIGMA',
-                         'NII_6584_FLUX', 'NII_6584_FLUX_IVAR',
+                         'NII_6584_FLUX', 'NII_6584_FLUX_IVAR', 'NII_6584_EW', 'NII_6584_EW_IVAR',
                          'SII_6716_FLUX', 'SII_6716_FLUX_IVAR',
                          'SII_6731_FLUX', 'SII_6731_FLUX_IVAR']
 }

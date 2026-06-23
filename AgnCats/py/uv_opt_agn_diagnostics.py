@@ -452,23 +452,25 @@ def whan(input_table: Table, snr: int | float = 3, snr_ew: int | float = 1, mask
     snr_ha = input_table['HALPHA_FLUX'] * np.sqrt(input_table['HALPHA_FLUX_IVAR'])
     snr_nii = input_table['NII_6584_FLUX'] * np.sqrt(input_table['NII_6584_FLUX_IVAR'])
     snr_ha_ew = input_table['HALPHA_EW'] * np.sqrt(input_table['HALPHA_EW_IVAR'])
+    snr_nii_ew = input_table['NII_6584_EW'] * np.sqrt(input_table['NII_6584_EW_IVAR'])
 
     # Define regions
     ew_ha_6562 = input_table['HALPHA_EW']
+    ew_nii_6584 = input_table['NII_6584_EW']
     log_nii_ha = np.log10(input_table['NII_6584_FLUX'] / input_table['HALPHA_FLUX'])
 
     ## WHAN is available: 
     # - NII and Halpha line flux SNR >= snr (=3 by default) when using the [NII]/Ha ratio
     # - Halpha EW measured at > snr_ew (=1 by default) sigma significance when cutting just on EW
-    whan_ew_cut = (snr_ha_ew >= snr_ew) & (~zero_flux_ha)  # depends on Halpha only
+    whan_ew_cut = (snr_ha_ew >= snr_ew) & (snr_nii_ew >= snr_ew) & (~zero_flux_ha)
     whan_flux_cut = (snr_ha >= snr) & (snr_nii >= snr) & (~zero_flux_whan)
 
     ## WHAN-SF, strong AGN, weak AGN, retired, passive
     whan_sf = whan_flux_cut & (log_nii_ha < -0.4) & (ew_ha_6562 >= 3)
     whan_sagn = whan_flux_cut & (log_nii_ha >= -0.4) & (ew_ha_6562 >= 6)
     whan_wagn = whan_flux_cut & (log_nii_ha >= -0.4) & (ew_ha_6562 < 6) & (ew_ha_6562 >= 3)
-    whan_retired = whan_ew_cut & (ew_ha_6562 < 3) & (ew_ha_6562 >= 0.5)
-    whan_passive = whan_ew_cut & (ew_ha_6562 < 0.5)
+    whan_retired = whan_ew_cut & (ew_ha_6562 < 3) & (ew_ha_6562 >= 0.5) & (ew_nii_6584 >= 0.5)
+    whan_passive = whan_ew_cut & ((ew_ha_6562 < 0.5) | (ew_nii_6584 < 0.5))
 
     ## Re-define WHAN is available to strictly mean one of the classes was met
     whan_avail = whan_sf | whan_sagn | whan_wagn | whan_retired | whan_passive
