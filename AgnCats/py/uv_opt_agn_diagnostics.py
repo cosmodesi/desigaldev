@@ -476,29 +476,27 @@ def whan(input_table: Table, snr: int | float = 3, snr_ew: int | float = 1, mask
     return whan_avail, whan_sf, whan_sagn, whan_wagn, whan_retired, whan_passive
 
 
-def blue(input_table: Table, snr: int | float = 3, snr_oii: int | float = 3, mask: MaskedColumn = None) -> (
+def blue(input_table: Table, snr: int | float = 3, mask: MaskedColumn = None) -> (
         tuple[NDArray[bool], NDArray[bool], NDArray[bool], NDArray[bool], NDArray[bool], NDArray[bool]]):
     r"""BLUE diagnostic originally from [Lam04]_ and [Lam10]_.
 
     Blue diagram regions defined as:
         Main division between SF/AGN (Eq. 1 of [Lam10]_):
-            :math:`\log_10(flux_{[OIII]_\lambda5006} / flux_{H\beta}) =
+            :math:`\log_10(EW_{[OIII]_\lambda5006} / EW_{H\beta}) =
             \frac{0.11}{\log_10(EW_{[OII]_\lambda3727} / EW_{H\beta_\lambda4861}) - 0.92} + 0.85`
 
         Division between SF and "mixed" SF/Sy2 (Eq. 2 of [Lam10]_):
-            :math:`\log_10(flux_{[OIII]_\lambda5006} / flux_{H\beta}) > 0.3`
+            :math:`\log_10(EW_{[OIII]_\lambda5006} / EW_{H\beta}) > 0.3`
 
         Divisions for the SF-LIN/Comp overlap region (Eq. 3 of [Lam10]_):
             ``blue1``:
-            :math:`\log_10(flux_{[OIII]_\lambda5006} / flux_{H\beta}) =
-            - (\log_10(EW_{[OII]_\lambda3727} / EW_{H\beta_\lambda4861}) - 1.0)^2
-            - 0.1 \log_10(EW_{[OII]_\lambda3727} / EW_{H\beta_\lambda4861}) + 0.25`
+            :math:`y = - (x - 1.0)^2 - 0.1 x + 0.25`
 
             ``blue2``:
-            :math:`\log_10(flux_{[OIII]_\lambda5006} / flux_{H\beta}) =
-            \frac{\log_10(EW_{[OII]_\lambda3727}}{EW_{H\beta_\lambda4861}} - 0.2)^2 - 0.6`
+            :math:`y = (x - 0.2)^2 - 0.6`
 
-            where :math:`y = \log_10(flux_{[OIII]_\lambda5006} / flux_{H\beta})` and :math:`x = \log_10(EW_{[OII]_\lambda3727} / EW_{H\beta_\lambda4861})`
+            where :math:`y = \log_10(EW_{[OIII]_\lambda5006} / EW_{H\beta})` and
+            :math:`x = \log_10(EW_{[OII]_\lambda3727} / EW_{H\beta_\lambda4861})`
 
         Division between Sy2/LINER (Eq. 4 of [Lam10]_):
             :math:`\log_10(flux_{[OIII]_\lambda5006} / flux_{H\beta}) =
@@ -511,10 +509,8 @@ def blue(input_table: Table, snr: int | float = 3, snr_oii: int | float = 3, mas
         (e.g. FastSpecFit ref FastSpecFit_ref)
 
     Args:
-        input_table: Table including [OII], [OIII], and Hβ fluxes, associated inverse variances,
-            and the Hβ equivalent width.
-        snr: SNR cut applied to the Hβ and [O III] fluxes. Default is ``3``.
-        snr_oii: SNR cut applied to the [O II]λ3727 flux. Default is ``3``.
+        input_table: Table including [OII], [OIII], and Hβ equivalent widths and associated inverse variances.
+        snr: SNR cut applied to the Hβ, [O II] doublet, and [O III] equivalent widths. Default is ``3``.
         mask: Optional mask (e.g., from masked column array). Default is ``None``.
 
     Returns:
@@ -525,35 +521,34 @@ def blue(input_table: Table, snr: int | float = 3, snr_oii: int | float = 3, mas
     .. [Lam10] 2010A&A...509A..53L
     """
 
-    # Mask for zero fluxes (Now checks both components of the [O II] doublet)
-    zero_flux_blue = ((input_table['HBETA_FLUX'] == 0) |
-                      (input_table['OIII_5007_FLUX'] == 0) |
-                      (input_table['OII_3726_FLUX'] == 0) |
-                      (input_table['OII_3729_FLUX'] == 0))
+    # Mask for zero equivalent widths
+    zero_ew_blue = ((input_table['HBETA_EW'] == 0) |
+                    (input_table['OIII_5007_EW'] == 0) |
+                    (input_table['OII_3726_EW'] == 0) |
+                    (input_table['OII_3729_EW'] == 0))
                       
     if mask is not None:
-        # Mask for flux availability - included as fastspecfit columns are MaskedColumn data
-        zero_flux_blue |= mask
+        # Mask for EW availability - included as fastspecfit columns are MaskedColumn data
+        zero_ew_blue |= mask
 
     # Mask for SNR. Default is BLUE is available if Hb, OIII SNR >= 3 and OII SNR >= 1.
-    snr_hb = input_table['HBETA_FLUX'] * np.sqrt(input_table['HBETA_FLUX_IVAR'])
-    snr_oiii = input_table['OIII_5007_FLUX'] * np.sqrt(input_table['OIII_5007_FLUX_IVAR'])
     snr_hb_ew = input_table['HBETA_EW'] * np.sqrt(input_table['HBETA_EW_IVAR'])
+    snr_oiii_ew = input_table['OIII_5007_EW'] * np.sqrt(input_table['OIII_5007_EW_IVAR'])
 
     # If ivar = 0 set it to NaN to avoid infinities when computing the error:
-    OII_3726_EW_IVAR = np.where(input_table['OII_3726_EW_IVAR'] == 0,
+    oii_3726_ew_ivar = np.where(input_table['OII_3726_EW_IVAR'] == 0,
                                    np.nan, input_table['OII_3726_EW_IVAR'])
-    OII_3729_EW_IVAR = np.where(input_table['OII_3729_EW_IVAR'] == 0,
+    oii_3729_ew_ivar = np.where(input_table['OII_3729_EW_IVAR'] == 0,
                                    np.nan, input_table['OII_3729_EW_IVAR'])
     
     # [OII]3727 is the sum of the doublet [OII]3726,3729
     oii_ew = input_table['OII_3726_EW'] + input_table['OII_3729_EW']
-    oii_ew_ivar = 1. / (1. / OII_3726_EW_IVAR + 1. / OII_3729_EW_IVAR)
+    oii_ew_ivar = 1. / (1. / oii_3726_ew_ivar + 1. / oii_3729_ew_ivar)
     snr_oii_ew = oii_ew * np.sqrt(oii_ew_ivar)
 
     # Parameters for horizontal and vertical axes
     log_ewoii_ewhb = np.log10(oii_ew / input_table['HBETA_EW'])
-    log_oiii_hb = np.log10(input_table['OIII_5007_FLUX'] / input_table['HBETA_FLUX'])
+    log_ewoiii_ewhb = np.log10(input_table['OIII_5007_EW'] / input_table['HBETA_EW'])
 
     # Define regions
     main_blue = 0.11 / (log_ewoii_ewhb - 0.92) + 0.85
@@ -566,20 +561,20 @@ def blue(input_table: Table, snr: int | float = 3, snr_oii: int | float = 3, mas
     eq4_blue = 0.95 * log_ewoii_ewhb - 0.4
 
     ## BLUE is available (SNR for the 3 lines other than OII >= 3)
-    blue_avail = (snr_hb >= snr) & (snr_oiii >= snr) & (snr_hb_ew >= snr) & (snr_oii_ew >= snr_oii) & (~zero_flux_blue)
+    blue_avail = (snr_hb_ew >= snr) & (snr_oiii_ew >= snr) & (snr_hb_ew >= snr) & (snr_oii_ew >= snr) & (~zero_ew_blue)
 
     ## BLUE-AGN, SF/LINER/Composite, LINER, SF, SF/AGN
     # Region that overlaps with other classes (set an extra bit for info)
-    sflin_blue = blue_avail & ((log_oiii_hb <= eq3_blue1) & (log_oiii_hb >= eq3_blue2))
+    sflin_blue = blue_avail & ((log_ewoiii_ewhb <= eq3_blue1) & (log_ewoiii_ewhb >= eq3_blue2))
 
     # AGN will be subdivided between Seyfert2 & LINER
-    agnlin_blue = blue_avail & ((log_oiii_hb >= main_blue) | (log_ewoii_ewhb >= 0.92))
-    agn_blue = agnlin_blue & (log_oiii_hb >= eq4_blue)
-    liner_blue = agnlin_blue & (log_oiii_hb < eq4_blue)
+    agnlin_blue = blue_avail & ((log_ewoiii_ewhb >= main_blue) | (log_ewoii_ewhb >= 0.92))
+    agn_blue = agnlin_blue & (log_ewoiii_ewhb >= eq4_blue)
+    liner_blue = agnlin_blue & (log_ewoiii_ewhb < eq4_blue)
 
     # SF 
-    sf_blue = blue_avail & (~agnlin_blue) & (log_oiii_hb < 0.3)
-    sfagn_blue = blue_avail & (~agnlin_blue) & (log_oiii_hb >= 0.3)
+    sf_blue = blue_avail & (~agnlin_blue) & (log_ewoiii_ewhb < 0.3)
+    sfagn_blue = blue_avail & (~agnlin_blue) & (log_ewoiii_ewhb >= 0.3)
 
     return blue_avail, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue
 

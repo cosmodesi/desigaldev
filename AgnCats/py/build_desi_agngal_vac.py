@@ -209,6 +209,7 @@ def apply_agngal_class(input_table: Table, agnmask_defs: Path | str) -> Table:
 
     # Define target minimum SNR thresholds
     emission_line_snr = 3
+    equivalent_width_snr = 3
     whan_ew_snr = 1
     wise_snr = 3
 
@@ -227,8 +228,7 @@ def apply_agngal_class(input_table: Table, agnmask_defs: Path | str) -> Table:
 
     # Apply the non-BPT optical maskbits
     desi_catalog = agn_masks.update_agntype_whan(desi_catalog, uv_opt_type, snr=emission_line_snr, snr_ew=whan_ew_snr)
-    desi_catalog = agn_masks.update_agntype_blue(desi_catalog, uv_opt_type, snr=emission_line_snr,
-                                                 snr_oii=emission_line_snr)
+    desi_catalog = agn_masks.update_agntype_blue(desi_catalog, uv_opt_type, snr=equivalent_width_snr)
     desi_catalog = agn_masks.update_agntype_mex(desi_catalog, uv_opt_type, snr=emission_line_snr)
     desi_catalog = agn_masks.update_agntype_kex(desi_catalog, uv_opt_type, snr=emission_line_snr)
     desi_catalog = agn_masks.update_agntype_heii(desi_catalog, uv_opt_type, snr=emission_line_snr)

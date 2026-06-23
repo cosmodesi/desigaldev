@@ -120,7 +120,7 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
     # Other (non-BPT) optical diagnostics: WHAN, MEx, KEx, Blue
     _, _, whan_sagn, *_ = uv_opt_agn.whan(input_table, snr=snr, mask=mask)
     _, mex_agn, *_ = uv_opt_agn.mex(input_table, snr=snr, mask=mask)
-    _, blue_agn, *_ = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii, mask=mask)
+    _, blue_agn, *_ = uv_opt_agn.blue(input_table, snr=snr, mask=mask)
     _, kex_agn, *_ = uv_opt_agn.kex(input_table, snr=snr, mask=mask)
 
     # Calculate [Ne V] to include in the optical AGN compilation
@@ -316,26 +316,22 @@ def update_agntype_whan(input_table: Table, opt_uv_type: BitMask, snr: int | flo
     return input_table
 
 
-def update_agntype_blue(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3, snr_oii: int | float = 3,
-                        mask: MaskedColumn = None) -> Table:
+def update_agntype_blue(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3, mask: MaskedColumn = None) -> Table:
     """Applies the Blue masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
     Args:
         input_table: Table joined with FastSpecFit columns.
         opt_uv_type: DESI BitMask object containing the definitions of the ``OPT_UV_TYPE`` values.
-        snr: Signal-to-noise cut applied to all flux axes. Default is ``3``.
-        snr_oii: Signal-to-noise cut applied to the [OII]λ3727 flux. Default is ``3``.
+        snr: Signal-to-noise cut applied to all equivalent width axes. Default is ``3``.
         mask: Optional mask (e.g., from masked column array). Default is ``None``.
 
     Returns:
        Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for Blue selections for all rows.
     """
 
-    blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = uv_opt_agn.blue(input_table, snr=snr, snr_oii=snr_oii,
-                                                                                  mask=mask)
+    blue, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue = uv_opt_agn.blue(input_table, snr=snr, mask=mask)
 
-    # If anyone of the emission line fluxes or the equivalent widths are unavailable,
-    # then there is no agn_mask (agn_mask = 0)
+    # If any one of the emission line equivalent widths are unavailable, then there is no agn_mask (agn_mask = 0)
     agn_mask = blue * opt_uv_type.BLUE
     agn_mask |= agn_blue * opt_uv_type.BLUE_AGN
     agn_mask |= sflin_blue * opt_uv_type.BLUE_SLC
