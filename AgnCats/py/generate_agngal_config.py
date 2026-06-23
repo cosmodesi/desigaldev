@@ -165,6 +165,7 @@ fuji_info = {
     # Output catalog extension 1 column names
     'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
                          'Z', 'ZWARN', 'Z_RR', 'ZERR_RR', 'Z_QSOM', 'ZERR_QSOM', 'Z_QN', 'QN_C_LINE_BEST',
+                         'DELTACHI2',
                          'SPECTYPE',
                          'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
                          'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',
@@ -195,6 +196,7 @@ iron_info = {
     # Output catalog extension 1 column names
     'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
                          'Z', 'ZWARN', 'Z_RR', 'ZERR_RR', 'Z_QSOM', 'ZERR_QSOM', 'Z_QN', 'QN_C_LINE_BEST',
+                         'DELTACHI2',
                          'SPECTYPE',
                          'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
                          'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',
@@ -225,6 +227,7 @@ loa_base_info = {
     # Output catalog extension 1 column names
     'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
                          'Z', 'ZWARN', 'Z_RR', 'ZERR_RR', 'Z_QSOM', 'ZERR_QSOM', 'Z_QN', 'QN_C_LINE_BEST',
+                         'DELTACHI2'
                          'SPECTYPE',
                          'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
                          'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',
@@ -246,6 +249,7 @@ all_data_release_info = {
 
     # Universal input catalog column names
     'fast_spec_data_cols': ['TARGETID', 'PROGRAM', 'SURVEY',
+                            'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT',
                             'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
                             'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
                             'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
@@ -284,6 +288,7 @@ all_data_release_info = {
 
     # Universal output catalog column names
     'output_cols_ext2': ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
+                         'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT'
                          'FLUX_W1', 'FLUX_W2', 'FLUX_W3',
                          'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'FLUX_IVAR_W3',
                          'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
