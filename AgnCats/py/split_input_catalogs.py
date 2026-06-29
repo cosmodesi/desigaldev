@@ -13,6 +13,7 @@ from astropy.table import Table
 import fitsio
 from pathlib import Path
 from desiutil.healpix import radec2hpix
+from astropy.io import fits
 
 def split_by_healpix(catalog: Table, nside: int) -> Table:
     """Takes a catalog that is already grouped by Survey-Program and further groups by HEALPix of size ``nside``.
@@ -59,7 +60,7 @@ def split_qsomaker(catalog_file: str, out_dir: str, specprod: str, version: int 
     """
 
     # Read in the monolithic catalog
-    qsom = Table(fitsio.read(catalog_file, ext='QSO_CAT'))
+    qsom = Table(fitsio.read(catalog_file, ext=1))
 
     # Group the catalog by Survey-Program
     qsom = qsom.group_by(['SURVEY', 'PROGRAM'])
@@ -102,16 +103,20 @@ def split_qsomaker(catalog_file: str, out_dir: str, specprod: str, version: int 
         qn_high_conf_50 = subcat['QN_C_LINE_BEST'] > 0.5
         subcat = subcat[(~is_star) & qn_high_conf_50]
 
+        # Prepare the output file
+        primary_hdu = fits.PrimaryHDU()
+        subcat_hdu = fits.BinTableHDU(subcat, name='QSO_CAT')
+        hdu_list = fits.HDUList([primary_hdu, subcat_hdu])
+
         # Write the file out copying
         if len(subcat_key) == 3:
             survey, program, nside1_hp = subcat_key
-            subcat.write(f'{out_dir}/QSO_cat_{specprod}_{survey}_{program}_nside1_hp{nside1_hp:02d}'
-                         f'_healpix_all_targets_v{version}.fits',
-                         hdu='QSO_CAT', overwrite=True)
+            hdu_list.writeto(f'{out_dir}/QSO_cat_{specprod}_{survey}_{program}_nside1_hp{nside1_hp:02d}'
+                             f'_healpix_all_targets_v{version}.fits', overwrite=True, checksum=True)
         else:
             survey, program = subcat_key
-            subcat.write(f'{out_dir}/QSO_cat_{specprod}_{survey}_{program}_healpix_all_targets_v{version}.fits',
-                         hdu='QSO_CAT', overwrite=True)
+            hdu_list.writeto(f'{out_dir}/QSO_cat_{specprod}_{survey}_{program}_healpix_all_targets_v{version}.fits',
+                             overwrite=True, checksum=True)
 
 
 def split_zcat(catalog_file: str, out_dir: str, specprod: str, version: int|float) -> None:
@@ -158,14 +163,20 @@ def split_zcat(catalog_file: str, out_dir: str, specprod: str, version: int|floa
 
     # Write out all the catalogs
     for subcat_key, subcat in zcat_subcats.items():
+        # Prepare the output file
+        primary_hdu = fits.PrimaryHDU()
+        subcat_hdu = fits.BinTableHDU(subcat, name='ZCATALOG')
+        hdu_list = fits.HDUList([primary_hdu, subcat_hdu])
+
         if len(subcat_key) == 3:
             survey, program, nside1_hp = subcat_key
-            subcat.write(f'{out_dir}/zpix_cat_{specprod}_{survey}_{program}_nside1_hp{nside1_hp:02d}_v{version}.fits',
-                         hdu='ZCATALOG', overwrite=True)
+            hdu_list.writeto(f'{out_dir}/zpix_cat_{specprod}_{survey}_{program}'
+                             f'_nside1_hp{nside1_hp:02d}_v{version}.fits',
+                             overwrite=True, checksum=True)
         else:
             survey, program = subcat_key
-            subcat.write(f'{out_dir}/zpix_cat_{specprod}_{survey}_{program}_v{version}.fits',
-                         hdu='ZCATALOG', overwrite=True)
+            hdu_list.writeto(f'{out_dir}/zpix_cat_{specprod}_{survey}_{program}_v{version}.fits',
+                             overwrite=True, checksum=True)
 
 if __name__ == '__main__':
     # Split Fuji
@@ -175,8 +186,8 @@ if __name__ == '__main__':
     fuji_qso_outdir = '/pscratch/sd/b/bfloyd/agngal_incats_tmp/fuji/qsom'
     fuji_zcat_outdir = '/pscratch/sd/b/bfloyd/agngal_incats_tmp/fuji/zcat'
 
-    iron_qsom = '/dvs_ro/cfs/cdirs/desi/users/edmondc/QSO_catalog/fuji/QSO_cat_fuji_healpix_all_targets_v2.fits'
-    iron_zcat = '/dvs_ro/cfs/cdirs/desi/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits'
+    iron_qsom = '/dvs_ro/cfs/cdirs/desi/science/gqp/agncatalog/qsomaker/iron/QSO_cat_iron_healpix_all_targets_v1.fits'
+    iron_zcat = '/dvs_ro/cfs/cdirs/desi/spectro/redux/iron/zcatalog/v1/zall-pix-iron.fits'
 
     iron_qso_outdir = '/pscratch/sd/b/bfloyd/agngal_incats_tmp/iron/qsom'
     iron_zcat_outdir = '/pscratch/sd/b/bfloyd/agngal_incats_tmp/iron/zcat'
