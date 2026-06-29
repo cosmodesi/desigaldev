@@ -91,8 +91,9 @@ def generate_loa_config(specprod_info: dict[str, Path | list[str]], universal_in
 
     # Remove the full "main-bright" and "main-dark" entries in our grouped dictionary.
     # Due to extra files being present in QSO-Maker directory.
-    del all_catalogs_dict['main-bright']
-    del all_catalogs_dict['main-dark']
+    if specprod_name != 'fuji':
+        del all_catalogs_dict['main-bright']
+        del all_catalogs_dict['main-dark']
 
     # Convert the lists of file paths into dictionaries with the same structure as the dispatch patterns for previous
     # data releases
@@ -151,14 +152,18 @@ def loa_paths(file_paths: list[Path], specprod_info: dict[str, Path | list[str]]
 # EDR
 fuji_info = {
     # QSO-Maker catalog from Edmonds catalog keeping all columns
-    'qso_maker': f'{DESI_ROOT_RO}/users/edmondc/QSO_catalog/fuji/QSO_cat_fuji_healpix_all_targets_v2.fits',
+    # 'qso_maker': f'{DESI_ROOT_RO}/users/edmondc/QSO_catalog/fuji/QSO_cat_fuji_healpix_all_targets_v2.fits',
+    'qso_maker_dir': Path('/pscratch/sd/b/bfloyd/agngal_incats_tmp/fuji/qsom'),
+    'qso_maker_cols': ['QN_C_LINE_BEST'],
 
     # FastSpecFit catalog
-    'fast_spec': f'{DESI_ROOT_RO}/spectro/fastspecfit/fuji/v3.2/catalogs/fastspec-fuji.fits',
+    # 'fast_spec': f'{DESI_ROOT_RO}/spectro/fastspecfit/fuji/v3.2/catalogs/fastspec-fuji.fits',
+    'fast_spec_dir': Path('/global/cfs/cdirs/desi/public/edr/vac/edr/fastspecfit/fuji/v3.2/catalogs/'),
     'fast_spec_data_cols': ['LOGMSTAR'],
 
     # Redshift catalog
-    'zcat': f'{DESI_ROOT_RO}/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits',
+    # 'zcat': f'{DESI_ROOT_RO}/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits',
+    'zcat_dir': Path('/pscratch/sd/b/bfloyd/agngal_incats_tmp/fuji/zcat'),
     'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'ZERR', 'TSNR2_LRG', 'SV_NSPEC', 'SV_PRIMARY',
                   'ZCAT_NSPEC', 'ZCAT_PRIMARY', 'MIN_MJD', 'MEAN_MJD', 'MAX_MJD', 'OBJTYPE'],
 
@@ -180,15 +185,19 @@ fuji_info = {
 # DR1
 iron_info = {
     # QSO-Maker catalog from `merge_QSOmaker.ipynb`. DR1 version from after Edmond ran on all targets/all surveys
-    'qso_maker': f'{DESI_ROOT_RO}/science/gqp/agncatalog/qsomaker/iron/QSO_cat_iron_healpix_all_targets_v1.fits',
+    # 'qso_maker': f'{DESI_ROOT_RO}/science/gqp/agncatalog/qsomaker/iron/QSO_cat_iron_healpix_all_targets_v1.fits',
+    'qso_maker_dir': Path('/pscratch/sd/b/bfloyd/agngal_incats_tmp/iron/qsom'),
     'qso_maker_cols': ['QN_C_LINE_BEST'],
 
     # FastSpecFit catalog
-    'fast_spec': f'{DESI_ROOT_RO}/spectro/fastspecfit/iron/v2.1/catalogs/fastspec-iron.fits',
-    'fast_spec_data_cols': ['LOGMSTAR'],
+    # 'fast_spec': f'{DESI_ROOT_RO}/spectro/fastspecfit/iron/v2.1/catalogs/fastspec-iron.fits',
+    'fast_spec_dir': Path('/global/cfs/cdirs/desi/public/dr1/vac/dr1/fastspecfit/iron/v3.0/catalogs'),
+    # 'fast_spec_data_cols': ['LOGMSTAR'],
+    'fast_spec_specphot_cols': ['TARGETID', 'PROGRAM', 'SURVEY', 'LOGMSTAR', 'LOGMSTAR_IVAR'],
 
     # Redshift catalog
-    'zcat': f'{DESI_ROOT_RO}/spectro/redux/iron/zcatalog/v1/zall-pix-iron.fits',
+    # 'zcat': f'{DESI_ROOT_RO}/spectro/redux/iron/zcatalog/v1/zall-pix-iron.fits',
+    'zcat_dir': Path('/pscratch/sd/b/bfloyd/agngal_incats_tmp/iron/zcat'),
     'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'ZERR', 'TSNR2_LRG', 'ZCAT_NSPEC',
                   'ZCAT_PRIMARY', 'SV_NSPEC', 'SV_PRIMARY', 'MAIN_PRIMARY', 'MAIN_NSPEC', 'MIN_MJD', 'MEAN_MJD',
                   'MAX_MJD', 'OBJTYPE'],
@@ -310,12 +319,18 @@ all_data_release_info = {
 }
 
 if __name__ == '__main__':
-    generate_fuji_iron_config(specprod_info=fuji_info, universal_info=all_data_release_info,
-                              config_file_name=Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/fuji_config.yaml'),
-                              specprod_name='fuji')
-    generate_fuji_iron_config(specprod_info=iron_info, universal_info=all_data_release_info,
-                              config_file_name=Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/iron_config.yaml'),
-                              specprod_name='iron')
+    # generate_fuji_iron_config(specprod_info=fuji_info, universal_info=all_data_release_info,
+    #                           config_file_name=Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/fuji_config.yaml'),
+    #                           specprod_name='fuji')
+    # generate_fuji_iron_config(specprod_info=iron_info, universal_info=all_data_release_info,
+    #                           config_file_name=Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/iron_config.yaml'),
+    #                           specprod_name='iron')
+    generate_loa_config(specprod_info=fuji_info, universal_info=all_data_release_info,
+                        config_file_name=Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/fuji_split_config.yaml'),
+                        specprod_name='fuji')
+    generate_loa_config(specprod_info=iron_info, universal_info=all_data_release_info,
+                        config_file_name=Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/iron_split_config.yaml'),
+                        specprod_name='iron')
     generate_loa_config(specprod_info=loa_base_info, universal_info=all_data_release_info,
                         config_file_name=Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/loa_config.yaml'),
                         specprod_name='loa')

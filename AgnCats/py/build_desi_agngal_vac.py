@@ -345,17 +345,17 @@ if __name__ == "__main__":
             result = pool.starmap_async(build_agngal_catalog, zip(testing_info_set['loa'].values(), output_filenames))
             result.get()
 
-    elif spec_prod == 'loa':
+    else:
         # We need to assign unique output filenames for Loa catalogs based on the input catalog names.
-        output_filenames = [str(args.output / Path(f'desi_agngal_loa_{survey_program}.fits'))
-                            for survey_program in spec_prod_info['loa'].keys()]
+        output_filenames = [str(args.output / Path(f'desi_agngal_{spec_prod}_{survey_program}.fits'))
+                            for survey_program in spec_prod_info[spec_prod].keys()]
 
         # Run all catalog operations in parallel simultaneously
         with mp.Pool() as pool:
-            result = pool.starmap_async(build_agngal_catalog, zip(spec_prod_info['loa'].values(), output_filenames))
+            result = pool.starmap_async(build_agngal_catalog, zip(spec_prod_info[spec_prod].values(), output_filenames))
             result.get()
-
-    else:
-        # For all previous data releases (EDR/Fuji, DR1/Iron) we will run the operations in serial.
-        spec_prod_info = spec_prod_info[spec_prod][f'{spec_prod}_all']
-        build_agngal_catalog(specprod_info=spec_prod_info, output_filename=str(args.output))
+    #
+    # else:
+    #     # For all previous data releases (EDR/Fuji, DR1/Iron) we will run the operations in serial.
+    #     spec_prod_info = spec_prod_info[spec_prod][f'{spec_prod}_all']
+    #     build_agngal_catalog(specprod_info=spec_prod_info, output_filename=str(args.output))
