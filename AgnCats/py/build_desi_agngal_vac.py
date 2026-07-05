@@ -27,6 +27,7 @@ from desiutil.log import get_logger
 from AgnCats.py import set_agn_masksDESI as agn_masks
 
 logger = get_logger(level='INFO')
+
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -34,6 +35,7 @@ warnings.filterwarnings('ignore')
 @dataclass(kw_only=True)
 class SpecProdInfo:
     """Data class for DESI specprod configuration information."""
+    name: str
     agn_bitmask_defs: str
     fast_spec: str
     fast_spec_data_cols: list[str]
@@ -65,7 +67,7 @@ def read_config(config_path: Path | str) -> dict[str, dict[str, SpecProdInfo]]:
 
     try:
         # Cast the nested dictionary in the configuration info as a SpecProdInfo data class to help with type checking.
-        config_info = {survey_name: {survey_program: SpecProdInfo(**config)
+        config_info = {survey_name: {survey_program: SpecProdInfo(name=f'{survey_name}_{survey_program}', **config)
                                      for survey_program, config in survey_config.items()}
                        for survey_name, survey_config in config_info.items()}
     except TypeError as e:
@@ -305,8 +307,8 @@ if __name__ == "__main__":
     # Provide CLI arguments for easy execution via SLURM scripts.
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', required=True, help='Path to configuration file.', type=Path)
-    parser.add_argument("-o", "--output", default="desi_agngal.fits", required=True,
-                        help="Path to output FITS file.", type=Path)
+    parser.add_argument('-o', '--output',  required=True, help='Path to output directory.', type=Path)
+    parser.add_argument('-v', '--version', required=True, help='Version number of catalog.', type=float)
     parser.add_argument('--testing', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--testing-pp', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
@@ -347,15 +349,10 @@ if __name__ == "__main__":
 
     else:
         # We need to assign unique output filenames for Loa catalogs based on the input catalog names.
-        output_filenames = [str(args.output / Path(f'desi_agngal_{spec_prod}_{survey_program}.fits'))
+        output_filenames = [str(args.output / Path(f'desi_agngal_{spec_prod}_{survey_program}_v{args.version}.fits'))
                             for survey_program in spec_prod_info[spec_prod].keys()]
 
         # Run all catalog operations in parallel simultaneously
         with mp.Pool() as pool:
             result = pool.starmap_async(build_agngal_catalog, zip(spec_prod_info[spec_prod].values(), output_filenames))
             result.get()
-    #
-    # else:
-    #     # For all previous data releases (EDR/Fuji, DR1/Iron) we will run the operations in serial.
-    #     spec_prod_info = spec_prod_info[spec_prod][f'{spec_prod}_all']
-    #     build_agngal_catalog(specprod_info=spec_prod_info, output_filename=str(args.output))
