@@ -8,12 +8,11 @@ QSO-Maker catalogs respectively for the DR2/Loa DESI specprod to work on all DES
 This has become necessary to match the organization of the most recent FastSpec and FastPhot catalogs.
 """
 
-import numpy as np
-from astropy.table import Table
 import fitsio
-from pathlib import Path
-from desiutil.healpix import radec2hpix
 from astropy.io import fits
+from astropy.table import Table
+from desiutil.healpix import radec2hpix
+
 
 def split_by_healpix(catalog: Table, nside: int) -> Table:
     """Takes a catalog that is already grouped by Survey-Program and further groups by HEALPix of size ``nside``.
