@@ -222,6 +222,9 @@ def apply_agngal_class(input_table: Table, agnmask_defs: Path | str) -> Table:
     desi_catalog = agn_masks.update_agn_maskbits(input_table, agn_maskbits, snr=emission_line_snr,
                                                  snr_oi=emission_line_snr, snr_wise=wise_snr, kewley01=False)
 
+    # Apply the BROADLINE maskbits in OPT_UV_TYPE
+    desi_catalog = agn_masks.update_broad_lines(desi_catalog, uv_opt_type, snr=emission_line_snr)
+
     # Apply the BPT UV_OPT_TYPE maskbits
     desi_catalog = agn_masks.update_agntype_nii_bpt(desi_catalog, uv_opt_type, snr=emission_line_snr)
     desi_catalog = agn_masks.update_agntype_sii_bpt(desi_catalog, uv_opt_type, snr=emission_line_snr, kewley01=False)
