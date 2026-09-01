@@ -122,13 +122,14 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
     _, mex_agn, *_ = uv_opt_agn.mex(input_table, snr=snr, mask=mask)
     _, blue_agn, *_ = uv_opt_agn.blue(input_table, snr=snr, mask=mask)
     _, kex_agn, *_ = uv_opt_agn.kex(input_table, snr=snr, mask=mask)
+    _, heii_agn, *_ = uv_opt_agn.heii_bpt(input_table, snr=snr, mask=mask)
 
     # Calculate [Ne V] to include in the optical AGN compilation
     _, nev_agn, _ = uv_opt_agn.nev(input_table, snr=snr_nev, mask=mask)
 
     # Combine them for the OPT_OTHER_AGN (keeping mostly more confident ones and
     # excluding possible weak AGN / blended classes; explicitly including [Ne V])
-    opt_other_agn = whan_sagn | mex_agn | blue_agn | kex_agn | nev_agn
+    opt_other_agn = whan_sagn | mex_agn | blue_agn | kex_agn | heii_agn | nev_agn
     agn_bits |= opt_other_agn * agn_maskbits.OPT_OTHER_AGN
 
     # Overall WISE classification (combining all diagnostics)

@@ -27,6 +27,7 @@ from desiutil.log import get_logger
 from AgnCats.py import set_agn_masksDESI as agn_masks
 
 logger = get_logger(level='INFO')
+
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -34,6 +35,7 @@ warnings.filterwarnings('ignore')
 @dataclass(kw_only=True)
 class SpecProdInfo:
     """Data class for DESI specprod configuration information."""
+    name: str
     agn_bitmask_defs: str
     fast_spec: str
     fast_spec_data_cols: list[str]
@@ -65,7 +67,7 @@ def read_config(config_path: Path | str) -> dict[str, dict[str, SpecProdInfo]]:
 
     try:
         # Cast the nested dictionary in the configuration info as a SpecProdInfo data class to help with type checking.
-        config_info = {survey_name: {survey_program: SpecProdInfo(**config)
+        config_info = {survey_name: {survey_program: SpecProdInfo(name=f'{survey_name}_{survey_program}', **config)
                                      for survey_program, config in survey_config.items()}
                        for survey_name, survey_config in config_info.items()}
     except TypeError as e:
@@ -220,6 +222,9 @@ def apply_agngal_class(input_table: Table, agnmask_defs: Path | str) -> Table:
     desi_catalog = agn_masks.update_agn_maskbits(input_table, agn_maskbits, snr=emission_line_snr,
                                                  snr_oi=emission_line_snr, snr_wise=wise_snr, kewley01=False)
 
+    # Apply the BROADLINE maskbits in OPT_UV_TYPE
+    desi_catalog = agn_masks.update_broad_lines(desi_catalog, uv_opt_type, snr=emission_line_snr)
+
     # Apply the BPT UV_OPT_TYPE maskbits
     desi_catalog = agn_masks.update_agntype_nii_bpt(desi_catalog, uv_opt_type, snr=emission_line_snr)
     desi_catalog = agn_masks.update_agntype_sii_bpt(desi_catalog, uv_opt_type, snr=emission_line_snr, kewley01=False)
@@ -235,6 +240,7 @@ def apply_agngal_class(input_table: Table, agnmask_defs: Path | str) -> Table:
     desi_catalog = agn_masks.update_agntype_nev(desi_catalog, uv_opt_type, snr=emission_line_snr)
 
     # Apply the WISE IR-selection maskbits
+    desi_catalog = agn_masks.update_agntype_wise_jarrett11(desi_catalog, ir_type, snr=wise_snr)
     desi_catalog = agn_masks.update_agntype_wise_stern12(desi_catalog, ir_type, snr=wise_snr)
     desi_catalog = agn_masks.update_agntype_wise_mateos12(desi_catalog, ir_type, snr=wise_snr)
     desi_catalog = agn_masks.update_agntype_wise_assef18_r(desi_catalog, ir_type, snr=wise_snr, reliability=90)
@@ -305,8 +311,8 @@ if __name__ == "__main__":
     # Provide CLI arguments for easy execution via SLURM scripts.
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', required=True, help='Path to configuration file.', type=Path)
-    parser.add_argument("-o", "--output", default="desi_agngal.fits", required=True,
-                        help="Path to output FITS file.", type=Path)
+    parser.add_argument('-o', '--output',  required=True, help='Path to output directory.', type=Path)
+    parser.add_argument('-v', '--version', required=True, help='Version number of catalog.', type=float)
     parser.add_argument('--testing', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--testing-pp', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
@@ -345,17 +351,12 @@ if __name__ == "__main__":
             result = pool.starmap_async(build_agngal_catalog, zip(testing_info_set['loa'].values(), output_filenames))
             result.get()
 
-    elif spec_prod == 'loa':
+    else:
         # We need to assign unique output filenames for Loa catalogs based on the input catalog names.
-        output_filenames = [str(args.output / Path(f'desi_agngal_loa_{survey_program}.fits'))
-                            for survey_program in spec_prod_info['loa'].keys()]
+        output_filenames = [str(args.output / Path(f'desi_agngal_{spec_prod}_{survey_program}_v{args.version}.fits'))
+                            for survey_program in spec_prod_info[spec_prod].keys()]
 
         # Run all catalog operations in parallel simultaneously
         with mp.Pool() as pool:
-            result = pool.starmap_async(build_agngal_catalog, zip(spec_prod_info['loa'].values(), output_filenames))
+            result = pool.starmap_async(build_agngal_catalog, zip(spec_prod_info[spec_prod].values(), output_filenames))
             result.get()
-
-    else:
-        # For all previous data releases (EDR/Fuji, DR1/Iron) we will run the operations in serial.
-        spec_prod_info = spec_prod_info[spec_prod][f'{spec_prod}_all']
-        build_agngal_catalog(specprod_info=spec_prod_info, output_filename=str(args.output))
