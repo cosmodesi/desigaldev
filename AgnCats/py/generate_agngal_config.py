@@ -149,7 +149,7 @@ iron_info = {
     'qso_maker_dir': Path('/pscratch/sd/b/bfloyd/agngal_incats_tmp/iron/qsom'),
 
     # FastSpecFit catalog
-    'fast_spec_dir': Path(f'{DESI_ROOT_RO}/public/dr1/vac/dr1/fastspecfit/iron/v3.0/catalogs'),
+    'fast_spec_dir': Path(f'/pscratch/sd/i/ioannis/fastspecfit/iron-v4.0-fastspec/iron/catalogs'),
     'fast_spec_specphot_cols': ['TARGETID', 'PROGRAM', 'SURVEY', 'LOGMSTAR', 'LOGMSTAR_IVAR',
                                 'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT'],
 
@@ -183,7 +183,7 @@ loa_base_info = {
     'qso_maker_dir': Path(f'{DESI_ROOT_RO}/science/gqp/agncatalog/qsomaker/loa'),
 
     # FastSpecFit Catalog
-    'fast_spec_dir': Path(f'{DESI_ROOT_RO}/vac/dr2/fastspecfit/loa/v1.0/catalogs'),
+    'fast_spec_dir': Path(f'/pscratch/sd/i/ioannis/fastspecfit/loa-v2.0-fastspec/loa/catalogs'),
     'fast_spec_specphot_cols': ['TARGETID', 'PROGRAM', 'SURVEY', 'LOGMSTAR', 'LOGMSTAR_IVAR',
                                 'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT'],
 
@@ -196,7 +196,7 @@ loa_base_info = {
     # Output catalog extension 1 column names
     'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
                          'Z', 'ZWARN', 'Z_RR', 'ZERR_RR', 'Z_QSOM', 'ZERR_QSOM', 'Z_QN', 'QN_C_LINE_BEST',
-                         'DELTACHI2'
+                         'DELTACHI2',
                          'SPECTYPE',
                          'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
                          'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',
