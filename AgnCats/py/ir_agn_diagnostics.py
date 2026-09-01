@@ -27,7 +27,7 @@ def wise_jarrett11(input_table: Table, snr: int | float = 3, mask: MaskedColumn 
     [Jarrett11]_
     ``agn_jarrett11``:
     :math:`\begin{cases}
-    W2 - W3 > 2.2 \quad\mathrm{and}\quad W2 - W3 > 4.2, \\
+    W2 - W3 > 2.2 \quad\mathrm{and}\quad W2 - W3 < 4.2, \\
     W1 - W2 > 0.1 \times (W2 - W3) + 0.38 \quad\mathrm{and}\quad W1 - W2 < 1.7
     \end{cases}`
 
