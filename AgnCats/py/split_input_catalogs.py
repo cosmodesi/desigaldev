@@ -29,14 +29,19 @@ def split_by_healpix(catalog: Table, nside: int) -> Table:
     """
 
     # Determine the new nside HEALPix number based on the RA and Dec of the object
-    catalog['new_healpix'] = radec2hpix(nside=nside, ra=catalog['TARGET_RA'], dec=catalog['TARGET_DEC'])
+    try:
+        catalog['new_healpix'] = radec2hpix(nside=nside, ra=catalog['TARGET_RA'], dec=catalog['TARGET_DEC'])
+    except KeyError:
+        # Some catalogs don't follow standard naming conventions
+        catalog['new_healpix'] = radec2hpix(nside=nside, ra=catalog['RA'], dec=catalog['DEC'])
 
     # Group by our new HEALPix numbers
     catalog_grp = catalog.group_by(['SURVEY', 'PROGRAM', 'new_healpix'])
 
     return catalog_grp
 
-def split_catalogs(catalog_file: str, out_prefix: str, out_dir: str, specprod: str, version: int | float) -> None:
+def split_catalogs(catalog_file: str, out_prefix: str, out_hdu: str, out_dir: str, specprod: str,
+                   version: int | float) -> None:
     """Splits an input monolithic catalog into sub-catalogs split by Survey-Program(-nside1_hpXX).
 
     Most sub-catalogs will just be split by Survey-Program with the exception of ``Main-Bright`` and ``Main-Dark``.
@@ -47,7 +52,9 @@ def split_catalogs(catalog_file: str, out_prefix: str, out_dir: str, specprod: s
         catalog_file:
             Path to monolithic QSO-Maker catalog to split.
         out_prefix:
-            Prefix to place in output file name. E.g., "QSO" or "zpix" for QSO-Maker or Redshift catalogs respectively.
+            Prefix to place in output file name. E.g., "QSO" for QSO-Maker catalog.
+        out_hdu:
+            Name of HDU extension for output catalog, typically matches the input HDU extension name.
         out_dir:
             Path to directory to save split catalogs to.
         specprod:
@@ -80,7 +87,7 @@ def split_catalogs(catalog_file: str, out_prefix: str, out_dir: str, specprod: s
     for subcat_key, subcat in subcats.items():
         # Prepare the output file
         primary_hdu = fits.PrimaryHDU()
-        subcat_hdu = fits.BinTableHDU(subcat, name='QSO_CAT' if out_prefix == 'QSO' else 'ZCATALOG')
+        subcat_hdu = fits.BinTableHDU(subcat, name=out_hdu)
         hdu_list = fits.HDUList([primary_hdu, subcat_hdu])
 
         # Write the file out copying
@@ -98,8 +105,8 @@ if __name__ == '__main__':
     # Split Fuji
     fuji_qsom = '/dvs_ro/cfs/cdirs/desi/users/edmondc/QSO_catalog/fuji/QSO_cat_fuji_healpix_all_targets_v2.fits'
     fuji_zcat = '/dvs_ro/cfs/cdirs/desi/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits'
-    fuji_qso_outdir = '/pscratch/sd/b/bfloyd/agngal_incats_tmp/fuji/qsom'
-    fuji_zcat_outdir = '/pscratch/sd/b/bfloyd/agngal_incats_tmp/fuji/zcat'
+    fuji_qso_outdir = '/global/cfs/cdirs/desi/science/gqp/agncatalog/edr/input_catalogs/qsom'
+    fuji_zcat_outdir = '/global/cfs/cdirs/desi/science/gqp/agncatalog/edr/input_catalogs/zcat'
 
     split_catalogs(fuji_qsom, out_prefix='QSO', out_dir=fuji_qso_outdir, specprod='fuji', version=2)
     split_catalogs(fuji_zcat, out_prefix='zpix', out_dir=fuji_zcat_outdir, specprod='fuji', version=2)
@@ -107,8 +114,11 @@ if __name__ == '__main__':
     # Split Iron
     iron_qsom = '/dvs_ro/cfs/cdirs/desi/science/gqp/agncatalog/qsomaker/iron/QSO_cat_iron_healpix_all_targets_v1.fits'
     iron_zcat = '/dvs_ro/cfs/cdirs/desi/spectro/redux/iron/zcatalog/v1/zall-pix-iron.fits'
-    iron_qso_outdir = '/pscratch/sd/b/bfloyd/agngal_incats_tmp/iron/qsom'
-    iron_zcat_outdir = '/pscratch/sd/b/bfloyd/agngal_incats_tmp/iron/zcat'
+    iron_cigale = '/dvs_ro/cfs/cdirs/desi/public/dr1/vac/dr1/cigale/iron/v1.2/IronPhysProp_AfterBurnerv1.2.fits'
+    iron_qso_outdir = '/global/cfs/cdirs/desi/science/gqp/agncatalog/dr1/input_catalogs/qsom'
+    iron_zcat_outdir = '/global/cfs/cdirs/desi/science/gqp/agncatalog/dr1/input_catalogs/zcat'
+    iron_cigale_outdir = '/global/cfs/cdirs/desi/science/gqp/agncatalog/dr1/input_catalogs/cigale'
 
-    split_catalogs(iron_qsom, out_prefix='QSO', out_dir=iron_qso_outdir, specprod='iron', version=2)
-    split_catalogs(iron_zcat, out_prefix='zpix', out_dir=iron_zcat_outdir, specprod='iron', version=2)
+    split_catalogs(iron_qsom, out_prefix='QSO', out_dir=iron_qso_outdir, out_hdu='QSO_CAT', specprod='iron', version=2)
+    split_catalogs(iron_zcat, out_prefix='zpix', out_dir=iron_zcat_outdir, out_hdu='ZCATALOG', specprod='iron', version=2)
+    split_catalogs(iron_cigale, out_prefix='CIGALE', out_dir=iron_cigale_outdir, out_hdu='DATA', specprod='iron', version=1.2)
