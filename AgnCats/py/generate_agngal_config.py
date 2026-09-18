@@ -15,53 +15,16 @@ from pathlib import Path
 import yaml
 
 DESI_ROOT_RO = os.getenv('DESI_ROOT_READONLY', None)
+DESI_ROOT = os.getenv('DESI_ROOT', None)
 
-
-def generate_fuji_iron_config(specprod_info: dict[str, str | list[str]], universal_info: dict[str, str | list[str]],
-                              config_file_name: Path, specprod_name: str):
-    """Processes the EDR and DR1 configuration information into a YAML file.
-
-    As these data releases are simple, we only need to combine the data-release specific information with the universal
-    information and output the dictionary to the configuration file.
-
-    Args:
-        specprod_info:
-            Dictionary containing paths to find the relevant catalogs for EDR or DR1. Additionally, any
-            associated data-release specific column names that should be included in the final configuration file.
-        universal_info:
-            Dictionary containing paths to find the relevant files or input and output catalog column names that are
-            universal to all data releases.
-        config_file_name:
-            Path to output configuration file containing all relevant information to build the targeted data release
-            VAC.
-        specprod_name:
-            Name to assign the top-level label of the dictionary/yaml file. Should be ``'fuji'`` or ``'iron'``.
-    """
-
-    # Merge the column lists between the data release-specific and universal lists.
-    merged_column_lists = {list_name: [*specprod_info[list_name], *universal_info[list_name]]
-                           for list_name in set(specprod_info.keys()).intersection(universal_info.keys())}
-
-
-    # Simply union the two dictionaries together to create the complete data-release configuration.
-    data_release_info = specprod_info | universal_info | merged_column_lists
-
-    # In order to preserve consistency with the Loa data release configuration we need to nest our dictionary.
-    data_release_info = {f'{specprod_name}': {f'{specprod_name}_all': data_release_info}}
-
-    # Write the configuration to file
-    with open(config_file_name, 'w') as config_file:
-        yaml.safe_dump(data_release_info, config_file)
-
-
-def generate_loa_config(specprod_info: dict[str, Path | list[str]], universal_info: dict[str, str | list[str]],
+def generate_config(specprod_info: dict[str, Path | list[str]], universal_info: dict[str, str | list[str]],
                         config_file_name: Path, specprod_name: str):
-    """Processes the DR2 suite of catalogs into dispatchers matching the scheme for EDR and DR1.
+    """Processes the suite of catalogs into configuration structures.
 
     Args:
         specprod_info:
-            Dictionary containing paths to directories to find the relevant catalogs for DR2. Additionally, any
-            associated data-release specific column names that should be included in the final dispatcher.
+            Dictionary containing paths to directories to find the relevant catalogs for the data release. Additionally,
+            any associated data-release specific column names that should be included in the final configuration.
         universal_info:
             Dictionary containing paths to find the relevant files or input and output catalog column names that are
             universal to all data releases.
@@ -69,21 +32,29 @@ def generate_loa_config(specprod_info: dict[str, Path | list[str]], universal_in
             Path to output configuration file containing all relevant information to build the targeted data release
             VAC.
         specprod_name:
-            Name to assign the top-level label of the dictionary/yaml file. Should be ``'loa'``.
+            Name to assign the top-level label of the dictionary/yaml file.
 
     Returns:
-        Dispatch patterns matching required path names and column names for catalog input. Each dispatch pattern is
-        identified by the DESI ``<Survey>-<Program>[-nside1-hp<HEALPix>]`` naming scheme e.g.,
-        "main-dark-nside1-hp00" or "sv1-bright".
+        Configuration information matching required path names and column names for catalog input.
+        Each configuration structure is identified by the DESI ``<Survey>-<Program>[-nside1-hp<HEALPix>]`` naming scheme
+         e.g., "main-dark-nside1-hp00" or "sv1-bright".
     """
 
     # Define a RegEx pattern for the file grouping names
     file_pattern = re.compile(r'(cmx|main|special|sv1|sv2|sv3)[-_](backup|bright|dark|other)([-_]nside1[-_]hp[0-9]*)?')
 
-    # Group all the input catalogs by survey-program-healpix into a dictionary of lists of file paths
+    # Collect the paths to all the main input catalogs
     all_catalogs = [*list(specprod_info['fast_spec_dir'].glob('*.fits')),
                     *list(specprod_info['qso_maker_dir'].glob('*.fits')),
                     *list(specprod_info['zcat_dir'].glob('*.fits'))]
+
+    # Add the additional input catalogs if they exist for the specprod
+    if 'fast_phot_dir' in specprod_info:
+        all_catalogs.extend(specprod_info['fast_phot_dir'].glob('*.fits'))
+    if 'cigale_dir' in specprod_info:
+        all_catalogs.extend(specprod_info['cigale_dir'].glob('*.fits'))
+
+    # Group all the input catalogs by survey-program-healpix into a dictionary of lists of file paths
     all_catalogs = sorted([file_path for file_path in all_catalogs if file_pattern.search(str(file_path))],
                           key=lambda f: file_pattern.search(str(f).replace('_', '-')).group(0))
     all_catalogs_grp = groupby(all_catalogs, key=lambda f: file_pattern.search(str(f).replace('_', '-')).group(0))
@@ -91,36 +62,37 @@ def generate_loa_config(specprod_info: dict[str, Path | list[str]], universal_in
 
     # Remove the full "main-bright" and "main-dark" entries in our grouped dictionary.
     # Due to extra files being present in QSO-Maker directory.
-    del all_catalogs_dict['main-bright']
-    del all_catalogs_dict['main-dark']
+    if ('main-bright' in all_catalogs_dict) or ('main-dark' in all_catalogs_dict):
+        del all_catalogs_dict['main-bright']
+        del all_catalogs_dict['main-dark']
 
-    # Convert the lists of file paths into dictionaries with the same structure as the dispatch patterns for previous
-    # data releases
-    loa_info = {survey_program: loa_paths(catalog_paths, specprod_info)
-                for survey_program, catalog_paths in all_catalogs_dict.items()}
+    # Convert the lists of file paths into dictionaries sorted by catalog type
+    data_release_info = {survey_program: catalog_paths(cat_paths, specprod_info)
+                         for survey_program, cat_paths in all_catalogs_dict.items()}
 
-    # Extract all data for all the column data common to all survey-program(-healpix) subcatalog of Loa
-    all_loa_info = {label: info for label, info in specprod_info.items() if 'cols' in label}
+    # Extract all data for all the column data common to all survey-program(-healpix) subcatalogs
+    all_survey_program_info = {label: info for label, info in specprod_info.items() if 'cols' in label}
 
     # Merge the column lists between the data release-specific and universal lists.
-    merged_column_lists = {list_name: [*all_loa_info[list_name], *universal_info[list_name]]
-                           for list_name in set(all_loa_info.keys()).intersection(universal_info.keys())}
+    merged_column_lists = {list_name: [*all_survey_program_info[list_name], *universal_info[list_name]]
+                           for list_name in set(all_survey_program_info.keys()).intersection(universal_info.keys())}
 
-    # To each survey-program(-healpix) subcatalog of Loa, union the universal info dictionary.
-    loa_info = {f'{specprod_name}': {survey_program: survey_program_info | all_loa_info | universal_info | merged_column_lists
-                 for survey_program, survey_program_info in loa_info.items()}}
+    # To each survey-program(-healpix) subcatalog, union the universal info dictionary.
+    data_release_info = {f'{specprod_name}': {survey_program: survey_program_info | all_survey_program_info
+                                                              | universal_info | merged_column_lists
+                                              for survey_program, survey_program_info in data_release_info.items()}}
 
     # Write the configuration to file
     with open(config_file_name, 'w') as config_file:
-        yaml.safe_dump(loa_info, config_file)
+        yaml.safe_dump(data_release_info, config_file)
 
 
-def loa_paths(file_paths: list[Path], specprod_info: dict[str, Path | list[str]]) -> dict[str, str]:
+def catalog_paths(file_paths: list[Path], specprod_info: dict[str, Path | list[str]]) -> dict[str, str]:
     """Parse a list of file paths into a dictionary with keys matching the expected dispatch pattern
 
     Args:
         file_paths:
-            A list of file paths describing the path name to the FastSpecFit, QSO-Maker, and Redshift catalogs.
+            A list of file paths describing the path name to the input catalogs.
         specprod_info:
             A dictionary containing keys indicating the paths to the directories for the associated catalogs. This will
             be used to filter the paths into the appropriate categories.
@@ -141,6 +113,10 @@ def loa_paths(file_paths: list[Path], specprod_info: dict[str, Path | list[str]]
                 file_dict['qso_maker'] = str(file_path)
             case path if path == specprod_info['zcat_dir']:
                 file_dict['zcat'] = str(file_path)
+            case path if path == specprod_info['fast_phot_dir']:
+                file_dict['fast_phot'] = str(file_path)
+            case path if path == specprod_info['cigale_dir']:
+                file_dict['cigale'] = str(file_path)
             case _:
                 raise ValueError(f'Unknown path: {file_path}')
 
@@ -151,14 +127,17 @@ def loa_paths(file_paths: list[Path], specprod_info: dict[str, Path | list[str]]
 # EDR
 fuji_info = {
     # QSO-Maker catalog from Edmonds catalog keeping all columns
-    'qso_maker': f'{DESI_ROOT_RO}/users/edmondc/QSO_catalog/fuji/QSO_cat_fuji_healpix_all_targets_v2.fits',
+    # 'qso_maker': f'{DESI_ROOT_RO}/users/edmondc/QSO_catalog/fuji/QSO_cat_fuji_healpix_all_targets_v2.fits',
+    'qso_maker_dir': Path(f'{DESI_ROOT_RO}/science/gqp/agncatalog/edr/input_catalogs/qsom'),
 
     # FastSpecFit catalog
-    'fast_spec': f'{DESI_ROOT_RO}/spectro/fastspecfit/fuji/v3.2/catalogs/fastspec-fuji.fits',
-    'fast_spec_data_cols': ['LOGMSTAR'],
+    # 'fast_spec': f'{DESI_ROOT_RO}/spectro/fastspecfit/fuji/v3.2/catalogs/fastspec-fuji.fits',
+    'fast_spec_dir': Path(f'{DESI_ROOT_RO}/public/edr/vac/edr/fastspecfit/fuji/v3.2/catalogs/'),
+    'fast_spec_data_cols': ['LOGMSTAR',  'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT'],
 
     # Redshift catalog
-    'zcat': f'{DESI_ROOT_RO}/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits',
+    # 'zcat': f'{DESI_ROOT_RO}/public/edr/vac/edr/zcat/fuji/v1.0/zall-pix-edr-vac.fits',
+    'zcat_dir': Path(f'{DESI_ROOT_RO}/science/gqp/agncatalog/edr/input_catalogs/zcat'),
     'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'ZERR', 'TSNR2_LRG', 'SV_NSPEC', 'SV_PRIMARY',
                   'ZCAT_NSPEC', 'ZCAT_PRIMARY', 'MIN_MJD', 'MEAN_MJD', 'MAX_MJD', 'OBJTYPE'],
 
@@ -179,16 +158,24 @@ fuji_info = {
 
 # DR1
 iron_info = {
-    # QSO-Maker catalog from `merge_QSOmaker.ipynb`. DR1 version from after Edmond ran on all targets/all surveys
-    'qso_maker': f'{DESI_ROOT_RO}/science/gqp/agncatalog/qsomaker/iron/QSO_cat_iron_healpix_all_targets_v1.fits',
-    'qso_maker_cols': ['QN_C_LINE_BEST'],
+    # QSO-Maker catalog
+    'qso_maker_dir': Path(f'{DESI_ROOT_RO}/science/gqp/agncatalog/dr1/input_catalogs/qsom'),
 
     # FastSpecFit catalog
-    'fast_spec': f'{DESI_ROOT_RO}/spectro/fastspecfit/iron/v2.1/catalogs/fastspec-iron.fits',
-    'fast_spec_data_cols': ['LOGMSTAR'],
+    'fast_spec_dir': Path(f'/pscratch/sd/i/ioannis/fastspecfit/iron-v4.0-fastspec/iron/catalogs'),
+    'fast_spec_specphot_cols': ['TARGETID', 'PROGRAM', 'SURVEY', 'LOGMSTAR', 'LOGMSTAR_IVAR',
+                                'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT'],
+
+    # FastPhot Catalog
+    'fast_phot_dir': Path('/pscratch/sd/i/ioannis/fastspecfit/iron-v2.0-fastphot/iron/catalogs'),
+    'fast_phot_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR', 'LOGMSTAR_IVAR', 'RCHI2_PHOT'],
+
+    # CIGALE catalog
+    'cigale_dir': Path(f'{DESI_ROOT_RO}/science/gqp/agncatalog/dr1/input_catalogs/cigale'),
+    'cigale_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'LOGM', 'LOGM_ERR', 'AGNFRAC', 'CHI2', 'FLAG_MASSPDF'],
 
     # Redshift catalog
-    'zcat': f'{DESI_ROOT_RO}/spectro/redux/iron/zcatalog/v1/zall-pix-iron.fits',
+    'zcat_dir': Path(f'{DESI_ROOT_RO}/science/gqp/agncatalog/dr1/input_catalogs/zcat'),
     'zcat_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'ZERR', 'TSNR2_LRG', 'ZCAT_NSPEC',
                   'ZCAT_PRIMARY', 'SV_NSPEC', 'SV_PRIMARY', 'MAIN_PRIMARY', 'MAIN_NSPEC', 'MIN_MJD', 'MEAN_MJD',
                   'MAX_MJD', 'OBJTYPE'],
@@ -205,7 +192,13 @@ iron_info = {
                          'DESI_TARGET', 'SCND_TARGET', 'BGS_TARGET', 'CMX_TARGET',
                          'SV1_DESI_TARGET', 'SV2_DESI_TARGET', 'SV3_DESI_TARGET',
                          'SV1_BGS_TARGET', 'SV2_BGS_TARGET', 'SV3_BGS_TARGET',
-                         'SV1_SCND_TARGET', 'SV2_SCND_TARGET', 'SV3_SCND_TARGET']
+                         'SV1_SCND_TARGET', 'SV2_SCND_TARGET', 'SV3_SCND_TARGET'],
+
+    # Output catalog extension 2 column names
+    'output_cols_ext2': ['LOGMSTAR_IVAR',
+                         'LOGMSTAR_FASTPHOT', 'LOGMSTAR_IVAR_FASTPHOT', 'RCHI2_PHOT_FASTPHOT',
+                         'LOGMSTAR_CIGALE', 'LOGMSTAR_ERR_CIGALE', 'AGNFRAC_CIGALE', 'CHI2_CIGALE',
+                         'FLAG_MASSPDF_CIGALE']
 }
 
 # DR2
@@ -214,9 +207,13 @@ loa_base_info = {
     'qso_maker_dir': Path(f'{DESI_ROOT_RO}/science/gqp/agncatalog/qsomaker/loa'),
 
     # FastSpecFit Catalog
-    'fast_spec_dir': Path(f'{DESI_ROOT_RO}/vac/dr2/fastspecfit/loa/v1.0/catalogs'),
+    'fast_spec_dir': Path(f'/pscratch/sd/i/ioannis/fastspecfit/loa-v2.0-fastspec/loa/catalogs'),
+    'fast_spec_specphot_cols': ['TARGETID', 'PROGRAM', 'SURVEY', 'LOGMSTAR', 'LOGMSTAR_IVAR',
+                                'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT'],
 
-    'fast_spec_specphot_cols': ['TARGETID', 'PROGRAM', 'SURVEY', 'LOGMSTAR'],
+    # FastPhot Catalog
+    'fast_phot_dir': Path('/pscratch/sd/i/ioannis/fastspecfit/loa-v2.0-fastphot'),
+    'fast_phot_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR', 'LOGMSTAR_IVAR', 'RCHI2_PHOT'],
 
     # Redshift Catalog
     'zcat_dir': Path(f'{DESI_ROOT_RO}/science/gqp/agncatalog/zpix_nside1/loa/v1'),
@@ -227,7 +224,7 @@ loa_base_info = {
     # Output catalog extension 1 column names
     'output_cols_ext1': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX',
                          'Z', 'ZWARN', 'Z_RR', 'ZERR_RR', 'Z_QSOM', 'ZERR_QSOM', 'Z_QN', 'QN_C_LINE_BEST',
-                         'DELTACHI2'
+                         'DELTACHI2',
                          'SPECTYPE',
                          'AGN_MASKBITS', 'OPT_UV_TYPE', 'IR_TYPE',
                          'COADD_FIBERSTATUS', 'TARGET_RA', 'TARGET_DEC', 'LS_ID',
@@ -236,20 +233,23 @@ loa_base_info = {
                          'DESI_TARGET', 'SCND_TARGET', 'BGS_TARGET', 'CMX_TARGET',
                          'SV1_DESI_TARGET', 'SV2_DESI_TARGET', 'SV3_DESI_TARGET',
                          'SV1_BGS_TARGET', 'SV2_BGS_TARGET', 'SV3_BGS_TARGET',
-                         'SV1_SCND_TARGET', 'SV2_SCND_TARGET', 'SV3_SCND_TARGET']
+                         'SV1_SCND_TARGET', 'SV2_SCND_TARGET', 'SV3_SCND_TARGET'],
+
+    # Output catalog extension 2 column names
+    'output_cols_ext2': ['LOGMSTAR_IVAR',
+                         'LOGMSTAR_FASTPHOT', 'LOGMSTAR_IVAR_FASTPHOT', 'RCHI2_PHOT_FASTPHOT']
 }
 
 all_data_release_info = {
     # AGN BitMask Definitions file
-    'agn_bitmask_defs': '/dvs_ro/u2/b/bfloyd/agngal_dr2/AgnCats/py/agnmask.yaml',
+    'agn_bitmask_defs': f'{DESI_ROOT_RO}/science/gqp/agncatalog/code/AgnCats/py/agnmask.yaml',
 
     # Output file unit definitions files
-    'output_ext1_unit_defs': '/dvs_ro/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/ext1_units.yaml',
-    'output_ext2_unit_defs': '/dvs_ro/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/ext2_units.yaml',
+    'output_ext1_unit_defs': f'{DESI_ROOT_RO}/science/gqp/agncatalog/code/AgnCats/py/configs/ext1_units.yaml',
+    'output_ext2_unit_defs': f'{DESI_ROOT_RO}/science/gqp/agncatalog/code/AgnCats/py/configs/ext2_units.yaml',
 
     # Universal input catalog column names
     'fast_spec_data_cols': ['TARGETID', 'PROGRAM', 'SURVEY',
-                            'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT',
                             'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
                             'MGII_2796_FLUX', 'MGII_2796_FLUX_IVAR', 'MGII_2796_SIGMA',
                             'MGII_2803_FLUX', 'MGII_2803_FLUX_IVAR', 'MGII_2803_SIGMA',
@@ -287,8 +287,9 @@ all_data_release_info = {
                   'SV3_DESI_TARGET', 'SV3_BGS_TARGET', 'SV3_SCND_TARGET'],
 
     # Universal output catalog column names
-    'output_cols_ext2': ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR',
-                         'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT'
+    'output_cols_ext2': ['TARGETID', 'SURVEY', 'PROGRAM',
+                         'LOGMSTAR',
+                         'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT',
                          'FLUX_W1', 'FLUX_W2', 'FLUX_W3',
                          'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'FLUX_IVAR_W3',
                          'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
@@ -310,12 +311,12 @@ all_data_release_info = {
 }
 
 if __name__ == '__main__':
-    generate_fuji_iron_config(specprod_info=fuji_info, universal_info=all_data_release_info,
-                              config_file_name=Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/fuji_config.yaml'),
-                              specprod_name='fuji')
-    generate_fuji_iron_config(specprod_info=iron_info, universal_info=all_data_release_info,
-                              config_file_name=Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/iron_config.yaml'),
-                              specprod_name='iron')
-    generate_loa_config(specprod_info=loa_base_info, universal_info=all_data_release_info,
-                        config_file_name=Path('/global/u2/b/bfloyd/agngal_dr2/AgnCats/py/configs/loa_config.yaml'),
-                        specprod_name='loa')
+    generate_config(specprod_info=fuji_info, universal_info=all_data_release_info,
+                    config_file_name=Path(f'{DESI_ROOT}/science/gqp/agncatalog/code/AgnCats/py/configs/fuji_config.yaml'),
+                    specprod_name='fuji')
+    generate_config(specprod_info=iron_info, universal_info=all_data_release_info,
+                    config_file_name=Path(f'{DESI_ROOT}/science/gqp/agncatalog/code/AgnCats/py/configs/iron_config.yaml'),
+                    specprod_name='iron')
+    generate_config(specprod_info=loa_base_info, universal_info=all_data_release_info,
+                    config_file_name=Path(f'{DESI_ROOT}/science/gqp/agncatalog/code/AgnCats/py/configs/loa_config.yaml'),
+                    specprod_name='loa')

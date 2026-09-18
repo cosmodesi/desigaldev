@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 build_desi_agngal_vac.py
 Author: Benjamin Floyd
@@ -20,13 +21,14 @@ from dataclasses import dataclass
 
 import fitsio
 from astropy.io import fits
-from astropy.table import Table, hstack, join
+from astropy.table import Table, hstack, join, vstack
 from desiutil.annotate import annotate_fits, load_yml_units
 from desiutil.log import get_logger
 
 from AgnCats.py import set_agn_masksDESI as agn_masks
 
 logger = get_logger(level='INFO')
+
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -34,6 +36,7 @@ warnings.filterwarnings('ignore')
 @dataclass(kw_only=True)
 class SpecProdInfo:
     """Data class for DESI specprod configuration information."""
+    name: str
     agn_bitmask_defs: str
     fast_spec: str
     fast_spec_data_cols: list[str]
@@ -46,7 +49,11 @@ class SpecProdInfo:
     qso_maker_cols: list[str]
     zcat: str
     zcat_cols: list[str]
-    fast_spec_specphot_cols: list[str] = None
+    fast_phot: str | None = None
+    fast_phot_cols: list[str] | None = None
+    cigale: str | None = None
+    cigale_cols: list[str] | None = None
+    fast_spec_specphot_cols: list[str] | None = None
 
 
 def read_config(config_path: Path | str) -> dict[str, dict[str, SpecProdInfo]]:
@@ -65,7 +72,7 @@ def read_config(config_path: Path | str) -> dict[str, dict[str, SpecProdInfo]]:
 
     try:
         # Cast the nested dictionary in the configuration info as a SpecProdInfo data class to help with type checking.
-        config_info = {survey_name: {survey_program: SpecProdInfo(**config)
+        config_info = {survey_name: {survey_program: SpecProdInfo(name=f'{survey_name}_{survey_program}', **config)
                                      for survey_program, config in survey_config.items()}
                        for survey_name, survey_config in config_info.items()}
     except TypeError as e:
@@ -138,9 +145,21 @@ def read_input_catalogs(specprod_info: SpecProdInfo) -> Table:
 
     """
 
+    # Dummy assignments to protect against an extremely unlikely edge case
+    fastphot_catalog = Table(data=None, names=['LOGMSTAR', 'LOGMSTAR_IVAR', 'RCHI2_PHOT'])
+    cigale_catalog = Table(data=None, names=['LOGM', 'LOGM_ERR', 'AGNFRAC', 'CHI2', 'FLAG_MASSPDF'])
+
     try:
         # Read in and merge the FastSpecFit catalog extensions into a combined table
         fastspec_catalog = read_fastspecfit(specprod_info)
+
+        # Read in the FastPhot catalog (Fuji does not have this catalog available)
+        if specprod_info.fast_phot is not None:
+            fastphot_catalog = Table(fitsio.read(specprod_info.fast_phot, ext=2, columns=specprod_info.fast_phot_cols))
+
+        # Read in the CIGALE catalog (only Iron has this VAC at present)
+        if specprod_info.cigale is not None:
+            cigale_catalog = Table(fitsio.read(specprod_info.cigale, ext=1, columns=specprod_info.cigale_cols))
 
         # Read in the QSO-Maker catalog
         qso_maker_catalog = Table(fitsio.read(specprod_info.qso_maker, ext=1, columns=specprod_info.qso_maker_cols))
@@ -163,6 +182,17 @@ def read_input_catalogs(specprod_info: SpecProdInfo) -> Table:
     # Rename the redshift error column from the Redshift catalog to reflect that it's from Redrock
     redshift_catalog.rename_columns(['ZERR'], ['ZERR_RR'])
 
+    # Rename the CIGALE columns
+    if specprod_info.cigale is not None:
+        cigale_catalog.rename_columns(['LOGM', 'LOGM_ERR', 'AGNFRAC', 'CHI2', 'FLAG_MASSPDF'],
+                                      ['LOGMSTAR_CIGALE', 'LOGMSTAR_ERR_CIGALE', 'AGNFRAC_CIGALE', 'CHI2_CIGALE',
+                                       'FLAG_MASSPDF_CIGALE'])
+
+    # Rename the FastPhot columns
+    if specprod_info.fast_phot is not None:
+        fastphot_catalog.rename_columns(['LOGMSTAR', 'LOGMSTAR_IVAR', 'RCHI2_PHOT'],
+                                        ['LOGMSTAR_FASTPHOT', 'LOGMSTAR_IVAR_FASTPHOT', 'RCHI2_PHOT_FASTPHOT'])
+
     # Main identifiers for Joins
     keys_for_join = ['TARGETID', 'SURVEY', 'PROGRAM']
 
@@ -184,6 +214,14 @@ def read_input_catalogs(specprod_info: SpecProdInfo) -> Table:
     # Join the FastSpecFit+QSO-Maker catalog with the redshift catalog
     desi_catalog = join(desi_catalog, redshift_catalog, keys=keys_for_join, join_type='left')
     logger.debug(f'After (FSF + QSOM) + Zcatalog : {np.unique(desi_catalog["SURVEY"])}')
+
+    # Join the CIGALE catalog (if available)
+    if specprod_info.cigale is not None:
+        desi_catalog = join(desi_catalog, cigale_catalog, keys=keys_for_join, join_type='left')
+
+    # Join the FastPhot catalog (if available)
+    if specprod_info.fast_phot is not None:
+        desi_catalog = join(desi_catalog, fastphot_catalog, keys=keys_for_join, join_type='left')
 
     # Test for consistency
     try:
@@ -220,6 +258,9 @@ def apply_agngal_class(input_table: Table, agnmask_defs: Path | str) -> Table:
     desi_catalog = agn_masks.update_agn_maskbits(input_table, agn_maskbits, snr=emission_line_snr,
                                                  snr_oi=emission_line_snr, snr_wise=wise_snr, kewley01=False)
 
+    # Apply the BROADLINE maskbits in OPT_UV_TYPE
+    desi_catalog = agn_masks.update_broad_lines(desi_catalog, uv_opt_type, snr=emission_line_snr)
+
     # Apply the BPT UV_OPT_TYPE maskbits
     desi_catalog = agn_masks.update_agntype_nii_bpt(desi_catalog, uv_opt_type, snr=emission_line_snr)
     desi_catalog = agn_masks.update_agntype_sii_bpt(desi_catalog, uv_opt_type, snr=emission_line_snr, kewley01=False)
@@ -235,6 +276,7 @@ def apply_agngal_class(input_table: Table, agnmask_defs: Path | str) -> Table:
     desi_catalog = agn_masks.update_agntype_nev(desi_catalog, uv_opt_type, snr=emission_line_snr)
 
     # Apply the WISE IR-selection maskbits
+    desi_catalog = agn_masks.update_agntype_wise_jarrett11(desi_catalog, ir_type, snr=wise_snr)
     desi_catalog = agn_masks.update_agntype_wise_stern12(desi_catalog, ir_type, snr=wise_snr)
     desi_catalog = agn_masks.update_agntype_wise_mateos12(desi_catalog, ir_type, snr=wise_snr)
     desi_catalog = agn_masks.update_agntype_wise_assef18_r(desi_catalog, ir_type, snr=wise_snr, reliability=90)
@@ -276,6 +318,53 @@ def output_processing(input_table: Table, output_filename: str, specprod_info: S
                   overwrite=True)
 
 
+def merge_output_catalogs(catalog_directory: Path | str, merged_output_filename: Path | str, ext1_unit_defs: Path | str,
+                          ext2_unit_defs: Path | str) -> None:
+    """Merges output catalogs into a single FITS file.
+    Args:
+        catalog_directory:
+            Path to directory containing the individual Survey-Program[-HEALPix] catalogs.
+        merged_output_filename:
+            Path to output the merged catalog as a FITS file.
+        ext1_unit_defs:
+            Path to YAML file containing the definitions of extension column units we wish to add to the output file.
+        ext2_unit_defs:
+            Path to YAML file containing the definitions of extension column units we wish to add to the output file.
+    """
+
+    # Ensure the directory path is a Path object
+    catalog_directory = Path(catalog_directory)
+
+    # Read in and merge the subcatalogs into a single table (per extension)
+    full_catalog_ext1 = []
+    full_catalog_ext2 = []
+    for fname in catalog_directory.iterdir():
+        subcat_ext1 = Table(fitsio.read(str(fname), ext=1))
+        subcat_ext2 = Table(fitsio.read(str(fname), ext=2))
+
+        full_catalog_ext1.append(subcat_ext1)
+        full_catalog_ext2.append(subcat_ext2)
+
+    full_catalog_ext1 = vstack(full_catalog_ext1)
+    full_catalog_ext2 = vstack(full_catalog_ext2)
+
+    # Write the file to disk
+    primary_hdu = fits.PrimaryHDU()
+    full_catalog_ext1_hdu = fits.BinTableHDU(full_catalog_ext1, name='AGNCAT')
+    full_catalog_ext2_hdu = fits.BinTableHDU(full_catalog_ext2, name='AUXDATA')
+    hdu_list = fits.HDUList([primary_hdu, full_catalog_ext1_hdu, full_catalog_ext2_hdu])
+    hdu_list.writeto(merged_output_filename, overwrite=True, checksum=True)
+
+    # We will need to rerun the unit annotations on this new catalog file as they will not be preserved
+    out_ext1_units, _ = load_yml_units(ext1_unit_defs)
+    out_ext2_units, _ = load_yml_units(ext2_unit_defs)
+
+    annotate_fits(str(merged_output_filename), extension=1, output=str(merged_output_filename), units=out_ext1_units,
+                  validate=False, overwrite=True)
+    annotate_fits(str(merged_output_filename), extension=2, output=str(merged_output_filename), units=out_ext2_units,
+                  validate=False, overwrite=True)
+
+
 def build_agngal_catalog(specprod_info: SpecProdInfo, output_filename: str) -> None:
     """Builds the DESI AGN/Galaxy Classification VAC.
 
@@ -305,10 +394,13 @@ if __name__ == "__main__":
     # Provide CLI arguments for easy execution via SLURM scripts.
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', required=True, help='Path to configuration file.', type=Path)
-    parser.add_argument("-o", "--output", default="desi_agngal.fits", required=True,
-                        help="Path to output FITS file.", type=Path)
+    parser.add_argument('-o', '--output', required=True, help='Path to output directory.', type=Path)
+    parser.add_argument('-v', '--version', required=True, help='Version number of catalog.', type=float)
     parser.add_argument('--testing', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--testing-pp', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--merge', dest='merge-filename',
+                        help='If given, will merge the subcatalogs into a single catalog with the provided filename.',
+                        type=Path)
     args = parser.parse_args()
 
     # Read in the configuration file
@@ -342,20 +434,26 @@ if __name__ == "__main__":
                             for survey_program in testing_info_set['loa'].keys()]
 
         with mp.Pool() as pool:
-            result = pool.starmap_async(build_agngal_catalog, zip(testing_info_set['loa'].values(), output_filenames))
-            result.get()
-
-    elif spec_prod == 'loa':
-        # We need to assign unique output filenames for Loa catalogs based on the input catalog names.
-        output_filenames = [str(args.output / Path(f'desi_agngal_loa_{survey_program}.fits'))
-                            for survey_program in spec_prod_info['loa'].keys()]
-
-        # Run all catalog operations in parallel simultaneously
-        with mp.Pool() as pool:
-            result = pool.starmap_async(build_agngal_catalog, zip(spec_prod_info['loa'].values(), output_filenames))
+            result = pool.starmap_async(build_agngal_catalog,
+                                        zip(testing_info_set['loa'].values(), output_filenames))
             result.get()
 
     else:
-        # For all previous data releases (EDR/Fuji, DR1/Iron) we will run the operations in serial.
-        spec_prod_info = spec_prod_info[spec_prod][f'{spec_prod}_all']
-        build_agngal_catalog(specprod_info=spec_prod_info, output_filename=str(args.output))
+        # We need to assign unique output filenames for Loa catalogs based on the input catalog names.
+        output_filenames = [str(args.output / Path(f'desi_agngal_{spec_prod}_{survey_program}_v{args.version}.fits'))
+                            for survey_program in spec_prod_info[spec_prod].keys()]
+
+        # Run all catalog operations in parallel simultaneously
+        with mp.Pool() as pool:
+            result = pool.starmap_async(build_agngal_catalog,
+                                        zip(spec_prod_info[spec_prod].values(), output_filenames))
+            result.get()
+
+        if args.merge_filename is not None:
+            # Need to retrieve the unit definition file names stored in the SpecProdInfo object
+            subcatalog_name = list(spec_prod_info[spec_prod].keys())[0]
+            ext1_unit_defs_fname = spec_prod_info[spec_prod][subcatalog_name].output_ext1_unit_defs
+            ext2_unit_defs_fname = spec_prod_info[spec_prod][subcatalog_name].output_ext2_unit_defs
+
+            merge_output_catalogs(catalog_directory=args.output, merged_output_filename=args.merged_filename,
+                                  ext1_unit_defs=ext1_unit_defs_fname, ext2_unit_defs=ext2_unit_defs_fname)
