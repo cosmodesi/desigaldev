@@ -4,7 +4,11 @@ Author: Benjamin Floyd
 
 This library collects miscellaneous utility functions that are useful for DESI AGN/Galaxy Classification VAC.
 """
+from pathlib import Path
+
+import fitsio
 import numpy as np
+from astropy.table import Table, hstack, vstack
 from numpy.typing import NDArray
 
 
@@ -83,3 +87,37 @@ def decode_bitmask(maskbit_num: int) -> NDArray[int]:
             powers.append(i)
         i <<= 1  # Left bitwise shift. Essentially iterate the binary number up by one bit. 1 -> 2 -> 4 -> ...
     return np.array(powers)
+
+
+def read_catalogs(catalog_dir: Path | str, ext1_cols: list[str], ext2_cols: list[str]) -> Table:
+    """
+    Function to read in specified columns in all survey-program catalogs in a directory, merge them into a single table
+    and return the table to work with. Note, this only returns the catalog in memory, it does not write out any files.
+
+    Args:
+        catalog_dir:
+            Path to directory holding all survey-program catalogs.
+        ext1_cols:
+            List of column names to include from the ``AGNCAT`` extension in the catalog.
+        ext2_cols:
+            List of column names to include from the ``AUXDATA`` extension in the catalog.
+
+    Returns:
+        A stacked table of all specified columns across all rows of the survey-program catalogs.
+    """
+
+    # Ensure directory is a Path object
+    catalog_dir = Path(catalog_dir)
+
+    # Iterate through all survey-program catalogs and merge them into a single table
+    agngal = []
+    for fname in catalog_dir.iterdir():
+        subcat_ext1 = Table(fitsio.read(str(fname), ext=1, columns=ext1_cols))
+        subcat_ext2 = Table(fitsio.read(str(fname), ext=2, columns=ext2_cols))
+
+        subcat = hstack([subcat_ext1, subcat_ext2])
+        agngal.append(subcat)
+
+    agngal = vstack(agngal)
+
+    return agngal
