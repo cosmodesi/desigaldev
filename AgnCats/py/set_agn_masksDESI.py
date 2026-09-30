@@ -21,8 +21,11 @@ import yaml
 from astropy.table import Table, MaskedColumn
 from desiutil.bitmask import BitMask
 
-import AgnCats.py.ir_agn_diagnostics as ir_agn
-import AgnCats.py.uv_opt_agn_diagnostics as uv_opt_agn
+## SJ: having problems with these from a notebook
+#import AgnCats.py.ir_agn_diagnostics as ir_agn
+#import AgnCats.py.uv_opt_agn_diagnostics as uv_opt_agn
+import ir_agn_diagnostics as ir_agn
+import uv_opt_agn_diagnostics as uv_opt_agn
 
 
 ## Original notes:
