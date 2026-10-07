@@ -272,7 +272,7 @@ def apply_agngal_class(input_table: Table, agnmask_defs: Path | str) -> Table:
     desi_catalog = agn_masks.update_agntype_blue(desi_catalog, uv_opt_type, snr=equivalent_width_snr)
     desi_catalog = agn_masks.update_agntype_mex(desi_catalog, uv_opt_type, snr=emission_line_snr)
     desi_catalog = agn_masks.update_agntype_kex(desi_catalog, uv_opt_type, snr=emission_line_snr)
-    desi_catalog = agn_masks.update_agntype_heii(desi_catalog, uv_opt_type, snr=emission_line_snr)
+    # desi_catalog = agn_masks.update_agntype_heii(desi_catalog, uv_opt_type, snr=emission_line_snr)  # BF: Deactivating until further investigation can be done on this.
     desi_catalog = agn_masks.update_agntype_nev(desi_catalog, uv_opt_type, snr=emission_line_snr)
 
     # Apply the WISE IR-selection maskbits
