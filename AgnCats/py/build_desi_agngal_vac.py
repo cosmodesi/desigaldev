@@ -242,9 +242,7 @@ def apply_quality_checks(input_table: Table, aon_cut: int | float = 1, mask_valu
         We will apply a mask value on the associated line flux inverse variance column for rows that do not meet our
         quality cut of line amplitude over noise threshold. Amplitude over noise is defined as
 
-        .. math::
-
-        \text{AoN} = \text{LINENAME\_AMP} \cdot \sqrt{\text{LINENAME\_CONT\_IVAR}}
+        :math:`\text{AoN} = \text{LINENAME\_AMP} \cdot \sqrt{\text{LINENAME\_CONT\_IVAR}}`
 
         where :math:`\text{LINENAME\_AMP}` is the emission line amplitude and :math:`\text{LINENAME\_CONT\_IVAR}` is
         the inverse variance on the continuum measured at the line center.

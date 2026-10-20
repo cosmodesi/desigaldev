@@ -33,7 +33,7 @@ import AgnCats.py.uv_opt_agn_diagnostics as uv_opt_agn
 ## Edited: B. Canning 2023; S. Juneau November 2024, Feb 2025
 
 ###
-# Retrieve the bitmasks definitions from the yaml file
+# Retrieve the bitmasks definitions from the YAML file
 # Note: QSO_MASKBITS are applied to the first 9 bits of agn_maskbits
 #       OPT_UV_TYPE and IR_TYPE include definitions for detailed classification
 
@@ -57,8 +57,8 @@ def get_agn_maskbits(file: Path | str) -> tuple[BitMask, BitMask, BitMask]:
 
 
 def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | float = 3, snr_oi: int | float = 3,
-                        snr_oii: int | float = 3, snr_nev: int | float = 3, snr_wise: int | float = 3,
-                        kewley01: bool = False, mask: MaskedColumn = None) -> Table:
+                        snr_nev: int | float = 3, snr_wise: int | float = 3,
+                        kewley01: bool = False, mask: MaskedColumn | None = None) -> Table:
     """Sets the ``AGN_MASKBITS`` values in the input catalog.
 
     ``AGN_MASKBITS`` are initialized from the ``QSO_MASKBITS`` column from QSO MAKER. They are then further modified by
@@ -74,7 +74,6 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
             Default is ``1``.
         snr_nev: Signal-to-noise cut applied to the [NeV]λ3426 emission line. Used for the [NeV] diagnostic. Default is ``3``.
         snr_wise: Signal-to-noise cut applied to the WISE fluxes. Default is ``3``.
-        snr_oii: Signal-to-noise cut applied to the [OII]λ3727 flux. Used for the Blue diagnostic. Default is ``3``.
         kewley01: Optional flag to use Kewley+01 lines for SF/AGN classification instead of Law+21 lines. Used for the
             [SII] and [OI] BPT diagnostics. Default is ``False``.
         mask: Optional mask (e.g., from masked column array). Default is ``None``.
@@ -161,7 +160,7 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
 
 
 def update_broad_lines(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3,
-                       mask: MaskedColumn = None) -> Table:
+                       mask: MaskedColumn | None = None) -> Table:
     """Applies the Broad Line cuts and sets the bitmasks for ``OPT_UV_TYPE``.
 
     Args:
@@ -190,7 +189,7 @@ def update_broad_lines(input_table: Table, opt_uv_type: BitMask, snr: int | floa
 
 
 def update_agntype_nii_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3,
-                           mask: MaskedColumn = None) -> Table:
+                           mask: MaskedColumn | None = None) -> Table:
     """Applies the [NII] BPT masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
     Args:
@@ -221,7 +220,7 @@ def update_agntype_nii_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | 
 
 
 def update_agntype_sii_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3, kewley01: bool = False,
-                           mask: MaskedColumn = None) -> Table:
+                           mask: MaskedColumn | None = None) -> Table:
     """Applies the [SII] BPT masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
     Args:
@@ -252,7 +251,7 @@ def update_agntype_sii_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | 
 
 
 def update_agntype_oi_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3, snr_oi: int | float = 3,
-                          kewley01: bool = False, mask: MaskedColumn = None) -> Table:
+                          kewley01: bool = False, mask: MaskedColumn | None = None) -> Table:
     """Applies the [OI] BPT masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
     Args:
@@ -284,7 +283,7 @@ def update_agntype_oi_bpt(input_table: Table, opt_uv_type: BitMask, snr: int | f
 
 
 def update_agntype_whan(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3, snr_ew: int | float = 1,
-                        mask: MaskedColumn = None) -> Table:
+                        mask: MaskedColumn | None = None) -> Table:
     """Applies the WHAN masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
     Args:
@@ -317,7 +316,7 @@ def update_agntype_whan(input_table: Table, opt_uv_type: BitMask, snr: int | flo
     return input_table
 
 
-def update_agntype_blue(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3, mask: MaskedColumn = None) -> Table:
+def update_agntype_blue(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3, mask: MaskedColumn | None = None) -> Table:
     """Applies the Blue masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
     Args:
@@ -349,7 +348,7 @@ def update_agntype_blue(input_table: Table, opt_uv_type: BitMask, snr: int | flo
 
 
 def update_agntype_mex(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3,
-                       mask: MaskedColumn = None) -> Table:
+                       mask: MaskedColumn | None = None) -> Table:
     """Applies the MEx masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
     Args:
@@ -379,7 +378,7 @@ def update_agntype_mex(input_table: Table, opt_uv_type: BitMask, snr: int | floa
 
 
 def update_agntype_kex(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3,
-                       mask: MaskedColumn = None) -> Table:
+                       mask: MaskedColumn | None = None) -> Table:
     """Applies the KEx masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
     Args:
@@ -409,7 +408,7 @@ def update_agntype_kex(input_table: Table, opt_uv_type: BitMask, snr: int | floa
 
 
 def update_agntype_heii(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3,
-                        mask: MaskedColumn = None) -> Table:
+                        mask: MaskedColumn | None = None) -> Table:
     """Applies the HeII masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
     Args:
@@ -438,7 +437,7 @@ def update_agntype_heii(input_table: Table, opt_uv_type: BitMask, snr: int | flo
 
 
 def update_agntype_nev(input_table: Table, opt_uv_type: BitMask, snr: int | float = 3,
-                       mask: MaskedColumn = None) -> Table:
+                       mask: MaskedColumn | None = None) -> Table:
     """Applies the [NeV] masks and sets the bitmasks for ``OPT_UV_TYPE``.
 
     Args:
@@ -467,7 +466,7 @@ def update_agntype_nev(input_table: Table, opt_uv_type: BitMask, snr: int | floa
 
 
 def update_agntype_wise_jarrett11(input_table: Table, ir_type: BitMask, snr: int | float = 3,
-                                mask: MaskedColumn = None) -> Table:
+                                mask: MaskedColumn | None = None) -> Table:
     """Applies the Jarrett+11 WISE AGN selection masks and sets the bitmasks for ``IR_TYPE``.
 
     Args:
@@ -499,7 +498,7 @@ def update_agntype_wise_jarrett11(input_table: Table, ir_type: BitMask, snr: int
     return input_table
 
 def update_agntype_wise_stern12(input_table: Table, ir_type: BitMask, snr: int | float = 3,
-                                mask: MaskedColumn = None) -> Table:
+                                mask: MaskedColumn | None = None) -> Table:
     """Applies the Stern+12 WISE AGN selection masks and sets the bitmasks for ``IR_TYPE``.
 
     Args:
@@ -531,7 +530,7 @@ def update_agntype_wise_stern12(input_table: Table, ir_type: BitMask, snr: int |
     return input_table
 
 def update_agntype_wise_mateos12(input_table: Table, ir_type: BitMask, snr: int | float = 3,
-                                 mask: MaskedColumn = None) -> Table:
+                                 mask: MaskedColumn | None = None) -> Table:
     """Applies the Mateos+12 WISE AGN selection masks and sets the bitmasks for ``IR_TYPE``.
 
     Args:
@@ -563,7 +562,7 @@ def update_agntype_wise_mateos12(input_table: Table, ir_type: BitMask, snr: int 
     return input_table
 
 def update_agntype_wise_assef18_r(input_table: Table, ir_type: BitMask, snr: int | float = 3,
-                                 reliability: Literal[75, 90] = 90, mask: MaskedColumn = None) -> Table:
+                                 reliability: Literal[75, 90] = 90, mask: MaskedColumn | None = None) -> Table:
     """Applies the reliability-optimized Assef+18 WISE AGN selection masks and sets the bitmasks for ``IR_TYPE``.
 
     Args:
@@ -597,7 +596,7 @@ def update_agntype_wise_assef18_r(input_table: Table, ir_type: BitMask, snr: int
     return input_table
 
 def update_agntype_wise_yao20(input_table: Table, ir_type: BitMask, snr: int | float = 3,
-                              mask: MaskedColumn = None) -> Table:
+                              mask: MaskedColumn | None = None) -> Table:
     """Applies the Yao+20 WISE AGN selection masks and sets the bitmasks for ``IR_TYPE``.
 
     Args:
@@ -631,7 +630,7 @@ def update_agntype_wise_yao20(input_table: Table, ir_type: BitMask, snr: int | f
 
 
 def update_agntype_wise_hviding22(input_table: Table, ir_type: BitMask, snr: int | float = 3,
-                                  mask: MaskedColumn = None) -> Table:
+                                  mask: MaskedColumn | None = None) -> Table:
     """Applies the Hviding+22 WISE AGN selection masks and sets the bitmasks for ``IR_TYPE``.
 
     Args:
