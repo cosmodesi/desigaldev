@@ -8,6 +8,7 @@ notebook and provides parallelized computation abilities in constructing the fin
 """
 import re
 import sys
+from itertools import batched
 
 import numpy as np
 import yaml
@@ -260,17 +261,33 @@ def apply_quality_checks(input_table: Table, aon_cut: int | float = 1, mask_valu
     # Get a list of all emission line measurements included in the catalog
     line_name_pattern = re.compile(r'.+?(?=_FLUX_IVAR)')
 
+    # We will track the doublet lines
+    doublets = ['MGII_2796', 'MGII_2803', 'OII_3726', 'OII_3729', 'SII_6716', 'SII_6731']
+
     line_names = []
     for colname in input_table.colnames:
         if (line_name_match := line_name_pattern.search(colname)) is not None:
             line_names.append(line_name_match.group())
 
-    for line_name in line_names:
+    singlets = [line_name for line_name in line_names if line_name not in doublets]
+
+    # First handle all singlet lines
+    for line_name in singlets:
         # For each measurement compute the Amplitude over Noise
         aon = input_table[f'{line_name}_AMP'] * np.sqrt(input_table[f'{line_name}_CONT_IVAR'])
 
         # Apply the mask for all rows that do not meet the AoN threshold
         input_table[f'{line_name}_FLUX_IVAR'] = np.where(aon > aon_cut, input_table[f'{line_name}_FLUX_IVAR'], mask_value)
+
+    # Now doublets
+    for line_name_1, line_name_2 in batched(doublets, 2):
+        # Calculate each line's Amplitude over Noise
+        aon_1 = input_table[f'{line_name_1}_AMP'] * np.sqrt(input_table[f'{line_name_1}_CONT_IVAR'])
+        aon_2 = input_table[f'{line_name_2}_AMP'] * np.sqrt(input_table[f'{line_name_2}_CONT_IVAR'])
+
+        # Apply the mask for all rows that do not have *both* lines meeting the AoN threshold
+        input_table[f'{line_name_1}_FLUX_IVAR'] = np.where((aon_1 > aon_cut) | (aon_2 > aon_cut), input_table[f'{line_name_1}_FLUX_IVAR'], mask_value)
+        input_table[f'{line_name_2}_FLUX_IVAR'] = np.where((aon_1 > aon_cut) | (aon_2 > aon_cut), input_table[f'{line_name_2}_FLUX_IVAR'], mask_value)
 
     return input_table
 
