@@ -6,7 +6,7 @@ Author: Benjamin Floyd
 This top-level script builds the DESI AGN/Galaxy Classification VAC. This supersedes the DR1 00_AGNQSO_summary_cat.ipynb
 notebook and provides parallelized computation abilities in constructing the final catalog.
 """
-
+import re
 import sys
 
 import numpy as np
@@ -232,6 +232,49 @@ def read_input_catalogs(specprod_info: SpecProdInfo) -> Table:
     return desi_catalog
 
 
+def apply_quality_checks(input_table: Table, aon_cut: int | float = 1, mask_value: int | float = 0) -> Table:
+    r"""Applies quality checks on the FastSpecFit measurements and applies modifications to the specified table column
+    to indicate that given associated measurement from FastSpecFit is not reliable enough to use in AGN/Galaxy
+    diagnostics.
+
+    Notes:
+        We will apply a mask value on the associated line flux inverse variance column for rows that do not meet our
+        quality cut of line amplitude over noise threshold. Amplitude over noise is defined as
+
+        .. math::
+
+        \text{AoN} = \text{LINENAME\_AMP} \cdot \sqrt{\text{LINENAME\_CONT\_IVAR}}
+
+        where :math:`\text{LINENAME\_AMP}` is the emission line amplitude and :math:`\text{LINENAME\_CONT\_IVAR}` is
+        the inverse variance on the continuum measured at the line center.
+
+    Args:
+        input_table:
+            Table containing spectroscopic and photometric emission line information.
+        aon_cut:
+            Amplitude over Noise cut threshold qualifying a line measurement for use in diagnostics.
+        mask_value:
+            Value to apply to line ``LINENAME_FLUX_IVAR`` entry if a measurement fails the ``aon_cut`` threshold.
+    """
+
+    # Get a list of all emission line measurements included in the catalog
+    line_name_pattern = re.compile(r'.+?(?=_FLUX_IVAR)')
+
+    line_names = []
+    for colname in input_table.colnames:
+        if (line_name_match := line_name_pattern.search(colname)) is not None:
+            line_names.append(line_name_match.group())
+
+    for line_name in line_names:
+        # For each measurement compute the Amplitude over Noise
+        aon = input_table[f'{line_name}_AMP'] * np.sqrt(input_table[f'{line_name}_CONT_IVAR'])
+
+        # Apply the mask for all rows that do not meet the AoN threshold
+        input_table[f'{line_name}_FLUX_IVAR'] = np.where(aon > aon_cut, input_table[f'{line_name}_FLUX_IVAR'], mask_value)
+
+    return input_table
+
+
 def apply_agngal_class(input_table: Table, agnmask_defs: Path | str) -> Table:
     """Applies the AGN/Galaxy classification definitions and adds bitmasks to the input table.
 
@@ -378,6 +421,9 @@ def build_agngal_catalog(specprod_info: SpecProdInfo, output_filename: str) -> N
 
     # Build the initial input catalog
     desi_table = read_input_catalogs(specprod_info=specprod_info)
+
+    # Apply the quality cuts to the catalog
+    desi_table = apply_quality_checks(desi_table, aon_cut=1, mask_value=0)
 
     # Apply all AGN/Galaxy classifications and build BitMask columns
     desi_table = apply_agngal_class(input_table=desi_table, agnmask_defs=specprod_info.agn_bitmask_defs)
