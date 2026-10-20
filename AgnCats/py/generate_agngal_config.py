@@ -242,7 +242,7 @@ loa_base_info = {
 
 all_data_release_info = {
     # AGN BitMask Definitions file
-    'agn_bitmask_defs': f'{DESI_ROOT_RO}/science/gqp/agncatalog/code/AgnCats/py/agnmask.yaml',
+    'agn_bitmask_defs': f'{DESI_ROOT_RO}/science/gqp/agncatalog/code/AgnCats/py/configs/agnmask.yaml',
 
     # Output file unit definitions files
     'output_ext1_unit_defs': f'{DESI_ROOT_RO}/science/gqp/agncatalog/code/AgnCats/py/configs/ext1_units.yaml',

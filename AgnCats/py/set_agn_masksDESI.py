@@ -451,12 +451,12 @@ def update_agntype_nev(input_table: Table, opt_uv_type: BitMask, snr: int | floa
         Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for [NeV] selections for all rows.
     """
 
-    nev, agn_nev, sf_nev = uv_opt_agn.nev(input_table, snr=snr, mask=mask)
+    nev, agn_nev, unknown_nev = uv_opt_agn.nev(input_table, snr=snr, mask=mask)
 
     # If anyone of the emission line fluxes are unavailable, then there is no agn_mask (agn_mask = 0)
     agn_mask = nev * opt_uv_type.NEV
     agn_mask |= agn_nev * opt_uv_type.NEV_AGN
-    agn_mask |= sf_nev * opt_uv_type.NEV_SF
+    agn_mask |= unknown_nev * opt_uv_type.NEV_UNK
 
     try:
         input_table['OPT_UV_TYPE'] |= agn_mask
