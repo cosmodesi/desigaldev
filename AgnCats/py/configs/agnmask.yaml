@@ -65,7 +65,7 @@ OPT_UV_TYPE:
     - [HEII_SF,     35, "He II BPT Star-forming"]
     - [NEV,         36, "Ne V is available"]
     - [NEV_AGN,     37, "Ne V AGN"]
-    - [NEV_SF,      38, "Ne V Star-forming"]
+    - [NEV_UNK,     38, "Ne V Diagnostic cannot determine type"]
     - [BROAD_HALPHA,39, "Halpha line with FWHM >=1200 km/s"]
     - [BROAD_HBETA, 40, "Hbeta line with FWHM >=1200 km/s"]
     - [BROAD_MGII,  41, "MgII doublet with FWHM >=1200 km/s"]
