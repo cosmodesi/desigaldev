@@ -74,7 +74,7 @@ def generate_config(specprod_info: dict[str, Path | list[str]], universal_info: 
     all_survey_program_info = {label: info for label, info in specprod_info.items() if 'cols' in label}
 
     # Merge the column lists between the data release-specific and universal lists.
-    merged_column_lists = {list_name: [*all_survey_program_info[list_name], *universal_info[list_name]]
+    merged_column_lists = {list_name: [*universal_info[list_name], *all_survey_program_info[list_name],]
                            for list_name in set(all_survey_program_info.keys()).intersection(universal_info.keys())}
 
     # To each survey-program(-healpix) subcatalog, union the universal info dictionary.
@@ -212,7 +212,7 @@ loa_base_info = {
                                 'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT'],
 
     # FastPhot Catalog
-    'fast_phot_dir': Path('/pscratch/sd/i/ioannis/fastspecfit/loa-v2.0-fastphot'),
+    'fast_phot_dir': Path('/pscratch/sd/i/ioannis/fastspecfit/loa-v2.0-fastphot/loa/catalogs'),
     'fast_phot_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGMSTAR', 'LOGMSTAR_IVAR', 'RCHI2_PHOT'],
 
     # Redshift Catalog
@@ -265,7 +265,7 @@ all_data_release_info = {
                             'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_SIGMA', 'HALPHA_BROAD_AMP', 'HALPHA_BROAD_CONT_IVAR',
                             'NII_6584_FLUX', 'NII_6584_FLUX_IVAR', 'NII_6584_EW', 'NII_6584_EW_IVAR', 'NII_6584_AMP', 'NII_6584_CONT_IVAR',
                             'SII_6716_FLUX', 'SII_6716_FLUX_IVAR', 'SII_6716_AMP', 'SII_6716_CONT_IVAR',
-                            'SII_6731_FLUX', 'SII_6731_FLUX_IVAR' 'SII_6731_AMP', 'SII_6731_CONT_IVAR',],
+                            'SII_6731_FLUX', 'SII_6731_FLUX_IVAR', 'SII_6731_AMP', 'SII_6731_CONT_IVAR',],
 
     'fast_spec_meta_cols': ['TARGETID', 'PROGRAM', 'SURVEY', 'LS_ID',
                             'PHOTSYS', 'SPECTYPE', 'DELTACHI2',
@@ -287,8 +287,6 @@ all_data_release_info = {
 
     # Universal output catalog column names
     'output_cols_ext2': ['TARGETID', 'SURVEY', 'PROGRAM',
-                         'LOGMSTAR_FASTSPEC',
-                         'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT',
                          'FLUX_W1', 'FLUX_W2', 'FLUX_W3',
                          'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'FLUX_IVAR_W3',
                          'CIV_1549_FLUX', 'CIV_1549_FLUX_IVAR', 'CIV_1549_SIGMA',
@@ -306,7 +304,9 @@ all_data_release_info = {
                          'HALPHA_BROAD_FLUX', 'HALPHA_BROAD_FLUX_IVAR', 'HALPHA_BROAD_SIGMA',
                          'NII_6584_FLUX', 'NII_6584_FLUX_IVAR', 'NII_6584_EW', 'NII_6584_EW_IVAR',
                          'SII_6716_FLUX', 'SII_6716_FLUX_IVAR',
-                         'SII_6731_FLUX', 'SII_6731_FLUX_IVAR']
+                         'SII_6731_FLUX', 'SII_6731_FLUX_IVAR',
+                         'RCHI2_FASTSPEC', 'RCHI2_LINE_FASTSPEC', 'RCHI2_CONT_FASTSPEC', 'RCHI2_PHOT_FASTSPEC',
+                         'LOGMSTAR_FASTSPEC',]
 }
 
 if __name__ == '__main__':

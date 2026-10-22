@@ -121,9 +121,6 @@ def read_fastspecfit(specprod_info: SpecProdInfo) -> Table:
     # As all the extensions are already row-aligned we can do a fast hstack operation rather than a full join.
     fastspec_catalog = hstack([fastspec_data_catalog, fastspec_meta_catalog, fastspec_specphot_catalog])
 
-    # Rename the Stellar Mass column to not clash and be identifiable with the FastPhot and CIGALE versions
-    fastspec_catalog.rename_columns(['LOGMSTAR', 'LOGMSTAR_IVAR'], ['LOGMSTAR_FASTSPEC', 'LOGMSTAR_IVAR_FASTSPEC'])
-
     return fastspec_catalog
 
 
@@ -178,6 +175,12 @@ def read_input_catalogs(specprod_info: SpecProdInfo) -> Table:
         qn_c_lines = ['C_LYA', 'C_CIV', 'C_CIII', 'C_MgII', 'C_Hbeta', 'C_Halpha']
         all_c_lines = np.vstack([qso_maker_catalog[c_line_col] for c_line_col in qn_c_lines]).T
         qso_maker_catalog['QN_C_LINE_BEST'] = np.nanmax(all_c_lines, axis=1)
+
+    # Rename FastSpec columns to not clash and be identifiable with the FastPhot or CIGALE versions
+    fastspec_catalog.rename_columns(
+        ['LOGMSTAR', 'LOGMSTAR_IVAR', 'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT'],
+        ['LOGMSTAR_FASTSPEC', 'LOGMSTAR_IVAR_FASTSPEC',
+         'RCHI2_FASTSPEC', 'RCHI2_LINE_FASTSPEC', 'RCHI2_CONT_FASTSPEC', 'RCHI2_PHOT_FASTSPEC'])
 
     # We want to preserve the redshift columns from QSO-Maker separately from FastSpecFit's columns
     qso_maker_catalog.rename_columns(['Z', 'ZERR', 'SPECTYPE'],
