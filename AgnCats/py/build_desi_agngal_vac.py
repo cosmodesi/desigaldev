@@ -275,7 +275,7 @@ def apply_quality_checks(input_table: Table, aon_cut: int | float = 1, mask_valu
         aon = input_table[f'{line_name}_AMP'] * np.sqrt(input_table[f'{line_name}_CONT_IVAR'])
 
         # Apply the mask for all rows that do not meet the AoN threshold
-        input_table[f'{line_name}_FLUX_IVAR'] = np.where(aon > aon_cut, input_table[f'{line_name}_FLUX_IVAR'], mask_value)
+        input_table[f'{line_name}_FLUX_IVAR'] = np.where(aon >= aon_cut, input_table[f'{line_name}_FLUX_IVAR'], mask_value)
 
     # Now doublets
     for line_name_1, line_name_2 in batched(doublets, 2):
