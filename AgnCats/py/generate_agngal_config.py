@@ -195,7 +195,7 @@ iron_info = {
                          'SV1_SCND_TARGET', 'SV2_SCND_TARGET', 'SV3_SCND_TARGET'],
 
     # Output catalog extension 2 column names
-    'output_cols_ext2': ['LOGMSTAR_IVAR',
+    'output_cols_ext2': ['LOGMSTAR_IVAR_FASTSPEC',
                          'LOGMSTAR_FASTPHOT', 'LOGMSTAR_IVAR_FASTPHOT', 'RCHI2_PHOT_FASTPHOT',
                          'LOGMSTAR_CIGALE', 'LOGMSTAR_ERR_CIGALE', 'AGNFRAC_CIGALE', 'CHI2_CIGALE',
                          'FLAG_MASSPDF_CIGALE']
@@ -236,7 +236,7 @@ loa_base_info = {
                          'SV1_SCND_TARGET', 'SV2_SCND_TARGET', 'SV3_SCND_TARGET'],
 
     # Output catalog extension 2 column names
-    'output_cols_ext2': ['LOGMSTAR_IVAR',
+    'output_cols_ext2': ['LOGMSTAR_IVAR_FASTSPEC',
                          'LOGMSTAR_FASTPHOT', 'LOGMSTAR_IVAR_FASTPHOT', 'RCHI2_PHOT_FASTPHOT']
 }
 
@@ -287,7 +287,7 @@ all_data_release_info = {
 
     # Universal output catalog column names
     'output_cols_ext2': ['TARGETID', 'SURVEY', 'PROGRAM',
-                         'LOGMSTAR',
+                         'LOGMSTAR_FASTSPEC',
                          'RCHI2', 'RCHI2_LINE', 'RCHI2_CONT', 'RCHI2_PHOT',
                          'FLUX_W1', 'FLUX_W2', 'FLUX_W3',
                          'FLUX_IVAR_W1', 'FLUX_IVAR_W2', 'FLUX_IVAR_W3',

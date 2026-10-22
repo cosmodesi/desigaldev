@@ -121,6 +121,9 @@ def read_fastspecfit(specprod_info: SpecProdInfo) -> Table:
     # As all the extensions are already row-aligned we can do a fast hstack operation rather than a full join.
     fastspec_catalog = hstack([fastspec_data_catalog, fastspec_meta_catalog, fastspec_specphot_catalog])
 
+    # Rename the Stellar Mass column to not clash and be identifiable with the FastPhot and CIGALE versions
+    fastspec_catalog.rename_columns(['LOGMSTAR', 'LOGMSTAR_IVAR'], ['LOGMSTAR_FASTSPEC', 'LOGMSTAR_IVAR_FASTSPEC'])
+
     return fastspec_catalog
 
 

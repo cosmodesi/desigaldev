@@ -118,7 +118,7 @@ def update_agn_maskbits(input_table: Table, agn_maskbits: BitMask, snr: int | fl
 
     # Other (non-BPT) optical diagnostics: WHAN, MEx, KEx, Blue
     _, _, whan_sagn, *_ = uv_opt_agn.whan(input_table, snr=snr, mask=mask)
-    _, mex_agn, *_ = uv_opt_agn.mex(input_table, snr=snr, mask=mask)
+    _, mex_agn, *_ = uv_opt_agn.mex(input_table, snr=snr, mstar_colname='LOGMSTAR_FASTPHOT', mask=mask)
     _, blue_agn, *_ = uv_opt_agn.blue(input_table, snr=snr, mask=mask)
     _, kex_agn, *_ = uv_opt_agn.kex(input_table, snr=snr, mask=mask)
     # _, heii_agn, *_ = uv_opt_agn.heii_bpt(input_table, snr=snr, mask=mask)  # BF: Deactivating until further investigation can be done on this
@@ -361,7 +361,7 @@ def update_agntype_mex(input_table: Table, opt_uv_type: BitMask, snr: int | floa
         Input table with new or updated column with ``OPT_UV_TYPE`` bit masks for MEx selections for all rows.
     """
 
-    mex, mex_agn, mex_sf, mex_interm = uv_opt_agn.mex(input_table, snr=snr, mask=mask)
+    mex, mex_agn, mex_sf, mex_interm = uv_opt_agn.mex(input_table, snr=snr, mstar_colname='LOGMSTAR_FASTPHOT', mask=mask)
 
     # If any of the emission line fluxes or the stellar masses are unavailable then there is no agn_mask (agn_mask = 0)
     agn_mask = mex * opt_uv_type.MEX
