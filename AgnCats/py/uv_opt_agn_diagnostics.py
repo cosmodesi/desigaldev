@@ -634,7 +634,7 @@ def mex(input_table: Table, snr: int | float = 3, mstar_colname: str = 'LOGMSTAR
 
     # Mask for zero fluxes
     qa_mask_mex = ((input_table['HBETA_FLUX'] == 0) | (input_table['HBETA_FLUX_IVAR'] == 0)
-                   | (input_table['OIII_5007_FLUX'] == 0) | (input_table['OIII_5007_IVAR'] == 0))
+                   | (input_table['OIII_5007_FLUX'] == 0) | (input_table['OIII_5007_FLUX_IVAR'] == 0))
 
     # Apply user defined masking if provided
     if mask is not None:
@@ -708,7 +708,7 @@ def kex(input_table: Table, snr: int | float = 3, mask: MaskedColumn | None = No
 
     # Masks for zero fluxes
     qa_mask_kex = ((input_table['HBETA_FLUX'] == 0.) | (input_table['HBETA_FLUX_IVAR'] == 0.)
-                   | (input_table['OIII_5007_FLUX'] == 0.) | (input_table['OIII_5007_IVAR'] == 0.))
+                   | (input_table['OIII_5007_FLUX'] == 0.) | (input_table['OIII_5007_FLUX_IVAR'] == 0.))
 
     # Apply user defined masking if provided
     if mask is not None:
