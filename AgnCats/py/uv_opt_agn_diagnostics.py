@@ -11,6 +11,7 @@ Mar Mezcula (Institut de Ciencies de l'Espai)
 Revised by:
 Benjamin Floyd (University of Portsmouth)
 """
+from typing import Literal
 
 import numpy as np
 from astropy.table import MaskedColumn, Table
@@ -585,7 +586,7 @@ def blue(input_table: Table, snr: int | float = 3, mask: MaskedColumn | None = N
     return blue_avail, agn_blue, sflin_blue, liner_blue, sf_blue, sfagn_blue
 
 
-def mex(input_table: Table, snr: int | float = 3, mstar_colname: str = 'LOGMSTAR_FASTPHOT',
+def mex(input_table: Table, snr: int | float = 3, mstar_catname: Literal['FASTSPEC', 'FASTPHOT', 'CIGALE'] = 'FASTPHOT',
         mask: MaskedColumn | None = None) -> tuple[NDArray[np.bool], NDArray[np.bool], NDArray[np.bool], NDArray[np.bool]]:
     r"""MEx diagnostic originally by [Jun14]_
 
@@ -621,8 +622,9 @@ def mex(input_table: Table, snr: int | float = 3, mstar_colname: str = 'LOGMSTAR
         input_table: Table including [OIII] and Hβ fluxes, their associated inverse variances and stellar mass
             (derived using either a Chabrier or Kroupa IMF)
         snr: SNR cut applied to the Hβ and [O III] fluxes. Default is ``3``.
-        mstar_colname: Name for the log-Stellar Mass column to use. Typically, the catalog will include stellar mass
-            measurements for FastSpec, FastPhot, and CIGALE. Default is FastPhot, ``LOGMSTAR_FASTPHOT``.
+        mstar_catname: Name for the catalog from which to use a log-Stellar Mass measurement. Typically, the catalog
+            will include stellar mass measurements for FastSpec, FastPhot, and CIGALE. Default is FastPhot, ``FASTPHOT``.
+            This string will be appended to ``LOGMSTAR_CATNAME`` to query the appropriate stellar mass column.
         mask: Optional mask (e.g., from masked column array). Default is ``None``.
 
     Returns:
@@ -645,11 +647,13 @@ def mex(input_table: Table, snr: int | float = 3, mstar_colname: str = 'LOGMSTAR
     snr_hb = input_table['HBETA_FLUX'] * np.sqrt(input_table['HBETA_FLUX_IVAR'])
     snr_oiii = input_table['OIII_5007_FLUX'] * np.sqrt(input_table['OIII_5007_FLUX_IVAR'])
 
-    ## MEx is available (line fluxes SNR >= 3 and valid mass)
-    mex_avail: NDArray[np.bool] = (snr_hb >= snr) & (snr_oiii >= snr) & (input_table[mstar_colname] > 4.) & (~qa_mask_mex)
+    # MEx is available (line fluxes SNR >= 3 (typical), valid mass, and quality checks)
+    mex_avail: NDArray[np.bool] = ((snr_hb >= snr) & (snr_oiii >= snr)
+                                   & (input_table[f'LOGMSTAR_{mstar_catname}'] > 4.)
+                                   & (~qa_mask_mex))
 
     # Define variables for equations 1 & 2
-    x = input_table[mstar_colname]
+    x = input_table[f'LOGMSTAR_{mstar_catname}']
     y = np.log10(input_table['OIII_5007_FLUX'] / input_table['HBETA_FLUX'])
 
     # upper MEx

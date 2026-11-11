@@ -319,7 +319,10 @@ def apply_agngal_class(input_table: Table, agnmask_defs: Path | str) -> Table:
     # Apply the non-BPT optical maskbits
     desi_catalog = agn_masks.update_agntype_whan(desi_catalog, uv_opt_type, snr=emission_line_snr, snr_ew=whan_ew_snr)
     desi_catalog = agn_masks.update_agntype_blue(desi_catalog, uv_opt_type, snr=equivalent_width_snr)
-    desi_catalog = agn_masks.update_agntype_mex(desi_catalog, uv_opt_type, snr=emission_line_snr)
+    if 'LOGMSTAR_FASTPHOT' in input_table.colnames:
+        desi_catalog = agn_masks.update_agntype_mex(desi_catalog, uv_opt_type, mstar_catname='FASTPHOT', snr=emission_line_snr)
+    if 'LOGMSTAR_CIGALE' in input_table.colnames:
+        desi_catalog = agn_masks.update_agntype_mex(desi_catalog, uv_opt_type, mstar_catname='CIGALE', snr=emission_line_snr)
     desi_catalog = agn_masks.update_agntype_kex(desi_catalog, uv_opt_type, snr=emission_line_snr)
     # desi_catalog = agn_masks.update_agntype_heii(desi_catalog, uv_opt_type, snr=emission_line_snr)  # BF: Deactivating until further investigation can be done on this.
     desi_catalog = agn_masks.update_agntype_nev(desi_catalog, uv_opt_type, snr=emission_line_snr)
