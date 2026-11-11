@@ -172,7 +172,7 @@ iron_info = {
 
     # CIGALE catalog
     'cigale_dir': Path(f'{DESI_ROOT_RO}/science/gqp/agncatalog/dr1/input_catalogs/cigale'),
-    'cigale_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'HEALPIX', 'LOGM', 'LOGM_ERR', 'AGNFRAC', 'CHI2', 'FLAG_MASSPDF'],
+    'cigale_cols': ['TARGETID', 'SURVEY', 'PROGRAM', 'LOGM', 'LOGM_ERR', 'AGNFRAC', 'CHI2', 'FLAG_MASSPDF'],
 
     # Redshift catalog
     'zcat_dir': Path(f'{DESI_ROOT_RO}/science/gqp/agncatalog/dr1/input_catalogs/zcat'),
