@@ -453,7 +453,7 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--version', required=True, help='Version number of catalog.', type=float)
     parser.add_argument('--testing', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--testing-pp', action='store_true', help=argparse.SUPPRESS)
-    parser.add_argument('--merge', dest='merge-filename',
+    parser.add_argument('--merge', dest='merge_filename',
                         help='If given, will merge the subcatalogs into a single catalog with the provided filename.',
                         type=Path)
     args = parser.parse_args()
